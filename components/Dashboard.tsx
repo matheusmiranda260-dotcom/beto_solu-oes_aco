@@ -840,8 +840,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                             <p className="text-xs text-slate-500 truncate">{item.description}</p>
                           </div>
                           <span className={`text-[10px] px-2 py-1 rounded-full uppercase font-bold ${item.status === 'Agendado' ? 'bg-blue-100 text-blue-700' :
-                              item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
-                                'bg-green-100 text-green-700'
+                            item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
+                              'bg-green-100 text-green-700'
                             }`}>
                             {item.status}
                           </span>
@@ -1126,18 +1126,20 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                         <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Altura (cm)</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                           value={newTruss.height || ''}
-                          onChange={(e) => setNewTruss({ ...newTruss, height: parseFloat(e.target.value) })}
+                          onChange={(e) => setNewTruss({ ...newTruss, height: parseFloat(e.target.value.replace(',', '.')) })}
                         />
                       </div>
                       <div>
                         <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Tamanho (mts)</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                           value={newTruss.length || ''}
-                          onChange={(e) => setNewTruss({ ...newTruss, length: parseFloat(e.target.value) })}
+                          onChange={(e) => setNewTruss({ ...newTruss, length: parseFloat(e.target.value.replace(',', '.')) })}
                         />
                       </div>
                     </div>
@@ -1147,27 +1149,30 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                         <label className="text-xs font-bold text-green-700 uppercase mb-1 block">Superior (mm)</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="w-full p-2 border border-green-200 bg-green-50 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                           value={newTruss.topDiam || ''}
-                          onChange={(e) => setNewTruss({ ...newTruss, topDiam: parseFloat(e.target.value) })}
+                          onChange={(e) => setNewTruss({ ...newTruss, topDiam: parseFloat(e.target.value.replace(',', '.')) })}
                         />
                       </div>
                       <div>
                         <label className="text-xs font-bold text-emerald-800 uppercase mb-1 block">Inferior (mm)</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="w-full p-2 border border-emerald-200 bg-emerald-50 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
                           value={newTruss.botDiam || ''}
-                          onChange={(e) => setNewTruss({ ...newTruss, botDiam: parseFloat(e.target.value) })}
+                          onChange={(e) => setNewTruss({ ...newTruss, botDiam: parseFloat(e.target.value.replace(',', '.')) })}
                         />
                       </div>
                       <div>
                         <label className="text-xs font-bold text-lime-700 uppercase mb-1 block">Senozoide (mm)</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="w-full p-2 border border-lime-200 bg-lime-50 rounded-lg focus:ring-2 focus:ring-lime-500 outline-none"
                           value={newTruss.sineDiam || ''}
-                          onChange={(e) => setNewTruss({ ...newTruss, sineDiam: parseFloat(e.target.value) })}
+                          onChange={(e) => setNewTruss({ ...newTruss, sineDiam: parseFloat(e.target.value.replace(',', '.')) })}
                         />
                       </div>
                     </div>
@@ -1512,8 +1517,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                                 {new Date(item.startDate).toLocaleDateString()}
                               </span>
                               <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.status === 'Concluido' ? 'bg-green-100 text-green-700' :
-                                  item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-blue-100 text-blue-700'
+                                item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
+                                  'bg-blue-100 text-blue-700'
                                 }`}>
                                 {item.status}
                               </span>
@@ -1610,8 +1615,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user'
-                        ? 'bg-orange-600 text-white rounded-br-none'
-                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
+                      ? 'bg-orange-600 text-white rounded-br-none'
+                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
                       }`}>
                       <p className="whitespace-pre-wrap">{msg.text}</p>
                       <p className={`text-[10px] mt-2 opacity-70 ${msg.role === 'user' ? 'text-orange-100' : 'text-slate-400'}`}>
