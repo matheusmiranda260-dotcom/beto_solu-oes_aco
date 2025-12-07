@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  ArrowRight, HardHat, TrendingUp, Settings, 
+import {
+  ArrowRight, HardHat, TrendingUp, Settings,
   Users, Phone, Mail, Lock, Star, ShieldCheck
 } from 'lucide-react';
 
@@ -33,8 +33,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
               <a href="#servicos" className="hidden md:block text-slate-300 hover:text-white text-sm font-medium transition-colors">Serviços</a>
               <a href="#sobre" className="hidden md:block text-slate-300 hover:text-white text-sm font-medium transition-colors">Sobre</a>
               <a href="#contato" className="hidden md:block text-slate-300 hover:text-white text-sm font-medium transition-colors">Contato</a>
-              
-              <button 
+
+              <button
                 onClick={onLoginClick}
                 className="group flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg hover:shadow-orange-500/20 transform hover:-translate-y-0.5"
               >
@@ -50,15 +50,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       <section className="relative pt-32 pb-12 lg:pt-40 lg:pb-24 bg-slate-900 overflow-hidden">
         {/* Background Patterns */}
         <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-800"></div>
-           <svg className="absolute top-0 right-0 h-full w-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-             <path d="M50 0 L100 100 L0 100 Z" fill="#ea580c" />
-           </svg>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-800"></div>
+          <svg className="absolute top-0 right-0 h-full w-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M50 0 L100 100 L0 100 Z" fill="#ea580c" />
+          </svg>
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
-            
+
             {/* Left Content */}
             <div className="space-y-8 animate-in slide-in-from-left duration-700 z-20">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 border border-slate-700 text-orange-400 text-xs font-bold uppercase tracking-wide shadow-lg">
@@ -68,27 +68,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
                 </span>
                 Inteligência Artificial para Indústria
               </div>
-              
+
               <h1 className="text-5xl lg:text-7xl font-black text-white leading-[1.1]">
-                O seu parceiro <br/>
+                O seu parceiro <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-500">
                   Especialista em Aço
                 </span>
               </h1>
-              
+
               <p className="text-lg text-slate-300 max-w-xl leading-relaxed border-l-4 border-orange-600 pl-4">
                 Olá, eu sou o <strong>Beto</strong>! Estou aqui para otimizar sua trefilação, calcular suas malhas e organizar sua consultoria técnica com precisão de engenheiro.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <a 
-                   href="#contato"
-                   className="flex items-center justify-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform hover:-translate-y-1"
+                <a
+                  href="#contato"
+                  className="flex items-center justify-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform hover:-translate-y-1"
                 >
                   Falar com o Beto
                   <ArrowRight size={20} />
                 </a>
-                <button 
+                <button
                   onClick={onLoginClick}
                   className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-lg text-white border border-slate-700 hover:bg-slate-800 hover:border-slate-500 transition-all"
                 >
@@ -98,7 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
 
               <div className="flex items-center gap-4 text-slate-500 text-sm font-medium pt-4">
                 <div className="flex -space-x-2">
-                  {[1,2,3,4].map(i => (
+                  {[1, 2, 3, 4].map(i => (
                     <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700"></div>
                   ))}
                 </div>
@@ -108,60 +108,60 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
 
             {/* Right Character Image - Reverted to clean fallback if image missing */}
             <div className="relative lg:h-[600px] flex items-end justify-center lg:justify-end animate-in slide-in-from-bottom duration-1000 delay-200 min-h-[400px]">
-               {/* Glow Effect */}
-               <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-orange-500 rounded-full blur-[100px] opacity-20"></div>
-               
-               {/* Character Image Container */}
-               <div className="relative z-10 w-full max-w-[500px] flex justify-center items-center">
-                 {!imageError ? (
-                   <img 
-                     src="/beto-avatar.png" 
-                     alt="Beto - Assistente Virtual" 
-                     onError={() => setImageError(true)}
-                     className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-700 ease-in-out"
-                     style={{
-                       maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-                       WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)'
-                     }}
-                   />
-                 ) : (
-                   /* Clean Professional Fallback - "Inicial Style" */
-                   <div className="relative group flex items-center justify-center w-[350px] h-[350px] bg-slate-800 rounded-full border-4 border-slate-700 shadow-2xl">
-                     <HardHat size={180} className="text-orange-500 drop-shadow-[0_0_15px_rgba(234,88,12,0.5)]" />
-                     <div className="absolute -bottom-4 bg-white text-slate-900 px-6 py-2 rounded-full font-bold shadow-lg">
-                       BETO
-                     </div>
-                   </div>
-                 )}
+              {/* Glow Effect */}
+              <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-orange-500 rounded-full blur-[100px] opacity-20"></div>
 
-                 {/* Floating Card 1: Efficiency */}
-                 <div className="absolute top-20 -left-4 md:-left-12 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-slate-600 shadow-xl flex items-center gap-3 animate-bounce duration-[3000ms]">
-                    <div className="bg-green-500/20 p-2 rounded-lg">
-                      <TrendingUp size={20} className="text-green-400" />
+              {/* Character Image Container */}
+              <div className="relative z-10 w-full max-w-[500px] flex justify-center items-center">
+                {!imageError ? (
+                  <img
+                    src="/images/beto-pixar.jpg"
+                    alt="Beto - Assistente Virtual"
+                    onError={() => setImageError(true)}
+                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-700 ease-in-out"
+                    style={{
+                      maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+                      WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)'
+                    }}
+                  />
+                ) : (
+                  /* Clean Professional Fallback - "Inicial Style" */
+                  <div className="relative group flex items-center justify-center w-[350px] h-[350px] bg-slate-800 rounded-full border-4 border-slate-700 shadow-2xl">
+                    <HardHat size={180} className="text-orange-500 drop-shadow-[0_0_15px_rgba(234,88,12,0.5)]" />
+                    <div className="absolute -bottom-4 bg-white text-slate-900 px-6 py-2 rounded-full font-bold shadow-lg">
+                      BETO
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-400 uppercase font-bold">Eficiência</p>
-                      <p className="text-white font-bold">+28% Garantido</p>
-                    </div>
-                 </div>
+                  </div>
+                )}
 
-                 {/* Floating Card 2: Security */}
-                 <div className="absolute bottom-32 -right-4 md:-right-8 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-slate-600 shadow-xl flex items-center gap-3 animate-bounce duration-[4000ms] delay-700">
-                    <div className="bg-orange-500/20 p-2 rounded-lg">
-                      <ShieldCheck size={20} className="text-orange-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400 uppercase font-bold">Qualidade</p>
-                      <p className="text-white font-bold">Norma ABNT</p>
-                    </div>
-                 </div>
+                {/* Floating Card 1: Efficiency */}
+                <div className="absolute top-20 -left-4 md:-left-12 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-slate-600 shadow-xl flex items-center gap-3 animate-bounce duration-[3000ms]">
+                  <div className="bg-green-500/20 p-2 rounded-lg">
+                    <TrendingUp size={20} className="text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase font-bold">Eficiência</p>
+                    <p className="text-white font-bold">+28% Garantido</p>
+                  </div>
+                </div>
 
-                 {/* Floating Card 3: Status */}
-                 <div className="absolute bottom-10 left-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-pulse">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-slate-900 font-bold text-sm">Beto Online Agora</span>
-                 </div>
-               </div>
+                {/* Floating Card 2: Security */}
+                <div className="absolute bottom-32 -right-4 md:-right-8 bg-slate-800/80 backdrop-blur-md p-3 rounded-xl border border-slate-600 shadow-xl flex items-center gap-3 animate-bounce duration-[4000ms] delay-700">
+                  <div className="bg-orange-500/20 p-2 rounded-lg">
+                    <ShieldCheck size={20} className="text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase font-bold">Qualidade</p>
+                    <p className="text-white font-bold">Norma ABNT</p>
+                  </div>
+                </div>
+
+                {/* Floating Card 3: Status */}
+                <div className="absolute bottom-10 left-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-pulse">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-slate-900 font-bold text-sm">Beto Online Agora</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -225,57 +225,57 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
 
       {/* CTA Section */}
       <section id="contato" className="py-20 bg-slate-900 relative overflow-hidden">
-         {/* Background Elements */}
-         <div className="absolute top-0 right-0 w-2/3 h-full bg-slate-800/50 transform -skew-x-12 translate-x-32"></div>
-         <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500 rounded-full blur-[120px] opacity-20"></div>
+        {/* Background Elements */}
+        <div className="absolute top-0 right-0 w-2/3 h-full bg-slate-800/50 transform -skew-x-12 translate-x-32"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500 rounded-full blur-[120px] opacity-20"></div>
 
-         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div className="inline-block p-3 rounded-full bg-slate-800 border-4 border-slate-700 mb-6 shadow-2xl">
-               <HardHat size={48} className="text-orange-500" />
-            </div>
-            
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Vamos modernizar sua fábrica hoje?</h2>
-            <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Não perca tempo com cálculos manuais e processos ultrapassados. Deixe o <strong>Beto</strong> cuidar da parte técnica enquanto você foca no crescimento.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg shadow-green-900/20">
-                <Phone size={24} />
-                Chamar no WhatsApp
-              </button>
-              <button className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg">
-                <Mail size={24} />
-                Enviar E-mail
-              </button>
-            </div>
-         </div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="inline-block p-3 rounded-full bg-slate-800 border-4 border-slate-700 mb-6 shadow-2xl">
+            <HardHat size={48} className="text-orange-500" />
+          </div>
+
+          <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Vamos modernizar sua fábrica hoje?</h2>
+          <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Não perca tempo com cálculos manuais e processos ultrapassados. Deixe o <strong>Beto</strong> cuidar da parte técnica enquanto você foca no crescimento.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg shadow-green-900/20">
+              <Phone size={24} />
+              Chamar no WhatsApp
+            </button>
+            <button className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg">
+              <Mail size={24} />
+              Enviar E-mail
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-slate-950 py-12 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-             <div className="flex items-center gap-3">
-                <div className="bg-slate-900 p-2 rounded-full border border-slate-800">
-                  <HardHat className="text-orange-600" size={24} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-white tracking-tight">BETO</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase">Soluções em Aço</p>
-                </div>
-             </div>
-             
-             <div className="flex gap-8 text-sm font-medium text-slate-400">
-                <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
-                <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-                <a href="#" className="hover:text-white transition-colors">Suporte</a>
-             </div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-900 p-2 rounded-full border border-slate-800">
+                <HardHat className="text-orange-600" size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white tracking-tight">BETO</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Soluções em Aço</p>
+              </div>
+            </div>
 
-             <p className="text-slate-600 text-xs">
-               &copy; {new Date().getFullYear()} Beto Soluções em Aço.
-             </p>
-           </div>
+            <div className="flex gap-8 text-sm font-medium text-slate-400">
+              <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
+              <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+              <a href="#" className="hover:text-white transition-colors">Suporte</a>
+            </div>
+
+            <p className="text-slate-600 text-xs">
+              &copy; {new Date().getFullYear()} Beto Soluções em Aço.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
