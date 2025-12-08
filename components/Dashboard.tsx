@@ -10,11 +10,12 @@ import {
   Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle
 } from 'lucide-react';
 import { generateBetoResponse } from '../services/geminiService';
-import { ChatMessage, MeshType, TrussType } from '../types';
+import { ChatMessage, MeshType, TrussType, Lead } from '../types';
 
 interface DashboardProps {
   username: string;
   onLogout: () => void;
+  leads?: Lead[];
 }
 
 const mockData = [
@@ -119,8 +120,8 @@ interface TrefilaRecipe {
 
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
-const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias'>('dashboard');
+const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, leads = [] }) => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Malhas State
@@ -771,8 +772,22 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             onClick={() => setActiveTab('chat')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'chat' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
           >
-            <MessageSquare size={20} />
             <span>Fale com o Beto</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('leads')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leads' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <div className="relative">
+              <MessageSquare size={20} />
+              {leads && leads.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white border-2 border-slate-900">
+                  {leads.length}
+                </span>
+              )}
+            </div>
+            <span>Recados do Site</span>
           </button>
         </nav>
 
@@ -835,8 +850,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     </div>
                     <span className="text-orange-600 text-sm font-medium">Atuais</span>
                   </div>
-                  <h3 className="text-slate-500 text-sm font-medium relative z-10">Consultorias em Andamento</h3>
-                  <p className="text-3xl font-bold text-slate-800 mt-1 relative z-10">{activeConsultingJobs}</p>
+                  <h3 className="text-slate-500 text-sm font-medium relative z-10">Recados Recebidos</h3>
+                  <p className="text-3xl font-bold text-slate-800 mt-1 relative z-10">{leads.length}</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 relative overflow-hidden">
@@ -2135,6 +2150,65 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                   >
                     <Send size={20} />
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'leads' && (
+            <div className="space-y-6 max-w-7xl mx-auto">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-800">Recados do Site</h1>
+                  <p className="text-slate-500">Gerencie as mensagens enviadas pelos clientes na Landing Page.</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                      <tr>
+                        <th className="px-6 py-4">Data</th>
+                        <th className="px-6 py-4">Nome</th>
+                        <th className="px-6 py-4">Contato</th>
+                        <th className="px-6 py-4">Mensagem</th>
+                        <th className="px-6 py-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {leads.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                            Nenhum recado recebido ainda.
+                          </td>
+                        </tr>
+                      ) : (
+                        leads.map((lead) => (
+                          <tr key={lead.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-medium text-slate-900">
+                              {lead.date.toLocaleDateString()}
+                              <div className="text-xs text-slate-400">{lead.date.toLocaleTimeString()}</div>
+                            </td>
+                            <td className="px-6 py-4 text-slate-600 font-bold">{lead.name}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 text-green-700 font-medium text-xs border border-green-200">
+                                <Phone size={12} />
+                                {lead.phone}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-slate-600 max-w-md truncate" title={lead.message}>
+                              {lead.message}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Novo
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

@@ -46,3 +46,12 @@ export interface TrussType {
   sineDiam: number;    // mm (Senozoide)
   totalWeight: number; // kg (Peso Final)
 }
+
+export interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  message: string;
+  date: Date;
+  status: 'New' | 'Contacted';
+}

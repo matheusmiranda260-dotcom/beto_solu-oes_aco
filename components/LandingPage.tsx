@@ -1,15 +1,38 @@
 import React, { useState } from 'react';
 import {
   ArrowRight, HardHat, TrendingUp, Settings,
-  Users, Phone, Mail, Lock, Star, ShieldCheck
+  Users, Phone, Mail, Lock, Star, ShieldCheck, X, Send, MessageSquare
 } from 'lucide-react';
+import { Lead } from '../types';
 
 interface LandingPageProps {
   onLoginClick: () => void;
+  onSendLead: (lead: Lead) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSendLead }) => {
   const [imageError, setImageError] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.phone || !formData.message) return;
+
+    const newLead: Lead = {
+      id: Date.now().toString(),
+      name: formData.name || 'Cliente',
+      phone: formData.phone,
+      message: formData.message,
+      date: new Date(),
+      status: 'New'
+    };
+
+    onSendLead(newLead);
+    setIsModalOpen(false);
+    setFormData({ name: '', phone: '', message: '' });
+    alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -251,13 +274,13 @@ Em que podemos auxiliar?`)}`}
               <Phone size={24} />
               Chamar no WhatsApp
             </a>
-            <a
-              href="mailto:beto.solucoesemaco@gmail.com"
+            <button
+              onClick={() => setIsModalOpen(true)}
               className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg"
             >
-              <Mail size={24} />
-              Enviar E-mail
-            </a>
+              <MessageSquare size={24} />
+              Enviar Mensagem
+            </button>
           </div>
         </div>
       </section>
@@ -288,6 +311,80 @@ Em que podemos auxiliar?`)}`}
           </div>
         </div>
       </footer>
+      {/* Message Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="text-orange-500" />
+                <h3 className="text-xl font-bold">Fale com o Beto</h3>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendMessage} className="p-6 space-y-4">
+              <div className="bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-lg text-sm mb-4">
+                Deixe seu contato e uma breve mensagem. Retornarei o mais breve possível!
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Seu Nome (Opcional)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    placeholder="Como prefere ser chamado?"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                  <Users className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Seu WhatsApp / Celular <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    placeholder="(11) 99999-9999"
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                  <Phone className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Mensagem <span className="text-red-500">*</span></label>
+                <textarea
+                  required
+                  rows={4}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none"
+                  placeholder="Olá Beto, gostaria de saber mais sobre..."
+                  value={formData.message}
+                  onChange={e => setFormData({ ...formData, message: e.target.value })}
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <Send size={20} />
+                Enviar Mensagem
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

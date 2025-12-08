@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
-import { AuthState } from './types';
+import { AuthState, Lead } from './types';
 
 const App: React.FC = () => {
   const [auth, setAuth] = useState<AuthState>({
@@ -11,6 +11,7 @@ const App: React.FC = () => {
   });
 
   const [showLogin, setShowLogin] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   const handleLogin = (username: string) => {
     setAuth({
@@ -32,26 +33,34 @@ const App: React.FC = () => {
     setShowLogin(false); // Return to landing page after logout
   };
 
+  const handleNewLead = (lead: Lead) => {
+    setLeads(prev => [lead, ...prev]);
+  };
+
   if (auth.isAuthenticated) {
     return (
-      <Dashboard 
-        username={auth.user?.name || 'Gestor'} 
-        onLogout={handleLogout} 
+      <Dashboard
+        username={auth.user?.name || 'Gestor'}
+        onLogout={handleLogout}
+        leads={leads}
       />
     );
   }
 
   if (showLogin) {
     return (
-      <LoginScreen 
-        onLogin={handleLogin} 
+      <LoginScreen
+        onLogin={handleLogin}
         onBack={() => setShowLogin(false)}
       />
     );
   }
 
   return (
-    <LandingPage onLoginClick={() => setShowLogin(true)} />
+    <LandingPage
+      onLoginClick={() => setShowLogin(true)}
+      onSendLead={handleNewLead}
+    />
   );
 };
 
