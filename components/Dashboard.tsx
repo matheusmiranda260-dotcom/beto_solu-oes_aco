@@ -138,6 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [trefilaPassCount, setTrefilaPassCount] = useState<number>(4);
   const [trefilaDies, setTrefilaDies] = useState<number[]>([4.7, 4.05, 3.56, 3.2]);
   const [trefilaReductions, setTrefilaReductions] = useState<{ pass: number, reduction: number }[]>([]);
+  const [trefilaMode, setTrefilaMode] = useState<'cacetes' | 'frieiras'>('cacetes');
   const [savedRecipes, setSavedRecipes] = useState<TrefilaRecipe[]>([]);
   const [recipeName, setRecipeName] = useState('');
 
@@ -288,6 +289,32 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
       if (i === trefilaPassCount - 1) d = trefilaExit;
 
       newDies.push(Number(d.toFixed(3)));
+    }
+
+    setTrefilaDies(newDies);
+  };
+
+  const calculateEqualPasses = () => {
+    if (trefilaEntry <= trefilaExit || trefilaPassCount <= 0) return;
+
+    // ALGORITMO DE DISTRIBUIÇÃO UNIFORME (Frieiras)
+    // Regra: A porcentagem de redução deve ser igual para todos os passes.
+    // Ideal: 19% a 23%.
+
+    // R = 1 - (Exit/Entry)^(2/passes)
+    const requiredReduction = 1 - Math.pow(trefilaExit / trefilaEntry, 2 / trefilaPassCount);
+
+    const newDies = [];
+    let currentD = trefilaEntry;
+
+    for (let i = 0; i < trefilaPassCount; i++) {
+      // nextD = currentD * Math.sqrt(1 - requiredReduction)
+      currentD = currentD * Math.sqrt(1 - requiredReduction);
+
+      // Forçar o último para o valor exato para evitar erros de floating point
+      if (i === trefilaPassCount - 1) currentD = trefilaExit;
+
+      newDies.push(Number(currentD.toFixed(3)));
     }
 
     setTrefilaDies(newDies);
@@ -1317,6 +1344,24 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
                   <div className="space-y-4">
                     <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Trefilação</label>
+                      <div className="flex bg-slate-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setTrefilaMode('cacetes')}
+                          className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'cacetes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Cacetes
+                        </button>
+                        <button
+                          onClick={() => setTrefilaMode('frieiras')}
+                          className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'frieiras' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Frieiras
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Diâmetro de Entrada (mm)</label>
                       <input
                         type="number" step="0.01"
@@ -1345,7 +1390,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     </div>
 
                     <button
-                      onClick={calculateIdealPasses}
+                      onClick={() => trefilaMode === 'cacetes' ? calculateIdealPasses() : calculateEqualPasses()}
                       className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 mt-4"
                     >
                       <Settings size={18} /> Calcular Distribuição
@@ -1374,8 +1419,13 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                       {/* PASSES CHAIN */}
                       {trefilaDies.map((die, i) => {
                         const red = trefilaReductions[i]?.reduction || 0;
-                        const isHigh = red > 29;
-                        const isLastHigh = (i === trefilaDies.length - 1) && red > 19;
+                        const isHigh = trefilaMode === 'cacetes'
+                          ? (red > 29)
+                          : (red > 23 || red < 19);
+
+                        const isLastHigh = trefilaMode === 'cacetes'
+                          ? ((i === trefilaDies.length - 1) && red > 19)
+                          : false; // Uniform distribution covers all passes
 
                         return (
                           <div key={i} className="flex flex-col items-center flex-shrink-0">
@@ -1423,8 +1473,17 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                           <YAxis stroke="#64748b" label={{ value: '% Redução', angle: -90, position: 'insideLeft' }} />
                           <Tooltip contentStyle={{ borderRadius: '8px' }} />
                           {/* Limit Lines */}
-                          <ReferenceLine y={29} label="Max Inicial (29%)" stroke="red" strokeDasharray="3 3" />
-                          <ReferenceLine y={19} label="Max Final (19%)" stroke="orange" strokeDasharray="3 3" />
+                          {trefilaMode === 'cacetes' ? (
+                            <>
+                              <ReferenceLine y={29} label="Max Inicial (29%)" stroke="red" strokeDasharray="3 3" />
+                              <ReferenceLine y={19} label="Max Final (19%)" stroke="orange" strokeDasharray="3 3" />
+                            </>
+                          ) : (
+                            <>
+                              <ReferenceLine y={23} label="Max (23%)" stroke="red" strokeDasharray="3 3" />
+                              <ReferenceLine y={19} label="Min (19%)" stroke="orange" strokeDasharray="3 3" />
+                            </>
+                          )}
 
                           <Line type="monotone" dataKey="reduction" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
                         </LineChart>
@@ -1501,8 +1560,17 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                         <tbody className="divide-y divide-slate-100">
                           {trefilaDies.map((die, index) => {
                             const reduction = trefilaReductions[index]?.reduction || 0;
-                            const isHigh = reduction > 22;
-                            // Red Entrada > 22% 
+
+                            let status = 'OK';
+                            if (trefilaMode === 'cacetes') {
+                              if (reduction > 29) status = 'Crítica';
+                              else if (reduction > 22) status = 'Alta';
+                            } else {
+                              if (reduction > 23) status = 'Alta';
+                              if (reduction < 19) status = 'Baixa';
+                            }
+
+                            const isWarning = status !== 'OK';
 
                             return (
                               <tr key={index} className="bg-white hover:bg-slate-50">
@@ -1519,8 +1587,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                                   {reduction.toFixed(3)}%
                                 </td>
                                 <td className="px-4 py-3">
-                                  {isHigh ? (
-                                    <span className="text-red-500 font-bold text-xs flex items-center gap-1"><AlertCircle size={12} /> Alta</span>
+                                  {isWarning ? (
+                                    <span className="text-red-500 font-bold text-xs flex items-center gap-1"><AlertCircle size={12} /> {status}</span>
                                   ) : (
                                     <span className="text-green-500 font-bold text-xs flex items-center gap-1"><CheckSquare size={12} /> OK</span>
                                   )}
