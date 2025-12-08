@@ -66,7 +66,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                 </span>
-                Inteligência Artificial para Indústria
+                Inteligência para sua Indústria
               </div>
 
               <h1 className="text-5xl lg:text-7xl font-black text-white leading-[1.1]">
