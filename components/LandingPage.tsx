@@ -102,7 +102,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
                     <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700"></div>
                   ))}
                 </div>
-                <p>+50 empresas atendidas este mês</p>
+                <p>+50 empresas atendidas e satisfeitas com o resultado</p>
               </div>
             </div>
 
