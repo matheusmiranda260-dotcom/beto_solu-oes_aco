@@ -100,6 +100,16 @@ interface QuoteForm {
   taxPercent: number; // Acrescimo MAS
 }
 
+interface TrefilaRecipe {
+  id: string;
+  name: string;
+  date: string;
+  entry: number;
+  exit: number;
+  passes: number;
+  dies: number[];
+}
+
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
 const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
@@ -128,6 +138,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [trefilaPassCount, setTrefilaPassCount] = useState<number>(4);
   const [trefilaDies, setTrefilaDies] = useState<number[]>([4.7, 4.05, 3.56, 3.2]);
   const [trefilaReductions, setTrefilaReductions] = useState<{ pass: number, reduction: number }[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<TrefilaRecipe[]>([]);
+  const [recipeName, setRecipeName] = useState('');
 
   // Comissao State
   const [companies, setCompanies] = useState(initialCompanies);
@@ -202,15 +214,18 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setTrefilaReductions(reductions);
   }, [trefilaEntry, trefilaDies]);
 
+
+
   const calculateIdealPasses = () => {
     if (trefilaEntry <= trefilaExit || trefilaPassCount <= 0) return;
 
     // ALGORITMO DE CÁLCULO DE PASSE DECRESCENTE
-    // Regra: A última redução deve estar entre 15-18%.
+    // Regra: A última redução deve ser no máximo 19% (Ideal ~18%).
+    // Regra: A primeira redução deve ser no máximo 29%.
     // Regra: A curva deve ser decrescente (R1 > R2 > ... > Rn).
 
-    // Alvo para o último passe (entre 15% e 18%)
-    const targetLastRed = 0.165; // 16.5%
+    // Alvo para o último passe (Vamos mirar em 18% para ter margem)
+    const targetLastRed = 0.18;
 
     if (trefilaPassCount === 1) {
       setTrefilaDies([trefilaExit]);
@@ -223,8 +238,6 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
       let currentD = trefilaEntry;
       for (let i = 0; i < trefilaPassCount; i++) {
         // Interpolação Linear da Redução
-        // i=0 (Primeiro Passe) -> rStart
-        // i=Last (Último Passe) -> targetLastRed
         const t = i / (trefilaPassCount - 1);
         const currentRed = rStart * (1 - t) + targetLastRed * t;
 
@@ -235,43 +248,32 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     };
 
     // Busca Binária para encontrar o R_start ideal
-    // Intervalo de busca: [targetLastRed, 0.99]
-    // Se precisarmos reduzir mais que o targetLastRed constante, R_start deve ser maior.
-
     let low = 0.01;
     let high = 0.99;
 
-    // Verificar se redução constante de 16.5% já é muito forte
     const flatResult = calculateFinalD(targetLastRed);
 
     if (flatResult < trefilaExit) {
-      // Se 16.5% constante reduz DEMAIS (diâmetro final menor que o alvo),
-      // precisamos de reduções menores.
-      // A regra "Decrescente" + "Final 15-18%" entra em conflito com a física aqui se a redução total for pequena.
-      // Nesse caso, o solver vai encontrar um R_start < 16.5% (Crescente), mas manteremos o alvo final fixo se possível.
       low = 0.001;
       high = targetLastRed;
     } else {
-      // Caso normal: Precisamos de mais redução no início (Decrescente)
       low = targetLastRed;
-      high = 0.90;
+      high = 0.90; // Não deve precisar chegar tão alto
     }
 
-    let bestRStart = low;
     // 50 iterações são suficientes para precisão alta
     for (let j = 0; j < 50; j++) {
       const mid = (low + high) / 2;
       const res = calculateFinalD(mid);
 
       if (res < trefilaExit) {
-        // Reduziu demais, diminui R_start
-        high = mid;
+        high = mid; // Reduziu demais
       } else {
-        // Reduziu de menos, aumenta R_start
-        low = mid;
+        low = mid; // Reduziu de menos
       }
     }
-    bestRStart = (low + high) / 2;
+
+    const bestRStart = (low + high) / 2;
 
     // Gerar os passes finais com o melhor R_start encontrado
     const newDies = [];
@@ -282,13 +284,39 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
       d = d * Math.sqrt(1 - r);
 
-      // Forçar o último para o valor exato para evitar erro de arredondamento visual
+      // Forçar o último para o valor exato
       if (i === trefilaPassCount - 1) d = trefilaExit;
 
       newDies.push(Number(d.toFixed(3)));
     }
 
     setTrefilaDies(newDies);
+  };
+
+  const handleSaveRecipe = () => {
+    if (!recipeName.trim()) return;
+    const recipe: TrefilaRecipe = {
+      id: Date.now().toString(),
+      name: recipeName,
+      date: new Date().toLocaleDateString(),
+      entry: trefilaEntry,
+      exit: trefilaExit,
+      passes: trefilaPassCount,
+      dies: [...trefilaDies]
+    };
+    setSavedRecipes([...savedRecipes, recipe]);
+    setRecipeName('');
+  };
+
+  const handleLoadRecipe = (recipe: TrefilaRecipe) => {
+    setTrefilaEntry(recipe.entry);
+    setTrefilaExit(recipe.exit);
+    setTrefilaPassCount(recipe.passes);
+    setTrefilaDies(recipe.dies);
+  };
+
+  const handleDeleteRecipe = (id: string) => {
+    setSavedRecipes(savedRecipes.filter(r => r.id !== id));
   };
 
   const handleDieChange = (index: number, value: string) => {
@@ -1327,101 +1355,139 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
                 <div className="lg:col-span-2 space-y-6">
                   {/* Visual Blocks Representation */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
                     <h3 className="text-lg font-bold text-slate-800 mb-6 uppercase tracking-wider flex items-center gap-2">
                       <ScanLine className="text-blue-600" /> Fluxo de Redução
                     </h3>
 
-                    <div className="flex items-start gap-3 min-w-max pb-4">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-6 px-4">
                       {/* INPUT BLOCK */}
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-24 h-24 bg-[red] text-white flex items-center justify-center text-xl font-bold rounded-lg shadow-md transform hover:scale-105 transition-transform">
-                          {trefilaEntry.toFixed(3)}
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className="w-32 h-24 bg-slate-800 text-white flex flex-col items-center justify-center rounded-l-lg shadow-lg relative group">
+                          <span className="text-xs text-slate-400 absolute top-2 left-2">Entrada</span>
+                          <span className="text-2xl font-black">{trefilaEntry.toFixed(2)}</span>
+                          <span className="text-xs">mm</span>
                         </div>
-                        <span className="font-bold text-slate-900 text-sm uppercase">ENTRADA</span>
+                        <div className="h-1 w-full bg-slate-300 mt-[-1px]"></div>
                       </div>
 
-                      <div className="h-24 flex items-center">
-                        <ArrowRight className="text-slate-300" size={32} />
-                      </div>
+                      {/* PASSES CHAIN */}
+                      {trefilaDies.map((die, i) => {
+                        const red = trefilaReductions[i]?.reduction || 0;
+                        const isHigh = red > 29;
+                        const isLastHigh = (i === trefilaDies.length - 1) && red > 19;
 
-                      {/* PASSES BLOCKS */}
-                      {trefilaDies.map((die, i) => (
-                        <React.Fragment key={i}>
-                          <div className="flex flex-col items-center gap-2">
-                            <div className={`w-24 h-24 flex flex-col items-center justify-center text-xl font-bold rounded-lg shadow-md transform hover:scale-105 transition-transform relative
-                                    ${i === trefilaDies.length - 1 ? 'bg-[#4ade80] text-slate-900' : 'bg-slate-300 text-slate-800'}`}>
-                              <span className="text-xs absolute top-2 left-2 opacity-50">{i + 1}º</span>
-                              {die.toFixed(3)}
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold text-slate-700 text-xs uppercase">{i + 1}º PASSE</span>
-                              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mt-1">
-                                {trefilaReductions[i]?.reduction.toFixed(2)}%
-                              </span>
+                        return (
+                          <div key={i} className="flex flex-col items-center flex-shrink-0">
+                            {/* Connecting Wire */}
+                            <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
+
+                            {/* Die Representation */}
+                            <div className="relative flex flex-col items-center mx-2 transform hover:scale-105 transition-transform z-10">
+                              <div className="w-24 h-24 bg-slate-200 border-4 border-slate-400 flex flex-col items-center justify-center shadow-md relative"
+                                style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}>
+                                <span className="text-xs font-bold text-slate-500 mb-1">Passe {i + 1}</span>
+                                <span className="text-xl font-bold text-slate-800">{die.toFixed(2)}</span>
+                              </div>
+
+                              {/* Reduction Tag */}
+                              <div className={`mt-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${isHigh || isLastHigh ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-100 text-blue-600'
+                                }`}>
+                                {red.toFixed(1)}%
+                              </div>
                             </div>
                           </div>
+                        )
+                      })}
 
-                          {i < trefilaDies.length - 1 && (
-                            <div className="h-24 flex items-center">
-                              <ArrowRight className="text-slate-300" size={32} />
-                            </div>
-                          )}
-                        </React.Fragment>
-                      ))}
-
-                      <div className="h-24 flex items-center">
-                        <ArrowRight className="text-slate-300" size={32} />
-                      </div>
-
-                      {/* OUTPUT LABEL BLOCK (FINAL) */}
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-24 h-24 border-4 border-[#4ade80] bg-white text-slate-900 flex items-center justify-center text-xl font-black rounded-lg shadow-sm">
-                          {trefilaExit.toFixed(3)}
+                      {/* OUTPUT BLOCK */}
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
+                        <div className="ml-2 w-32 h-24 bg-green-600 text-white flex flex-col items-center justify-center rounded-r-lg shadow-lg relative">
+                          <span className="text-xs text-green-200 absolute top-2 right-2">Final</span>
+                          <span className="text-2xl font-black">{trefilaExit.toFixed(2)}</span>
+                          <span className="text-xs">mm</span>
                         </div>
-                        <span className="font-bold text-slate-900 text-sm uppercase">SAÍDA</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Graph Section */}
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Cálculo em Porcentagem (Gráfico)</h3>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Gráfico de Redução (% da Área)</h3>
                     <div className="h-80 w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={trefilaReductions} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                        <LineChart data={trefilaReductions} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis
-                            dataKey="pass"
-                            stroke="#64748b"
-                            tick={{ fill: '#64748b' }}
-                            label={{ value: 'Número do Passe', position: 'insideBottom', offset: -10, fill: '#64748b' }}
-                          />
-                          <YAxis
-                            stroke="#64748b"
-                            tick={{ fill: '#64748b' }}
-                            label={{ value: '% Redução', angle: -90, position: 'insideLeft', fill: '#64748b' }}
-                          />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="reduction"
-                            name="Redução (%)"
-                            stroke="#3b82f6"
-                            strokeWidth={4}
-                            dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-                            activeDot={{ r: 8 }}
-                          />
+                          <XAxis dataKey="pass" stroke="#64748b" label={{ value: 'Passe', position: 'insideBottom', offset: -5 }} />
+                          <YAxis stroke="#64748b" label={{ value: '% Redução', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                          {/* Limit Lines */}
+                          <ReferenceLine y={29} label="Max Inicial (29%)" stroke="red" strokeDasharray="3 3" />
+                          <ReferenceLine y={19} label="Max Final (19%)" stroke="orange" strokeDasharray="3 3" />
+
+                          <Line type="monotone" dataKey="reduction" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
+                  {/* Save Recipe Section */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <Save size={20} className="text-orange-500" /> Salvar Receita
+                    </h3>
+                    <div className="flex gap-4 mb-6">
+                      <input
+                        type="text"
+                        placeholder="Nome da Receita (Ex: Trefila 5.5 -> 3.2)"
+                        className="flex-1 p-2 border border-slate-300 rounded-lg"
+                        value={recipeName}
+                        onChange={(e) => setRecipeName(e.target.value)}
+                      />
+                      <button
+                        onClick={handleSaveRecipe}
+                        className="bg-orange-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50"
+                        disabled={!recipeName.trim()}
+                      >
+                        Salvar
+                      </button>
+                    </div>
+
+                    {savedRecipes.length > 0 && (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                            <tr>
+                              <th className="px-4 py-3">Nome</th>
+                              <th className="px-4 py-3">Entrada</th>
+                              <th className="px-4 py-3">Saída</th>
+                              <th className="px-4 py-3">Passes</th>
+                              <th className="px-4 py-3 text-right">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {savedRecipes.map(recipe => (
+                              <tr key={recipe.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-bold text-slate-700">{recipe.name}</td>
+                                <td className="px-4 py-3">{recipe.entry}mm</td>
+                                <td className="px-4 py-3">{recipe.exit}mm</td>
+                                <td className="px-4 py-3">{recipe.passes}</td>
+                                <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                  <button onClick={() => handleLoadRecipe(recipe)} className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase">Carregar</button>
+                                  <button onClick={() => handleDeleteRecipe(recipe.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Quick Edit Table */}
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Ajuste Fino</h3>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Tabela Detalhada</h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
