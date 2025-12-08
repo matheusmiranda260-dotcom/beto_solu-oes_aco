@@ -428,28 +428,36 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const handleSaveRecipe = async () => {
     if (!recipeName.trim()) return;
 
-    // Save to Supabase
-    const { data, error } = await supabase.from('trefila_recipes').insert([{
-      name: recipeName,
-      date: new Date().toLocaleDateString(),
-      entry: trefilaEntry,
-      exit: trefilaExit,
-      passes: trefilaPassCount,
-      dies: trefilaDies
-    }]).select();
+    try {
+      // Save to Supabase
+      const { data, error } = await supabase.from('trefila_recipes').insert([{
+        name: recipeName,
+        date: new Date().toLocaleDateString(),
+        entry: trefilaEntry,
+        exit: trefilaExit,
+        passes: trefilaPassCount,
+        dies: trefilaDies
+      }]).select();
 
-    if (data && !error) {
-      const newRecipe: TrefilaRecipe = {
-        id: data[0].id.toString(),
-        name: data[0].name,
-        date: data[0].date,
-        entry: data[0].entry,
-        exit: data[0].exit,
-        passes: data[0].passes,
-        dies: data[0].dies
-      };
-      setSavedRecipes([...savedRecipes, newRecipe]);
-      setRecipeName('');
+      if (error) throw error;
+
+      if (data) {
+        const newRecipe: TrefilaRecipe = {
+          id: data[0].id.toString(),
+          name: data[0].name,
+          date: data[0].date,
+          entry: data[0].entry,
+          exit: data[0].exit,
+          passes: data[0].passes,
+          dies: data[0].dies
+        };
+        setSavedRecipes([...savedRecipes, newRecipe]);
+        setRecipeName('');
+        alert('Receita salva com sucesso!');
+      }
+    } catch (error: any) {
+      console.error('Erro ao salvar receita:', error);
+      alert('Erro ao salvar receita. Verifique se criou as tabelas no Supabase (README_SUPABASE_SETUP.md). Detalhes: ' + (error.message || error));
     }
   };
 
@@ -461,9 +469,14 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   };
 
   const handleDeleteRecipe = async (id: string) => {
-    const { error } = await supabase.from('trefila_recipes').delete().eq('id', id);
-    if (!error) {
+    try {
+      const { error } = await supabase.from('trefila_recipes').delete().eq('id', id);
+      if (error) throw error;
       setSavedRecipes(savedRecipes.filter(r => r.id !== id));
+      alert('Receita excluída!');
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir: ' + (error.message || error));
     }
   };
 
@@ -617,36 +630,49 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
   const handleSaveTruss = async () => {
     if (newTruss.model && calculatedTrussWeight > 0) {
-      const { data, error } = await supabase.from('trusses').insert([{
-        model: newTruss.model,
-        height: newTruss.height,
-        length: newTruss.length,
-        top_diam: newTruss.topDiam,
-        bot_diam: newTruss.botDiam,
-        sine_diam: newTruss.sineDiam,
-        total_weight: parseFloat(calculatedTrussWeight.toFixed(2))
-      }]).select();
+      try {
+        const { data, error } = await supabase.from('trusses').insert([{
+          model: newTruss.model,
+          height: newTruss.height,
+          length: newTruss.length,
+          top_diam: newTruss.topDiam,
+          bot_diam: newTruss.botDiam,
+          sine_diam: newTruss.sineDiam,
+          total_weight: parseFloat(calculatedTrussWeight.toFixed(2))
+        }]).select();
 
-      if (data && !error) {
-        setTrusses([...trusses, {
-          id: data[0].id.toString(),
-          model: data[0].model,
-          height: data[0].height,
-          length: data[0].length,
-          topDiam: data[0].top_diam,
-          botDiam: data[0].bot_diam,
-          sineDiam: data[0].sine_diam,
-          totalWeight: data[0].total_weight
-        }]);
-        setNewTruss({ ...newTruss, model: '' });
+        if (error) throw error;
+
+        if (data) {
+          setTrusses([...trusses, {
+            id: data[0].id.toString(),
+            model: data[0].model,
+            height: data[0].height,
+            length: data[0].length,
+            topDiam: data[0].top_diam,
+            botDiam: data[0].bot_diam,
+            sineDiam: data[0].sine_diam,
+            totalWeight: data[0].total_weight
+          }]);
+          setNewTruss({ ...newTruss, model: '' });
+          alert('Treliça salva com sucesso!');
+        }
+      } catch (error: any) {
+        console.error('Erro ao salvar treliça:', error);
+        alert('Erro ao salvar treliça. Verifique as tabelas no Supabase. Detalhes: ' + (error.message || error));
       }
     }
   };
 
   const handleDeleteTruss = async (id: string) => {
-    const { error } = await supabase.from('trusses').delete().eq('id', id);
-    if (!error) {
+    try {
+      const { error } = await supabase.from('trusses').delete().eq('id', id);
+      if (error) throw error;
       setTrusses(trusses.filter(t => t.id !== id));
+      alert('Treliça excluída!');
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir treliça: ' + (error.message || error));
     }
   };
 
@@ -764,51 +790,64 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   };
 
   const handleDeleteJob = async (id: string) => {
-    const { error } = await supabase.from('consulting_jobs').delete().eq('id', id);
-    if (!error) {
+    try {
+      const { error } = await supabase.from('consulting_jobs').delete().eq('id', id);
+      if (error) throw error;
       setAgendaItems(prev => prev.filter(item => item.id !== id));
+      alert('Agendamento excluído!');
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir agendamento: ' + (error.message || error));
     }
   };
 
   const handleSaveJob = async () => {
     if (!currentJob.client || !currentJob.description || !currentJob.startDate) return;
 
-    if (currentJob.id) {
-      // Edit
-      const { error } = await supabase.from('consulting_jobs').update({
-        client: currentJob.client,
-        description: currentJob.description,
-        start_date: currentJob.startDate,
-        end_date: currentJob.endDate,
-        status: currentJob.status
-      }).eq('id', currentJob.id);
+    try {
+      if (currentJob.id) {
+        // Edit
+        const { error } = await supabase.from('consulting_jobs').update({
+          client: currentJob.client,
+          description: currentJob.description,
+          start_date: currentJob.startDate,
+          end_date: currentJob.endDate,
+          status: currentJob.status
+        }).eq('id', currentJob.id);
 
-      if (!error) {
+        if (error) throw error;
         setAgendaItems(prev => prev.map(item => item.id === currentJob.id ? currentJob as ConsultingJob : item));
-      }
-    } else {
-      // Create
-      const { data, error } = await supabase.from('consulting_jobs').insert([{
-        client: currentJob.client,
-        description: currentJob.description,
-        start_date: currentJob.startDate,
-        end_date: currentJob.endDate,
-        status: currentJob.status || 'Agendado'
-      }]).select();
+        alert('Agendamento atualizado!');
+      } else {
+        // Create
+        const { data, error } = await supabase.from('consulting_jobs').insert([{
+          client: currentJob.client,
+          description: currentJob.description,
+          start_date: currentJob.startDate,
+          end_date: currentJob.endDate,
+          status: currentJob.status || 'Agendado'
+        }]).select();
 
-      if (data && !error) {
-        const newJob: ConsultingJob = {
-          id: data[0].id.toString(),
-          client: data[0].client,
-          description: data[0].description,
-          startDate: data[0].start_date,
-          endDate: data[0].end_date,
-          status: data[0].status
-        };
-        setAgendaItems([...agendaItems, newJob]);
+        if (error) throw error;
+
+        if (data) {
+          const newJob: ConsultingJob = {
+            id: data[0].id.toString(),
+            client: data[0].client,
+            description: data[0].description,
+            startDate: data[0].start_date,
+            endDate: data[0].end_date,
+            status: data[0].status
+          };
+          setAgendaItems([...agendaItems, newJob]);
+          alert('Agendamento criado com sucesso!');
+        }
       }
+      setIsJobModalOpen(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar agendamento:', error);
+      alert('Erro ao salvar agendamento. Verifique o Supabase. ' + (error.message || error));
     }
-    setIsJobModalOpen(false);
   };
 
 
@@ -850,35 +889,47 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const paymentPerWeek = grandTotal / quoteForm.weeks;
 
   const handleSaveQuote = async () => {
-    const { data, error } = await supabase.from('saved_quotes').insert([{
-      client_name: quoteForm.clientName,
-      contact: quoteForm.contact,
-      start_date: quoteForm.startDate,
-      weeks: quoteForm.weeks,
-      value_weekly_service: quoteForm.valueWeeklyService,
-      value_weekly_travel: quoteForm.valueWeeklyTravel,
-      value_weekly_food: quoteForm.valueWeeklyFood,
-      shifts: quoteForm.shifts,
-      hours_per_day: quoteForm.hoursPerDay,
-      working_days: quoteForm.workingDays,
-      tax_percent: quoteForm.taxPercent
-    }]).select();
+    try {
+      const { data, error } = await supabase.from('saved_quotes').insert([{
+        client_name: quoteForm.clientName,
+        contact: quoteForm.contact,
+        start_date: quoteForm.startDate,
+        weeks: quoteForm.weeks,
+        value_weekly_service: quoteForm.valueWeeklyService,
+        value_weekly_travel: quoteForm.valueWeeklyTravel,
+        value_weekly_food: quoteForm.valueWeeklyFood,
+        shifts: quoteForm.shifts,
+        hours_per_day: quoteForm.hoursPerDay,
+        working_days: quoteForm.workingDays,
+        tax_percent: quoteForm.taxPercent
+      }]).select();
 
-    if (data && !error) {
-      const newQuote: SavedQuote = {
-        ...quoteForm,
-        id: data[0].id.toString(),
-        createdAt: data[0].created_at
-      };
-      setSavedQuotes([...savedQuotes, newQuote]);
-      alert('Orçamento salvo no banco de dados!');
+      if (error) throw error;
+
+      if (data) {
+        const newQuote: SavedQuote = {
+          ...quoteForm,
+          id: data[0].id.toString(),
+          createdAt: data[0].created_at
+        };
+        setSavedQuotes([...savedQuotes, newQuote]);
+        alert('Orçamento salvo no banco de dados!');
+      }
+    } catch (error: any) {
+      console.error('Erro ao salvar orçamento:', error);
+      alert('Erro ao salvar orçamento: ' + (error.message || error));
     }
   };
 
   const handleDeleteQuote = async (id: string) => {
-    const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
-    if (!error) {
+    try {
+      const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
+      if (error) throw error;
       setSavedQuotes(savedQuotes.filter(q => q.id !== id));
+      alert('Orçamento excluído!');
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir orçamento: ' + (error.message || error));
     }
   };
 
