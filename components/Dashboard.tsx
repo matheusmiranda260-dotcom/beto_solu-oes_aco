@@ -1957,7 +1957,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
                             {/* Terms - Print Only */}
                             <div className="hidden print:block mt-6 text-[10px] text-slate-500 text-justify leading-tight">
-                              <p className="mb-2"><strong>Condições de Pagamento:</strong> 50% no aceite da proposta e 50% na conclusão do projeto ou conforme cronograma físico-financeiro a ser combinado.</p>
+                              <p className="mb-2"><strong>Condições de Pagamento:</strong> A combinar.</p>
                               <p><strong>Validade:</strong> Esta proposta é válida por 15 dias a partir da data de emissão. Após este período, os valores estão sujeitos a reajuste.</p>
                             </div>
 
@@ -1982,7 +1982,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     {/* Footer - Print Only */}
                     <div className="hidden print:block absolute bottom-8 left-0 right-0 text-center border-t border-slate-200 mx-12 pt-4">
                       <p className="text-xs font-bold text-slate-600">Beto Soluções em Aço - Consultoria Especializada</p>
-                      <p className="text-[10px] text-slate-400 mt-1">beto.solucoesemaco@gmail.com | (11) 99999-9999 | www.betosolucoes.com.br</p>
+                      <p className="text-[10px] text-slate-400 mt-1">beto.solucoesemaco@gmail.com | (11) 99568-7186 | www.betosolucoes.com.br</p>
                     </div>
                   </div>
 
