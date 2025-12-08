@@ -1640,43 +1640,127 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
               </div>
 
               {consultingTab === 'agenda' ? (
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-slate-800">Agendamentos</h3>
-                    <button onClick={handleOpenNewJob} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                      <Plus size={18} /> Novo Agendamento
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Agenda de Projetos</h3>
+                      <p className="text-xs text-slate-500">Gestão visual de compromissos técnicos</p>
+                    </div>
+                    <button onClick={handleOpenNewJob} className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2 font-bold text-sm">
+                      <Plus size={16} /> Novo Agendamento
                     </button>
                   </div>
-                  <div className="space-y-4">
-                    {agendaItems.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:border-blue-300 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <div className="bg-blue-50 text-blue-600 p-3 rounded-lg">
-                            <Calendar size={24} />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-slate-800">{item.client}</h4>
-                            <p className="text-sm text-slate-500">{item.description}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs font-medium bg-slate-100 px-2 py-0.5 rounded text-slate-600 flex items-center gap-1">
-                                {new Date(item.startDate).toLocaleDateString()}
-                                {item.endDate && item.endDate !== item.startDate && ` - ${new Date(item.endDate).toLocaleDateString()}`}
-                              </span>
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.status === 'Concluido' ? 'bg-green-100 text-green-700' :
-                                item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
-                                  'bg-blue-100 text-blue-700'
-                                }`}>
-                                {item.status}
-                              </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Column: Agendado */}
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 h-fit">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
+                        <h4 className="font-bold text-slate-700 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span> Agendados
+                        </h4>
+                        <span className="bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-500 border border-slate-200">
+                          {agendaItems.filter(i => i.status === 'Agendado').length}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {agendaItems.filter(i => i.status === 'Agendado').map(item => (
+                          <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
+                            <div className="flex justify-between items-start mb-2">
+                              {/* Date Badge */}
+                              <div className="bg-blue-50 text-blue-700 rounded-md px-2 py-1 text-xs font-bold flex flex-col items-center border border-blue-100 min-w-[50px]">
+                                <span className="text-[10px] uppercase">{new Date(item.startDate).toLocaleString('default', { month: 'short' })}</span>
+                                <span className="text-lg leading-none">{new Date(item.startDate).getDate()}</span>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleEditJob(item)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600"><Edit size={14} /></button>
+                                <button onClick={() => handleDeleteJob(item.id)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
+                              </div>
+                            </div>
+                            <h5 className="font-bold text-slate-800 text-sm">{item.client}</h5>
+                            <p className="text-xs text-slate-500 line-clamp-2 mt-1">{item.description}</p>
+
+                            <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between text-xs text-slate-400">
+                              <span>{item.endDate ? `Até ${new Date(item.endDate).toLocaleDateString()}` : '1 dia'}</span>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleEditJob(item)} className="p-2 text-slate-400 hover:text-blue-600"><Edit size={18} /></button>
-                          <button onClick={() => handleDeleteJob(item.id)} className="p-2 text-slate-400 hover:text-red-600"><Trash2 size={18} /></button>
-                        </div>
+                        ))}
+                        {agendaItems.filter(i => i.status === 'Agendado').length === 0 && (
+                          <div className="text-center py-8 text-slate-400 text-xs italic border-2 border-dashed border-slate-200 rounded-lg">
+                            Nenhum agendamento futuro
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Column: Em Andamento */}
+                    <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100 h-fit">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-orange-200">
+                        <h4 className="font-bold text-orange-800 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Em Execução
+                        </h4>
+                        <span className="bg-white px-2 py-0.5 rounded text-xs font-bold text-orange-600 border border-orange-200">
+                          {agendaItems.filter(i => i.status === 'Em Andamento').length}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {agendaItems.filter(i => i.status === 'Em Andamento').map(item => (
+                          <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-l-orange-500 border-y border-r border-slate-200 hover:shadow-md transition-shadow group">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2 text-orange-600 text-xs font-bold uppercase tracking-wider">
+                                <Clock size={12} /> Em Progresso
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleEditJob(item)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600"><Edit size={14} /></button>
+                                <button onClick={() => handleDeleteJob(item.id)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
+                              </div>
+                            </div>
+                            <h5 className="font-bold text-slate-800 text-sm mb-1">{item.client}</h5>
+                            <p className="text-xs text-slate-500 mb-3">{item.description}</p>
+                            <div className="bg-slate-100 rounded px-2 py-1 text-xs text-slate-600 flex justify-between items-center">
+                              <span>Início:</span>
+                              <span className="font-medium">{new Date(item.startDate).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {agendaItems.filter(i => i.status === 'Em Andamento').length === 0 && (
+                          <div className="text-center py-8 text-slate-400 text-xs italic border-2 border-dashed border-orange-200 rounded-lg">
+                            Nenhum projeto em andamento
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Column: Concluído */}
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 h-fit">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
+                        <h4 className="font-bold text-slate-700 flex items-center gap-2">
+                          <CheckSquare size={16} className="text-green-600" /> Histórico
+                        </h4>
+                        <span className="bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-500 border border-slate-200">
+                          {agendaItems.filter(i => i.status === 'Concluido').length}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {agendaItems.filter(i => i.status === 'Concluido').map(item => (
+                          <div key={item.id} className="bg-white/60 p-3 rounded-lg border border-slate-100 hover:bg-white transition-colors group">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h5 className="font-bold text-slate-600 text-sm line-through decoration-slate-400">{item.client}</h5>
+                                <p className="text-[10px] text-slate-400">{new Date(item.startDate).toLocaleDateString()}</p>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleDeleteJob(item.id)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {agendaItems.filter(i => i.status === 'Concluido').length === 0 && (
+                          <div className="text-center py-8 text-slate-400 text-xs italic border-2 border-dashed border-slate-200 rounded-lg">
+                            Histórico vazio
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
