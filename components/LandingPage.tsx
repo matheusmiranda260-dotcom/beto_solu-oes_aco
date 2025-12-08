@@ -4,34 +4,47 @@ import {
   Users, Phone, Mail, Lock, Star, ShieldCheck, X, Send, MessageSquare
 } from 'lucide-react';
 import { Lead } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface LandingPageProps {
   onLoginClick: () => void;
-  onSendLead: (lead: Lead) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSendLead }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
   const [imageError, setImageError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.phone || !formData.message) return;
 
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      name: formData.name || 'Cliente',
-      phone: formData.phone,
-      message: formData.message,
-      date: new Date(),
-      status: 'New'
-    };
+    setIsSubmitting(true);
 
-    onSendLead(newLead);
-    setIsModalOpen(false);
-    setFormData({ name: '', phone: '', message: '' });
-    alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .insert([
+          {
+            name: formData.name || 'Cliente',
+            phone: formData.phone,
+            message: formData.message,
+            status: 'New'
+          }
+        ]);
+
+      if (error) throw error;
+
+      setIsModalOpen(false);
+      setFormData({ name: '', phone: '', message: '' });
+      alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Erro ao enviar mensagem. Por favor, tente novamente ou use o WhatsApp.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -376,10 +389,15 @@ Em que podemos auxiliar?`)}`}
 
               <button
                 type="submit"
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
               >
-                <Send size={20} />
-                Enviar Mensagem
+                {isSubmitting ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  <Send size={20} />
+                )}
+                {isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}
               </button>
             </form>
           </div>

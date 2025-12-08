@@ -7,15 +7,15 @@ import {
   LayoutDashboard, LogOut, MessageSquare, Package,
   TrendingUp, HardHat, Send, Menu, X, Grid3X3, Plus, Save, Trash2,
   Calculator, Scale, ArrowRight, ScanLine, Cable, Settings, Briefcase, DollarSign, PlusCircle,
-  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle
+  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle, Phone
 } from 'lucide-react';
 import { generateBetoResponse } from '../services/geminiService';
+import { supabase } from '../services/supabaseClient';
 import { ChatMessage, MeshType, TrussType, Lead } from '../types';
 
 interface DashboardProps {
   username: string;
   onLogout: () => void;
-  leads?: Lead[];
 }
 
 const mockData = [
@@ -120,9 +120,10 @@ interface TrefilaRecipe {
 
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
-const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, leads = [] }) => {
+const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>([]); // Local state for leads
 
   // Malhas State
   const [meshes, setMeshes] = useState<MeshType[]>(initialMeshes);
@@ -182,6 +183,31 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, leads = [] })
     taxPercent: 7
   });
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
+
+  // Fetch Leads from Supabase
+  useEffect(() => {
+    const fetchLeads = async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // Map Supabase data to Lead type
+        const mappedLeads: Lead[] = data.map(item => ({
+          id: item.id.toString(),
+          name: item.name,
+          phone: item.phone,
+          message: item.message,
+          date: new Date(item.created_at),
+          status: item.status as 'New' | 'Contacted'
+        }));
+        setLeads(mappedLeads);
+      }
+    };
+
+    fetchLeads();
+  }, []);
 
   // Update dies array size when pass count changes
   useEffect(() => {

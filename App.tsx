@@ -11,7 +11,6 @@ const App: React.FC = () => {
   });
 
   const [showLogin, setShowLogin] = useState(false);
-  const [leads, setLeads] = useState<Lead[]>([]);
 
   const handleLogin = (username: string) => {
     setAuth({
@@ -33,16 +32,11 @@ const App: React.FC = () => {
     setShowLogin(false); // Return to landing page after logout
   };
 
-  const handleNewLead = (lead: Lead) => {
-    setLeads(prev => [lead, ...prev]);
-  };
-
   if (auth.isAuthenticated) {
     return (
       <Dashboard
         username={auth.user?.name || 'Gestor'}
         onLogout={handleLogout}
-        leads={leads}
       />
     );
   }
@@ -57,10 +51,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <LandingPage
-      onLoginClick={() => setShowLogin(true)}
-      onSendLead={handleNewLead}
-    />
+    <LandingPage onLoginClick={() => setShowLogin(true)} />
   );
 };
 
