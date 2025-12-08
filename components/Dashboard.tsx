@@ -1618,7 +1618,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
           {activeTab === 'consultorias' && (
             <div className="space-y-6 max-w-7xl mx-auto">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between print:hidden">
                 <div>
                   <h1 className="text-2xl font-bold text-slate-800">Consultoria Técnica</h1>
                   <p className="text-slate-500">Gestão de agendamentos e orçamentos</p>
@@ -1791,48 +1791,56 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                   </div>
 
                   {/* Document Paper Representation */}
-                  <div className="bg-white p-8 md:p-12 rounded-xl shadow-lg border border-slate-200 mx-auto max-w-4xl print:shadow-none print:border-none print:w-full print:max-w-none print:p-0">
+                  <div className="bg-white p-8 md:p-12 rounded-xl shadow-lg border border-slate-200 mx-auto max-w-4xl print:shadow-none print:border-none print:w-[210mm] print:h-[297mm] print:p-[10mm] print:mx-auto relative overflow-hidden">
+
+                    {/* Watermark - Print Only */}
+                    <div className="hidden print:flex absolute inset-0 items-center justify-center opacity-[0.03] pointer-events-none z-0">
+                      <HardHat size={400} />
+                    </div>
+
+                    {/* Left Decorative Bar - Print Only */}
+                    <div className="hidden print:block absolute left-0 top-0 bottom-0 w-2 bg-orange-600"></div>
 
                     {/* Document Header */}
-                    <div className="flex justify-between items-start border-b-2 border-orange-500 pb-6 mb-8">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-slate-900 text-white p-3 rounded-lg print:bg-slate-900 print:text-white">
-                          <HardHat size={32} />
+                    <div className="relative z-10 flex justify-between items-start border-b-2 border-orange-500 pb-6 mb-8 print:pb-4 print:mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-slate-900 text-white p-3 rounded-lg print:bg-slate-900 print:text-white print:p-2">
+                          <HardHat size={32} className="print:w-8 print:h-8" />
                         </div>
                         <div>
-                          <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">BETO Soluções em Aço</h1>
-                          <p className="text-sm text-slate-500">Consultoria Especializada e Treinamentos</p>
+                          <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight print:text-xl">BETO Soluções em Aço</h1>
+                          <p className="text-sm text-slate-500 print:text-xs">Consultoria Especializada e Treinamentos</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Orçamento</h2>
-                        <p className="text-sm font-medium text-slate-600">#{new Date().getFullYear()}-{Math.floor(Math.random() * 1000)}</p>
-                        <p className="text-xs text-slate-400">{new Date().toLocaleDateString()}</p>
+                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest print:text-lg">Orçamento</h2>
+                        <p className="text-sm font-medium text-slate-600 print:text-xs">#{new Date().getFullYear()}-{Math.floor(Math.random() * 1000)}</p>
+                        <p className="text-xs text-slate-400 print:text-[10px]">{new Date().toLocaleDateString()}</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 print:gap-8">
-                      {/* Left Column: Inputs */}
-                      <div className="space-y-8">
+                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 print:gap-8 print:grid-cols-2">
+                      {/* Left Column: Inputs (Read-only view in print) */}
+                      <div className="space-y-8 print:space-y-6">
 
                         {/* Client Info Section */}
                         <section>
-                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
+                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2 print:mb-2 print:text-xs">
                             <User size={16} /> Informações do Cliente
                           </h4>
-                          <div className="space-y-4">
+                          <div className="space-y-4 print:space-y-2">
                             <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Empresa / Cliente</label>
-                              <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors font-medium text-slate-900" placeholder="Nome da Empresa" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} />
+                              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[10px]">Empresa / Cliente</label>
+                              <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors font-medium text-slate-900 print:p-1 print:text-sm print:border-none print:px-0" placeholder="Nome da Empresa" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contato</label>
-                                <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700" placeholder="Nome do Contato" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[10px]">Contato</label>
+                                <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700 print:p-1 print:text-sm print:border-none print:px-0" placeholder="Nome do Contato" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} />
                               </div>
                               <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Início</label>
-                                <input type="date" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[10px]">Data de Início</label>
+                                <input type="date" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700 print:p-1 print:text-sm print:border-none print:px-0" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} />
                               </div>
                             </div>
                           </div>
@@ -1840,24 +1848,24 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
                         {/* Scope Section */}
                         <section>
-                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
+                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2 print:mb-2 print:text-xs">
                             <Briefcase size={16} /> Escopo do Projeto
                           </h4>
-                          <div className="space-y-4">
+                          <div className="space-y-4 print:space-y-2">
                             <div className="flex gap-4">
                               <div className="flex-1">
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Duração (Semanas)</label>
-                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[10px]">Duração (Semanas)</label>
+                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900 print:bg-transparent print:border-none print:p-0 print:text-left print:text-sm" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} />
                               </div>
                               <div className="flex-1">
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Carga Horária / Dia</label>
-                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900" value={quoteForm.hoursPerDay} onChange={e => setQuoteForm({ ...quoteForm, hoursPerDay: parseFloat(e.target.value) })} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[10px]">Carga Horária / Dia</label>
+                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900 print:bg-transparent print:border-none print:p-0 print:text-left print:text-sm" value={quoteForm.hoursPerDay} onChange={e => setQuoteForm({ ...quoteForm, hoursPerDay: parseFloat(e.target.value) })} />
                               </div>
                             </div>
 
                             <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Dias de Atuação</label>
-                              <div className="flex gap-2">
+                              <label className="block text-xs font-bold text-slate-500 uppercase mb-2 print:text-[10px]">Dias de Atuação</label>
+                              <div className="flex gap-2 print:hidden">
                                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((d, idx) => {
                                   const isSelected = quoteForm.workingDays.includes(idx);
                                   return (
@@ -1876,11 +1884,15 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                                   );
                                 })}
                               </div>
+                              {/* Print view for days */}
+                              <div className="hidden print:block text-sm font-bold text-slate-800">
+                                {quoteForm.workingDays.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][d]).join(', ')}
+                              </div>
                             </div>
                           </div>
                         </section>
 
-                        {/* Financial Inputs Section */}
+                        {/* Financial Inputs Section (Hidden in print if no details needed, but kept for editing) */}
                         <section className="print:hidden">
                           <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
                             <DollarSign size={16} /> Composição de Custos
@@ -1897,28 +1909,28 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                       {/* Right Column: Financial Summary Document */}
                       <div>
                         <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 print:bg-transparent print:border-slate-300 print:p-0">
-                          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center justify-between">
+                          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center justify-between print:mb-4">
                             Investimento Estimado
                             <span className="text-xs font-normal bg-white border border-slate-200 px-2 py-1 rounded text-slate-500 print:hidden">
                               Atualização automática
                             </span>
                           </h3>
 
-                          <div className="space-y-6">
+                          <div className="space-y-6 print:space-y-4">
                             {/* Time Breakdown */}
-                            <div className="flex items-center gap-4 text-sm text-slate-600 pb-6 border-b border-slate-200 border-dashed">
+                            <div className="flex items-center gap-4 text-sm text-slate-600 pb-6 border-b border-slate-200 border-dashed print:pb-4 print:text-xs">
                               <div className="flex items-center gap-2">
-                                <Calendar size={16} />
+                                <Calendar size={16} className="print:w-4 print:h-4" />
                                 <span>{quoteForm.weeks} Semanas</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Clock size={16} />
+                                <Clock size={16} className="print:w-4 print:h-4" />
                                 <span>{totalConsultingHours} Horas Totais</span>
                               </div>
                             </div>
 
                             {/* Cost Breakdown */}
-                            <div className="space-y-3 text-sm">
+                            <div className="space-y-3 text-sm print:text-xs">
                               <div className="flex justify-between items-center">
                                 <span className="text-slate-600">Serviços Técnicos</span>
                                 <span className="font-semibold text-slate-900">R$ {((quoteForm.valueWeeklyService * quoteForm.weeks)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -1934,18 +1946,24 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                             </div>
 
                             {/* Total Box */}
-                            <div className="bg-slate-900 text-white p-6 rounded-lg mt-6 print:bg-transparent print:text-black print:border-t-2 print:border-black print:rounded-none print:px-0">
-                              <p className="text-sm text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Valor Total do Projeto</p>
+                            <div className="bg-slate-900 text-white p-6 rounded-lg mt-6 print:bg-transparent print:text-black print:border-t-2 print:border-black print:rounded-none print:px-0 print:mt-4">
+                              <p className="text-sm text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500 print:text-[10px]">Valor Total do Projeto</p>
                               <div className="flex items-baseline gap-1">
                                 <span className="text-sm font-light">R$</span>
-                                <span className="text-3xl font-bold tracking-tight">{grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-3xl font-bold tracking-tight print:text-2xl">{grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                               </div>
                               <p className="text-xs text-slate-500 mt-2 print:hidden">*Proposta válida por 15 dias.</p>
                             </div>
 
+                            {/* Terms - Print Only */}
+                            <div className="hidden print:block mt-6 text-[10px] text-slate-500 text-justify leading-tight">
+                              <p className="mb-2"><strong>Condições de Pagamento:</strong> 50% no aceite da proposta e 50% na conclusão do projeto ou conforme cronograma físico-financeiro a ser combinado.</p>
+                              <p><strong>Validade:</strong> Esta proposta é válida por 15 dias a partir da data de emissão. Após este período, os valores estão sujeitos a reajuste.</p>
+                            </div>
+
                             {/* Signature Placeholder Print Only */}
-                            <div className="hidden print:block pt-16 mt-8">
-                              <div className="grid grid-cols-2 gap-12">
+                            <div className="hidden print:block pt-12 mt-4 print:pt-8 print:mt-2">
+                              <div className="grid grid-cols-2 gap-8">
                                 <div className="border-t border-slate-400 pt-2">
                                   <p className="text-xs font-bold uppercase text-slate-900">BETO Soluções em Aço</p>
                                   <p className="text-[10px] text-slate-500">Consultor Técnico</p>
@@ -1962,9 +1980,9 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     </div>
 
                     {/* Footer - Print Only */}
-                    <div className="hidden print:block mt-24 text-center border-t border-slate-100 pt-8">
-                      <p className="text-xs text-slate-400">Beto Soluções em Aço - Especialista em Trefilação e Processos Siderúrgicos</p>
-                      <p className="text-[10px] text-slate-300 mt-1">beto.solucoesemaco@gmail.com | (11) 99999-9999</p>
+                    <div className="hidden print:block absolute bottom-8 left-0 right-0 text-center border-t border-slate-200 mx-12 pt-4">
+                      <p className="text-xs font-bold text-slate-600">Beto Soluções em Aço - Consultoria Especializada</p>
+                      <p className="text-[10px] text-slate-400 mt-1">beto.solucoesemaco@gmail.com | (11) 99999-9999 | www.betosolucoes.com.br</p>
                     </div>
                   </div>
 
