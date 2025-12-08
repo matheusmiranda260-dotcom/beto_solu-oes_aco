@@ -251,10 +251,13 @@ Em que podemos auxiliar?`)}`}
               <Phone size={24} />
               Chamar no WhatsApp
             </a>
-            <button className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg">
+            <a
+              href="mailto:beto.solucoesemaco@gmail.com"
+              className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg"
+            >
               <Mail size={24} />
               Enviar E-mail
-            </button>
+            </a>
           </div>
         </div>
       </section>
