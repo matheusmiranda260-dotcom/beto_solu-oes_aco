@@ -240,10 +240,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg shadow-green-900/20">
+            <a
+              href={`https://wa.me/5511995687186?text=${encodeURIComponent(`Olá! Você está falando com a Beto Soluções em Aço.
+Agradecemos seu contato.
+Em que podemos auxiliar?`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg shadow-green-900/20"
+            >
               <Phone size={24} />
               Chamar no WhatsApp
-            </button>
+            </a>
             <button className="flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-xl font-bold text-lg transition-transform hover:scale-105 shadow-lg">
               <Mail size={24} />
               Enviar E-mail
