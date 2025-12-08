@@ -3,9 +3,24 @@ import { GoogleGenAI } from "@google/genai";
 // Initialize Gemini Client
 // Note: In a production environment, never expose keys on the client side. 
 // However, per instructions, we use process.env.API_KEY directly here.
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+let ai: any = null;
+if (apiKey) {
+  try {
+    ai = new GoogleGenAI({ apiKey });
+  } catch (error) {
+    console.error("Failed to initialize Gemini client:", error);
+  }
+} else {
+  console.warn("VITE_GEMINI_API_KEY is missing. Beto AI features will use fallback responses.");
+}
 
 export const generateBetoResponse = async (prompt: string): Promise<string> => {
+  if (!ai) {
+    return "Olá! Sou o Beto. No momento minha conexão com a IA está desligada (Chave de API não configurada), mas estou aqui para ajudar no que for possível!";
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
