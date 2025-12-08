@@ -1681,117 +1681,209 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
-                    <div className="flex justify-between items-center mb-6 border-b pb-4 print:hidden">
-                      <h3 className="text-lg font-bold text-slate-800">Calculadora de Orçamento</h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => window.print()}
-                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                        >
-                          <Printer size={16} /> Imprimir
-                        </button>
-                        <button
-                          onClick={() => {
-                            const newQuote: SavedQuote = { ...quoteForm, id: Date.now().toString(), createdAt: new Date().toISOString() };
-                            setSavedQuotes([...savedQuotes, newQuote]);
-                          }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
-                        >
-                          <Save size={16} /> Salvar
-                        </button>
-                      </div>
+                  {/* Toolbar */}
+                  <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 print:hidden">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Gerador de Propostas</h3>
+                      <p className="text-xs text-slate-500">Crie orçamentos técnicos profissionais</p>
                     </div>
-
-                    {/* Print Header - Only visible on print */}
-                    <div className="hidden print:block mb-8 text-center text-slate-900">
-                      <h1 className="text-3xl font-bold uppercase">Proposta de Consultoria Técnica</h1>
-                      <p className="text-sm text-slate-500">Beto Soluções em Aço</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
-                      <div className="space-y-4">
-                        <div><label className="text-sm font-bold text-slate-700">Cliente</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} /></div>
-                        <div><label className="text-sm font-bold text-slate-700">Contato</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} /></div>
-                        <div><label className="text-sm font-bold text-slate-700">Início do Projeto</label><input type="date" className="w-full p-2 border rounded" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} /></div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-sm font-bold text-slate-700">Semanas de Duração</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} /></div>
-                          <div><label className="text-sm font-bold text-slate-700">Horas / Dia</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.hoursPerDay} onChange={e => setQuoteForm({ ...quoteForm, hoursPerDay: parseFloat(e.target.value) })} /></div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-bold text-slate-700 mb-2 block">Dias Trabalhados</label>
-                          <div className="flex gap-1">
-                            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, idx) => {
-                              const isSelected = quoteForm.workingDays.includes(idx);
-                              return (
-                                <button
-                                  key={idx}
-                                  onClick={() => {
-                                    const newDays = isSelected
-                                      ? quoteForm.workingDays.filter(d => d !== idx)
-                                      : [...quoteForm.workingDays, idx].sort();
-                                    setQuoteForm({ ...quoteForm, workingDays: newDays });
-                                  }}
-                                  className={`w-8 h-8 rounded font-bold text-xs transition-colors ${isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-                                >
-                                  {d}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t">
-                          <h4 className="font-bold text-sm text-slate-900 mb-3">Custos Semanais</h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div><label className="text-xs font-bold text-slate-500">Serviço (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyService} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyService: parseFloat(e.target.value) })} /></div>
-                            <div><label className="text-xs font-bold text-slate-500">Desloc. (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyTravel} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyTravel: parseFloat(e.target.value) })} /></div>
-                            <div><label className="text-xs font-bold text-slate-500">Alim. (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyFood} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyFood: parseFloat(e.target.value) })} /></div>
-                          </div>
-                        </div>
-
-                        <div><label className="text-sm font-bold text-slate-700">Imposto NF (%)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.taxPercent} onChange={e => setQuoteForm({ ...quoteForm, taxPercent: parseFloat(e.target.value) })} /></div>
-                      </div>
-
-                      <div className="bg-slate-50 p-6 rounded-xl space-y-4 h-fit print:bg-white print:border print:border-slate-300">
-                        <h4 className="font-bold text-slate-800 border-b pb-2 flex justify-between items-center">
-                          Resumo do Projeto
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                            {totalConsultingHours}h Totais
-                          </span>
-                        </h4>
-
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Período Estimado:</span>
-                            <span className="font-bold text-slate-900">{quoteForm.weeks} semanas</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Carga Horária:</span>
-                            <span className="font-bold text-slate-900">{quoteForm.workingDays.length} dias/sem x {quoteForm.hoursPerDay}h</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t border-dashed space-y-2">
-                          <div className="flex justify-between text-sm"><span>Honorários (Semanal):</span> <span className="font-medium">R$ {quoteForm.valueWeeklyService.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                          <div className="flex justify-between text-sm"><span>Logística (Semanal):</span> <span className="font-medium">R$ {(quoteForm.valueWeeklyTravel + quoteForm.valueWeeklyFood).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                          <div className="flex justify-between font-bold text-slate-700 pt-2"><span>Total Semanal:</span> <span>R$ {totalWeekly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                        </div>
-
-                        <div className="pt-4 border-t border-slate-200">
-                          <div className="flex justify-between"><span>Subtotal Mensal:</span> <span className="font-bold">R$ {totalMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                          <div className="flex justify-between text-orange-600 text-sm mt-1"><span>Impostos (+{quoteForm.taxPercent}%):</span> <span>R$ {taxValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                          <div className="flex justify-between text-2xl font-black text-slate-900 pt-4 mt-2 border-t border-slate-300">
-                            <span>Total Geral:</span>
-                            <span>R$ {grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                          <p className="text-xs text-slate-400 text-right mt-1">Valor referente ao projeto completo</p>
-                        </div>
-                      </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                      >
+                        <Printer size={18} /> Imprimir
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newQuote: SavedQuote = { ...quoteForm, id: Date.now().toString(), createdAt: new Date().toISOString() };
+                          setSavedQuotes([...savedQuotes, newQuote]);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
+                      >
+                        <Save size={18} /> Salvar Proposta
+                      </button>
                     </div>
                   </div>
+
+                  {/* Document Paper Representation */}
+                  <div className="bg-white p-8 md:p-12 rounded-xl shadow-lg border border-slate-200 mx-auto max-w-4xl print:shadow-none print:border-none print:w-full print:max-w-none print:p-0">
+
+                    {/* Document Header */}
+                    <div className="flex justify-between items-start border-b-2 border-orange-500 pb-6 mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-slate-900 text-white p-3 rounded-lg print:bg-slate-900 print:text-white">
+                          <HardHat size={32} />
+                        </div>
+                        <div>
+                          <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">BETO Soluções em Aço</h1>
+                          <p className="text-sm text-slate-500">Consultoria Especializada e Treinamentos</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Orçamento</h2>
+                        <p className="text-sm font-medium text-slate-600">#{new Date().getFullYear()}-{Math.floor(Math.random() * 1000)}</p>
+                        <p className="text-xs text-slate-400">{new Date().toLocaleDateString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 print:gap-8">
+                      {/* Left Column: Inputs */}
+                      <div className="space-y-8">
+
+                        {/* Client Info Section */}
+                        <section>
+                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
+                            <User size={16} /> Informações do Cliente
+                          </h4>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Empresa / Cliente</label>
+                              <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors font-medium text-slate-900" placeholder="Nome da Empresa" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contato</label>
+                                <input type="text" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700" placeholder="Nome do Contato" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Início</label>
+                                <input type="date" className="w-full p-2 border-b border-slate-300 focus:border-orange-500 bg-transparent outline-none transition-colors text-slate-700" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} />
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        {/* Scope Section */}
+                        <section>
+                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
+                            <Briefcase size={16} /> Escopo do Projeto
+                          </h4>
+                          <div className="space-y-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Duração (Semanas)</label>
+                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} />
+                              </div>
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Carga Horária / Dia</label>
+                                <input type="number" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-900" value={quoteForm.hoursPerDay} onChange={e => setQuoteForm({ ...quoteForm, hoursPerDay: parseFloat(e.target.value) })} />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Dias de Atuação</label>
+                              <div className="flex gap-2">
+                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((d, idx) => {
+                                  const isSelected = quoteForm.workingDays.includes(idx);
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => {
+                                        const newDays = isSelected
+                                          ? quoteForm.workingDays.filter(d => d !== idx)
+                                          : [...quoteForm.workingDays, idx].sort();
+                                        setQuoteForm({ ...quoteForm, workingDays: newDays });
+                                      }}
+                                      className={`flex-1 py-1 rounded text-[10px] font-bold uppercase tracking-wide transition-all border ${isSelected ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                                    >
+                                      {d}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        {/* Financial Inputs Section */}
+                        <section className="print:hidden">
+                          <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 uppercase tracking-wider mb-4 border-b border-orange-100 pb-2">
+                            <DollarSign size={16} /> Composição de Custos
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div><label className="text-xs font-bold text-slate-500 uppercase">Honorários (Semanal)</label><input type="number" className="w-full p-2 border rounded font-medium" value={quoteForm.valueWeeklyService} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyService: parseFloat(e.target.value) })} /></div>
+                            <div><label className="text-xs font-bold text-slate-500 uppercase">Impostos (%)</label><input type="number" className="w-full p-2 border rounded font-medium" value={quoteForm.taxPercent} onChange={e => setQuoteForm({ ...quoteForm, taxPercent: parseFloat(e.target.value) })} /></div>
+                            <div><label className="text-xs font-bold text-slate-500 uppercase">Deslocamento</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.valueWeeklyTravel} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyTravel: parseFloat(e.target.value) })} /></div>
+                            <div><label className="text-xs font-bold text-slate-500 uppercase">Alimentação</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.valueWeeklyFood} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyFood: parseFloat(e.target.value) })} /></div>
+                          </div>
+                        </section>
+                      </div>
+
+                      {/* Right Column: Financial Summary Document */}
+                      <div>
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 print:bg-transparent print:border-slate-300 print:p-0">
+                          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center justify-between">
+                            Investimento Estimado
+                            <span className="text-xs font-normal bg-white border border-slate-200 px-2 py-1 rounded text-slate-500 print:hidden">
+                              Atualização automática
+                            </span>
+                          </h3>
+
+                          <div className="space-y-6">
+                            {/* Time Breakdown */}
+                            <div className="flex items-center gap-4 text-sm text-slate-600 pb-6 border-b border-slate-200 border-dashed">
+                              <div className="flex items-center gap-2">
+                                <Calendar size={16} />
+                                <span>{quoteForm.weeks} Semanas</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock size={16} />
+                                <span>{totalConsultingHours} Horas Totais</span>
+                              </div>
+                            </div>
+
+                            {/* Cost Breakdown */}
+                            <div className="space-y-3 text-sm">
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-600">Serviços Técnicos</span>
+                                <span className="font-semibold text-slate-900">R$ {((quoteForm.valueWeeklyService * quoteForm.weeks)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-600">Custos Logísticos (Viagem/Alim.)</span>
+                                <span className="font-semibold text-slate-900">R$ {(((quoteForm.valueWeeklyTravel + quoteForm.valueWeeklyFood) * quoteForm.weeks)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-orange-600">
+                                <span>Encargos e Impostos ({quoteForm.taxPercent}%)</span>
+                                <span className="font-semibold">R$ {taxValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+
+                            {/* Total Box */}
+                            <div className="bg-slate-900 text-white p-6 rounded-lg mt-6 print:bg-transparent print:text-black print:border-t-2 print:border-black print:rounded-none print:px-0">
+                              <p className="text-sm text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Valor Total do Projeto</p>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-sm font-light">R$</span>
+                                <span className="text-3xl font-bold tracking-tight">{grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-2 print:hidden">*Proposta válida por 15 dias.</p>
+                            </div>
+
+                            {/* Signature Placeholder Print Only */}
+                            <div className="hidden print:block pt-16 mt-8">
+                              <div className="grid grid-cols-2 gap-12">
+                                <div className="border-t border-slate-400 pt-2">
+                                  <p className="text-xs font-bold uppercase text-slate-900">BETO Soluções em Aço</p>
+                                  <p className="text-[10px] text-slate-500">Consultor Técnico</p>
+                                </div>
+                                <div className="border-t border-slate-400 pt-2">
+                                  <p className="text-xs font-bold uppercase text-slate-900">De Acordo</p>
+                                  <p className="text-[10px] text-slate-500">{quoteForm.clientName || 'Cliente'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer - Print Only */}
+                    <div className="hidden print:block mt-24 text-center border-t border-slate-100 pt-8">
+                      <p className="text-xs text-slate-400">Beto Soluções em Aço - Especialista em Trefilação e Processos Siderúrgicos</p>
+                      <p className="text-[10px] text-slate-300 mt-1">beto.solucoesemaco@gmail.com | (11) 99999-9999</p>
+                    </div>
+                  </div>
+
 
                   {/* Saved Quotes List */}
                   {savedQuotes.length > 0 && (
@@ -1845,6 +1937,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
               )}
             </div>
           )}
+
 
           {activeTab === 'comissao' && (
             <div className="space-y-6 max-w-7xl mx-auto">
@@ -1945,7 +2038,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             </div>
           )}
         </main>
-      </div>
+      </div >
 
       {isJobModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1972,7 +2065,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
           </div>
         </div>
       )}
-    </div>
+    </div >
   );
 };
 
