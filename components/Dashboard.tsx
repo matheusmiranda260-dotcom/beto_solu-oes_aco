@@ -209,6 +209,75 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     fetchLeads();
   }, []);
 
+  // Fetch All Data from Supabase
+  useEffect(() => {
+    const fetchAllData = async () => {
+      // 1. Consulting Jobs
+      const { data: jobs } = await supabase.from('consulting_jobs').select('*');
+      if (jobs) {
+        setAgendaItems(jobs.map(j => ({
+          id: j.id.toString(),
+          client: j.client,
+          description: j.description,
+          startDate: j.start_date,
+          endDate: j.end_date,
+          status: j.status as any
+        })));
+      }
+
+      // 2. Trefila Recipes
+      const { data: recipes } = await supabase.from('trefila_recipes').select('*');
+      if (recipes) {
+        setSavedRecipes(recipes.map(r => ({
+          id: r.id.toString(),
+          name: r.name,
+          date: r.date,
+          entry: r.entry,
+          exit: r.exit,
+          passes: r.passes,
+          dies: r.dies
+        })));
+      }
+
+      // 3. Trusses
+      const { data: trussesData } = await supabase.from('trusses').select('*');
+      if (trussesData) {
+        setTrusses(trussesData.map(t => ({
+          id: t.id.toString(),
+          model: t.model,
+          height: t.height,
+          length: t.length,
+          topDiam: t.top_diam,
+          botDiam: t.bot_diam,
+          sineDiam: t.sine_diam,
+          totalWeight: t.total_weight
+        })));
+      }
+
+      // 4. Saved Quotes
+      const { data: quotesData } = await supabase.from('saved_quotes').select('*');
+      if (quotesData) {
+        setSavedQuotes(quotesData.map(q => ({
+          id: q.id.toString(),
+          createdAt: q.created_at,
+          clientName: q.client_name,
+          contact: q.contact,
+          startDate: q.start_date,
+          weeks: q.weeks,
+          valueWeeklyService: q.value_weekly_service,
+          valueWeeklyTravel: q.value_weekly_travel,
+          valueWeeklyFood: q.value_weekly_food,
+          shifts: q.shifts,
+          hoursPerDay: q.hours_per_day,
+          workingDays: q.working_days,
+          taxPercent: q.tax_percent
+        })));
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
   // Update dies array size when pass count changes
   useEffect(() => {
     if (trefilaDies.length !== trefilaPassCount) {
@@ -356,19 +425,32 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setTrefilaDies(newDies);
   };
 
-  const handleSaveRecipe = () => {
+  const handleSaveRecipe = async () => {
     if (!recipeName.trim()) return;
-    const recipe: TrefilaRecipe = {
-      id: Date.now().toString(),
+
+    // Save to Supabase
+    const { data, error } = await supabase.from('trefila_recipes').insert([{
       name: recipeName,
       date: new Date().toLocaleDateString(),
       entry: trefilaEntry,
       exit: trefilaExit,
       passes: trefilaPassCount,
-      dies: [...trefilaDies]
-    };
-    setSavedRecipes([...savedRecipes, recipe]);
-    setRecipeName('');
+      dies: trefilaDies
+    }]).select();
+
+    if (data && !error) {
+      const newRecipe: TrefilaRecipe = {
+        id: data[0].id.toString(),
+        name: data[0].name,
+        date: data[0].date,
+        entry: data[0].entry,
+        exit: data[0].exit,
+        passes: data[0].passes,
+        dies: data[0].dies
+      };
+      setSavedRecipes([...savedRecipes, newRecipe]);
+      setRecipeName('');
+    }
   };
 
   const handleLoadRecipe = (recipe: TrefilaRecipe) => {
@@ -378,8 +460,11 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setTrefilaDies(recipe.dies);
   };
 
-  const handleDeleteRecipe = (id: string) => {
-    setSavedRecipes(savedRecipes.filter(r => r.id !== id));
+  const handleDeleteRecipe = async (id: string) => {
+    const { error } = await supabase.from('trefila_recipes').delete().eq('id', id);
+    if (!error) {
+      setSavedRecipes(savedRecipes.filter(r => r.id !== id));
+    }
   };
 
   const handleDieChange = (index: number, value: string) => {
@@ -530,26 +615,39 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     }
   }, [newTruss, trussQuantity]);
 
-  const handleSaveTruss = () => {
+  const handleSaveTruss = async () => {
     if (newTruss.model && calculatedTrussWeight > 0) {
-      setTrusses([...trusses, {
-        id: Date.now().toString(),
-        model: newTruss.model!,
-        height: newTruss.height!,
-        length: newTruss.length!,
-        topDiam: newTruss.topDiam!,
-        botDiam: newTruss.botDiam!,
-        sineDiam: newTruss.sineDiam!,
-        totalWeight: parseFloat(calculatedTrussWeight.toFixed(2))
-      }]);
-      // Reset form (optional, or keep values for ease of entry?)
-      // Keeping values but clearing model name for next entry
-      setNewTruss({ ...newTruss, model: '' });
+      const { data, error } = await supabase.from('trusses').insert([{
+        model: newTruss.model,
+        height: newTruss.height,
+        length: newTruss.length,
+        top_diam: newTruss.topDiam,
+        bot_diam: newTruss.botDiam,
+        sine_diam: newTruss.sineDiam,
+        total_weight: parseFloat(calculatedTrussWeight.toFixed(2))
+      }]).select();
+
+      if (data && !error) {
+        setTrusses([...trusses, {
+          id: data[0].id.toString(),
+          model: data[0].model,
+          height: data[0].height,
+          length: data[0].length,
+          topDiam: data[0].top_diam,
+          botDiam: data[0].bot_diam,
+          sineDiam: data[0].sine_diam,
+          totalWeight: data[0].total_weight
+        }]);
+        setNewTruss({ ...newTruss, model: '' });
+      }
     }
   };
 
-  const handleDeleteTruss = (id: string) => {
-    setTrusses(trusses.filter(t => t.id !== id));
+  const handleDeleteTruss = async (id: string) => {
+    const { error } = await supabase.from('trusses').delete().eq('id', id);
+    if (!error) {
+      setTrusses(trusses.filter(t => t.id !== id));
+    }
   };
 
 
@@ -665,27 +763,50 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setIsJobModalOpen(true);
   };
 
-  const handleDeleteJob = (id: string) => {
-    setAgendaItems(prev => prev.filter(item => item.id !== id));
+  const handleDeleteJob = async (id: string) => {
+    const { error } = await supabase.from('consulting_jobs').delete().eq('id', id);
+    if (!error) {
+      setAgendaItems(prev => prev.filter(item => item.id !== id));
+    }
   };
 
-  const handleSaveJob = () => {
+  const handleSaveJob = async () => {
     if (!currentJob.client || !currentJob.description || !currentJob.startDate) return;
 
     if (currentJob.id) {
       // Edit
-      setAgendaItems(prev => prev.map(item => item.id === currentJob.id ? currentJob as ConsultingJob : item));
-    } else {
-      // Create
-      const newJob: ConsultingJob = {
-        id: Date.now().toString(),
+      const { error } = await supabase.from('consulting_jobs').update({
         client: currentJob.client,
         description: currentJob.description,
-        startDate: currentJob.startDate,
-        endDate: currentJob.endDate,
-        status: currentJob.status as 'Agendado' | 'Em Andamento' | 'Concluido' || 'Agendado'
-      };
-      setAgendaItems([...agendaItems, newJob]);
+        start_date: currentJob.startDate,
+        end_date: currentJob.endDate,
+        status: currentJob.status
+      }).eq('id', currentJob.id);
+
+      if (!error) {
+        setAgendaItems(prev => prev.map(item => item.id === currentJob.id ? currentJob as ConsultingJob : item));
+      }
+    } else {
+      // Create
+      const { data, error } = await supabase.from('consulting_jobs').insert([{
+        client: currentJob.client,
+        description: currentJob.description,
+        start_date: currentJob.startDate,
+        end_date: currentJob.endDate,
+        status: currentJob.status || 'Agendado'
+      }]).select();
+
+      if (data && !error) {
+        const newJob: ConsultingJob = {
+          id: data[0].id.toString(),
+          client: data[0].client,
+          description: data[0].description,
+          startDate: data[0].start_date,
+          endDate: data[0].end_date,
+          status: data[0].status
+        };
+        setAgendaItems([...agendaItems, newJob]);
+      }
     }
     setIsJobModalOpen(false);
   };
@@ -727,6 +848,39 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const grandTotal = totalMonthly + taxValue;
   const totalConsultingHours = quoteForm.weeks * quoteForm.workingDays.length * quoteForm.hoursPerDay;
   const paymentPerWeek = grandTotal / quoteForm.weeks;
+
+  const handleSaveQuote = async () => {
+    const { data, error } = await supabase.from('saved_quotes').insert([{
+      client_name: quoteForm.clientName,
+      contact: quoteForm.contact,
+      start_date: quoteForm.startDate,
+      weeks: quoteForm.weeks,
+      value_weekly_service: quoteForm.valueWeeklyService,
+      value_weekly_travel: quoteForm.valueWeeklyTravel,
+      value_weekly_food: quoteForm.valueWeeklyFood,
+      shifts: quoteForm.shifts,
+      hours_per_day: quoteForm.hoursPerDay,
+      working_days: quoteForm.workingDays,
+      tax_percent: quoteForm.taxPercent
+    }]).select();
+
+    if (data && !error) {
+      const newQuote: SavedQuote = {
+        ...quoteForm,
+        id: data[0].id.toString(),
+        createdAt: data[0].created_at
+      };
+      setSavedQuotes([...savedQuotes, newQuote]);
+      alert('Orçamento salvo no banco de dados!');
+    }
+  };
+
+  const handleDeleteQuote = async (id: string) => {
+    const { error } = await supabase.from('saved_quotes').delete().eq('id', id);
+    if (!error) {
+      setSavedQuotes(savedQuotes.filter(q => q.id !== id));
+    }
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 print:h-auto print:bg-white">
@@ -1820,10 +1974,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                         <Printer size={18} /> Imprimir
                       </button>
                       <button
-                        onClick={() => {
-                          const newQuote: SavedQuote = { ...quoteForm, id: Date.now().toString(), createdAt: new Date().toISOString() };
-                          setSavedQuotes([...savedQuotes, newQuote]);
-                        }}
+                        onClick={handleSaveQuote}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
                       >
                         <Save size={18} /> Salvar Proposta
@@ -2062,7 +2213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                                       Carregar
                                     </button>
                                     <button
-                                      onClick={() => setSavedQuotes(savedQuotes.filter(q => q.id !== quote.id))}
+                                      onClick={() => handleDeleteQuote(quote.id)}
                                       className="text-red-400 hover:text-red-600"
                                     >
                                       <Trash2 size={16} />
