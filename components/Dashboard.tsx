@@ -83,6 +83,7 @@ interface ConsultingJob {
   id: string;
   client: string;
   startDate: string;
+  endDate?: string;
   status: 'Agendado' | 'Em Andamento' | 'Concluido';
   description: string;
 }
@@ -96,8 +97,14 @@ interface QuoteForm {
   valueWeeklyTravel: number;
   valueWeeklyFood: number;
   shifts: string; // Turnos A/B etc
-  hours: string; // 06:00 as 18:00
+  hoursPerDay: number;
+  workingDays: number[]; // 0=Dom, 1=Seg, ... 6=Sab
   taxPercent: number; // Acrescimo MAS
+}
+
+interface SavedQuote extends QuoteForm {
+  id: string;
+  createdAt: string;
 }
 
 interface TrefilaRecipe {
@@ -153,9 +160,9 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   // Consultoria State
   const [consultingTab, setConsultingTab] = useState<'agenda' | 'orcamento'>('agenda');
   const [agendaItems, setAgendaItems] = useState<ConsultingJob[]>([
-    { id: '1', client: 'MANETONI', startDate: '2025-02-02', status: 'Em Andamento', description: 'Consultoria de Trefilação' },
-    { id: '2', client: 'ARCELORMITTAL', startDate: '2025-03-10', status: 'Agendado', description: 'Treinamento Operacional' },
-    { id: '3', client: 'GERDAU', startDate: '2025-01-15', status: 'Concluido', description: 'Manutenção de Máquina' }
+    { id: '1', client: 'MANETONI', startDate: '2025-02-02', endDate: '2025-02-05', status: 'Em Andamento', description: 'Consultoria de Trefilação' },
+    { id: '2', client: 'ARCELORMITTAL', startDate: '2025-03-10', endDate: '2025-03-12', status: 'Agendado', description: 'Treinamento Operacional' },
+    { id: '3', client: 'GERDAU', startDate: '2025-01-15', endDate: '2025-01-15', status: 'Concluido', description: 'Manutenção de Máquina' }
   ]);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [currentJob, setCurrentJob] = useState<Partial<ConsultingJob>>({});
@@ -169,9 +176,11 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     valueWeeklyTravel: 1300,
     valueWeeklyFood: 200,
     shifts: 'A/B e B/C',
-    hours: '06:00 às 18:00 / 18:00 às 06:00',
+    hoursPerDay: 8,
+    workingDays: [1, 2, 3, 4, 5], // Seg-Sex
     taxPercent: 7
   });
+  const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
 
   // Update dies array size when pass count changes
   useEffect(() => {
@@ -646,6 +655,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
         client: currentJob.client,
         description: currentJob.description,
         startDate: currentJob.startDate,
+        endDate: currentJob.endDate,
         status: currentJob.status as 'Agendado' | 'Em Andamento' | 'Concluido' || 'Agendado'
       };
       setAgendaItems([...agendaItems, newJob]);
@@ -688,6 +698,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const totalMonthly = totalWeekly * quoteForm.weeks;
   const taxValue = totalMonthly * (quoteForm.taxPercent / 100);
   const grandTotal = totalMonthly + taxValue;
+  const totalConsultingHours = quoteForm.weeks * quoteForm.workingDays.length * quoteForm.hoursPerDay;
   const paymentPerWeek = grandTotal / quoteForm.weeks;
 
   return (
@@ -1647,8 +1658,9 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                             <h4 className="font-bold text-slate-800">{item.client}</h4>
                             <p className="text-sm text-slate-500">{item.description}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs font-medium bg-slate-100 px-2 py-0.5 rounded text-slate-600">
+                              <span className="text-xs font-medium bg-slate-100 px-2 py-0.5 rounded text-slate-600 flex items-center gap-1">
                                 {new Date(item.startDate).toLocaleDateString()}
+                                {item.endDate && item.endDate !== item.startDate && ` - ${new Date(item.endDate).toLocaleDateString()}`}
                               </span>
                               <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.status === 'Concluido' ? 'bg-green-100 text-green-700' :
                                 item.status === 'Em Andamento' ? 'bg-orange-100 text-orange-700' :
@@ -1668,27 +1680,167 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                  <h3 className="text-lg font-bold text-slate-800 mb-6">Calculadora de Orçamento</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div><label className="text-sm font-bold text-slate-700">Cliente</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Contato</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Início</label><input type="date" className="w-full p-2 border rounded" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Semanas</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Serviço Semanal (R$)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.valueWeeklyService} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyService: parseFloat(e.target.value) })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Deslocamento Semanal (R$)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.valueWeeklyTravel} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyTravel: parseFloat(e.target.value) })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Alimentação Semanal (R$)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.valueWeeklyFood} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyFood: parseFloat(e.target.value) })} /></div>
-                      <div><label className="text-sm font-bold text-slate-700">Imposto (%)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.taxPercent} onChange={e => setQuoteForm({ ...quoteForm, taxPercent: parseFloat(e.target.value) })} /></div>
+                <div className="space-y-6">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
+                    <div className="flex justify-between items-center mb-6 border-b pb-4 print:hidden">
+                      <h3 className="text-lg font-bold text-slate-800">Calculadora de Orçamento</h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => window.print()}
+                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          <Printer size={16} /> Imprimir
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newQuote: SavedQuote = { ...quoteForm, id: Date.now().toString(), createdAt: new Date().toISOString() };
+                            setSavedQuotes([...savedQuotes, newQuote]);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
+                        >
+                          <Save size={16} /> Salvar
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-slate-50 p-6 rounded-xl space-y-4">
-                      <h4 className="font-bold text-slate-800 border-b pb-2">Resumo Financeiro</h4>
-                      <div className="flex justify-between"><span>Total Semanal:</span> <span className="font-bold">R$ {totalWeekly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                      <div className="flex justify-between"><span>Total Mensal ({quoteForm.weeks} sem):</span> <span className="font-bold">R$ {totalMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                      <div className="flex justify-between text-orange-600"><span>Impostos (+{quoteForm.taxPercent}%):</span> <span className="font-bold">R$ {taxValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                      <div className="flex justify-between text-xl font-black text-slate-900 pt-4 border-t"><span>Total Geral:</span> <span>R$ {grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+
+                    {/* Print Header - Only visible on print */}
+                    <div className="hidden print:block mb-8 text-center text-slate-900">
+                      <h1 className="text-3xl font-bold uppercase">Proposta de Consultoria Técnica</h1>
+                      <p className="text-sm text-slate-500">Beto Soluções em Aço</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
+                      <div className="space-y-4">
+                        <div><label className="text-sm font-bold text-slate-700">Cliente</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.clientName} onChange={e => setQuoteForm({ ...quoteForm, clientName: e.target.value })} /></div>
+                        <div><label className="text-sm font-bold text-slate-700">Contato</label><input type="text" className="w-full p-2 border rounded" value={quoteForm.contact} onChange={e => setQuoteForm({ ...quoteForm, contact: e.target.value })} /></div>
+                        <div><label className="text-sm font-bold text-slate-700">Início do Projeto</label><input type="date" className="w-full p-2 border rounded" value={quoteForm.startDate} onChange={e => setQuoteForm({ ...quoteForm, startDate: e.target.value })} /></div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><label className="text-sm font-bold text-slate-700">Semanas de Duração</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.weeks} onChange={e => setQuoteForm({ ...quoteForm, weeks: parseInt(e.target.value) })} /></div>
+                          <div><label className="text-sm font-bold text-slate-700">Horas / Dia</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.hoursPerDay} onChange={e => setQuoteForm({ ...quoteForm, hoursPerDay: parseFloat(e.target.value) })} /></div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-bold text-slate-700 mb-2 block">Dias Trabalhados</label>
+                          <div className="flex gap-1">
+                            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, idx) => {
+                              const isSelected = quoteForm.workingDays.includes(idx);
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    const newDays = isSelected
+                                      ? quoteForm.workingDays.filter(d => d !== idx)
+                                      : [...quoteForm.workingDays, idx].sort();
+                                    setQuoteForm({ ...quoteForm, workingDays: newDays });
+                                  }}
+                                  className={`w-8 h-8 rounded font-bold text-xs transition-colors ${isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                >
+                                  {d}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t">
+                          <h4 className="font-bold text-sm text-slate-900 mb-3">Custos Semanais</h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div><label className="text-xs font-bold text-slate-500">Serviço (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyService} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyService: parseFloat(e.target.value) })} /></div>
+                            <div><label className="text-xs font-bold text-slate-500">Desloc. (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyTravel} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyTravel: parseFloat(e.target.value) })} /></div>
+                            <div><label className="text-xs font-bold text-slate-500">Alim. (R$)</label><input type="number" className="w-full p-2 border rounded text-sm" value={quoteForm.valueWeeklyFood} onChange={e => setQuoteForm({ ...quoteForm, valueWeeklyFood: parseFloat(e.target.value) })} /></div>
+                          </div>
+                        </div>
+
+                        <div><label className="text-sm font-bold text-slate-700">Imposto NF (%)</label><input type="number" className="w-full p-2 border rounded" value={quoteForm.taxPercent} onChange={e => setQuoteForm({ ...quoteForm, taxPercent: parseFloat(e.target.value) })} /></div>
+                      </div>
+
+                      <div className="bg-slate-50 p-6 rounded-xl space-y-4 h-fit print:bg-white print:border print:border-slate-300">
+                        <h4 className="font-bold text-slate-800 border-b pb-2 flex justify-between items-center">
+                          Resumo do Projeto
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                            {totalConsultingHours}h Totais
+                          </span>
+                        </h4>
+
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Período Estimado:</span>
+                            <span className="font-bold text-slate-900">{quoteForm.weeks} semanas</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Carga Horária:</span>
+                            <span className="font-bold text-slate-900">{quoteForm.workingDays.length} dias/sem x {quoteForm.hoursPerDay}h</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-dashed space-y-2">
+                          <div className="flex justify-between text-sm"><span>Honorários (Semanal):</span> <span className="font-medium">R$ {quoteForm.valueWeeklyService.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                          <div className="flex justify-between text-sm"><span>Logística (Semanal):</span> <span className="font-medium">R$ {(quoteForm.valueWeeklyTravel + quoteForm.valueWeeklyFood).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                          <div className="flex justify-between font-bold text-slate-700 pt-2"><span>Total Semanal:</span> <span>R$ {totalWeekly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-200">
+                          <div className="flex justify-between"><span>Subtotal Mensal:</span> <span className="font-bold">R$ {totalMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                          <div className="flex justify-between text-orange-600 text-sm mt-1"><span>Impostos (+{quoteForm.taxPercent}%):</span> <span>R$ {taxValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                          <div className="flex justify-between text-2xl font-black text-slate-900 pt-4 mt-2 border-t border-slate-300">
+                            <span>Total Geral:</span>
+                            <span>R$ {grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 text-right mt-1">Valor referente ao projeto completo</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Saved Quotes List */}
+                  {savedQuotes.length > 0 && (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:hidden">
+                      <h3 className="font-bold text-slate-800 mb-4">Orçamentos Salvos</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                            <tr>
+                              <th className="px-4 py-3">Data</th>
+                              <th className="px-4 py-3">Cliente</th>
+                              <th className="px-4 py-3">Valor Total</th>
+                              <th className="px-4 py-3 text-right">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {savedQuotes.map(quote => {
+                              // Recalculate basic totals for display
+                              const wTotal = quote.valueWeeklyService + quote.valueWeeklyTravel + quote.valueWeeklyFood;
+                              const mTotal = wTotal * quote.weeks;
+                              const grand = mTotal + (mTotal * (quote.taxPercent / 100));
+
+                              return (
+                                <tr key={quote.id} className="hover:bg-slate-50">
+                                  <td className="px-4 py-3">{new Date(quote.createdAt).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 font-bold">{quote.clientName}</td>
+                                  <td className="px-4 py-3 text-green-700 font-bold">R$ {grand.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                    <button
+                                      onClick={() => setQuoteForm(quote)}
+                                      className="text-blue-600 hover:underline font-bold text-xs"
+                                    >
+                                      Carregar
+                                    </button>
+                                    <button
+                                      onClick={() => setSavedQuotes(savedQuotes.filter(q => q.id !== quote.id))}
+                                      className="text-red-400 hover:text-red-600"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1802,7 +1954,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             <div className="space-y-4">
               <div><label className="text-sm font-bold">Cliente</label><input className="w-full border p-2 rounded" value={currentJob.client || ''} onChange={e => setCurrentJob({ ...currentJob, client: e.target.value })} /></div>
               <div><label className="text-sm font-bold">Descrição</label><input className="w-full border p-2 rounded" value={currentJob.description || ''} onChange={e => setCurrentJob({ ...currentJob, description: e.target.value })} /></div>
-              <div><label className="text-sm font-bold">Data</label><input type="date" className="w-full border p-2 rounded" value={currentJob.startDate || ''} onChange={e => setCurrentJob({ ...currentJob, startDate: e.target.value })} /></div>
+              <div><label className="text-sm font-bold">Data Início</label><input type="date" className="w-full border p-2 rounded" value={currentJob.startDate || ''} onChange={e => setCurrentJob({ ...currentJob, startDate: e.target.value })} /></div>
+              <div><label className="text-sm font-bold">Data Término</label><input type="date" className="w-full border p-2 rounded" value={currentJob.endDate || ''} onChange={e => setCurrentJob({ ...currentJob, endDate: e.target.value })} /></div>
               <div>
                 <label className="text-sm font-bold">Status</label>
                 <select className="w-full border p-2 rounded" value={currentJob.status} onChange={e => setCurrentJob({ ...currentJob, status: e.target.value as any })}>
