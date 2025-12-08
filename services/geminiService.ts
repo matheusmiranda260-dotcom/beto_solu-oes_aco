@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 // Initialize Gemini Client
 // Note: In a production environment, never expose keys on the client side. 
 // However, per instructions, we use process.env.API_KEY directly here.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 export const generateBetoResponse = async (prompt: string): Promise<string> => {
   try {
@@ -17,7 +17,7 @@ export const generateBetoResponse = async (prompt: string): Promise<string> => {
         Sempre mantenha um tom prestativo e otimista.`,
       },
     });
-    
+
     return response.text || "Desculpe, estou verificando o estoque e não consegui responder agora.";
   } catch (error) {
     console.error("Erro ao consultar o Beto:", error);
