@@ -19,7 +19,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
 
     // Simulate network delay for better UX
     setTimeout(() => {
-      if (username === 'gestor' && password === '070223') {
+      if ((username === 'gestor' && password === '070223') || (username === 'beto' && password === '120674')) {
         onLogin(username);
       } else {
         setError('Acesso negado. Verifique suas credenciais.');
@@ -32,15 +32,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
     <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden">
       {/* Background Decorative Elements simulating coils/steel environment */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <circle cx="0" cy="0" r="40" fill="#ea580c" />
-            <circle cx="100" cy="100" r="50" fill="#ea580c" />
-            <path d="M0 100 L100 0" stroke="#64748b" strokeWidth="0.5" />
-         </svg>
+        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <circle cx="0" cy="0" r="40" fill="#ea580c" />
+          <circle cx="100" cy="100" r="50" fill="#ea580c" />
+          <path d="M0 100 L100 0" stroke="#64748b" strokeWidth="0.5" />
+        </svg>
       </div>
 
       {/* Back Button */}
-      <button 
+      <button
         onClick={onBack}
         className="absolute top-6 left-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors z-20"
       >
@@ -52,7 +52,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Header Section mimicking the character visuals */}
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-8 text-center relative overflow-hidden">
-             {/* Abstract Circles Background */}
+            {/* Abstract Circles Background */}
             <div className="absolute top-0 left-0 w-full h-full opacity-20">
               <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-white rounded-full"></div>
             </div>
@@ -67,7 +67,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
           {/* Form Section */}
           <div className="p-8">
             <h2 className="text-2xl font-semibold text-slate-800 mb-6 text-center">Acesso Restrito</h2>
-            
+
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-2">Usuário</label>
@@ -118,7 +118,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
               </button>
             </form>
           </div>
-          
+
           <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-400">
               &copy; {new Date().getFullYear()} Beto Soluções em Aço. Acesso restrito a gestores.
