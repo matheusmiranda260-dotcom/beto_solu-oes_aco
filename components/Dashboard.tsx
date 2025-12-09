@@ -1607,13 +1607,13 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                           onClick={() => setTrefilaMode('cacetes')}
                           className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'cacetes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                          Cacetes
+                          K-7 Ca 60
                         </button>
                         <button
                           onClick={() => setTrefilaMode('frieiras')}
                           className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'frieiras' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                          Frieiras
+                          Fieiras BTC
                         </button>
                       </div>
                     </div>

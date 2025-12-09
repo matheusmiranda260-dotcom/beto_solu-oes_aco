@@ -1,11 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
-
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    console.error('CRITICAL: Supabase URL or Key not found in environment variables. Application may not function correctly.');
-}
+// Hardcoding credentials to ensure connection while environment variables are being debugged
+const supabaseUrl = 'https://xrdjtitpxhraqutzoheg.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyZGp0aXRweGhyYXF1dHpvaGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxMjYyNTksImV4cCI6MjA4MDcwMjI1OX0.-JWtKt_GwhA7bZFBXlgCFvmc5T9R45dxusCa_B23wWc';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
