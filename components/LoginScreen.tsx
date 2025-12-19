@@ -33,11 +33,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
         const isLegacyUser = (username === 'gestor' && password === '070223') || (username === 'beto' && password === '120674');
 
         if (isLegacyUser && authError.message.includes('Invalid login credentials')) {
-          // É um usuário antigo tentando logar e falhou (conta não existe no Supabase). Vamos criar!
           console.log("Migrando usuário legado para Supabase...");
           const { error: signUpError } = await authService.signUp(username, password);
 
-          if (!signUpError) {
+          if (signUpError) {
+            alert('Erro ao criar conta no Supabase: ' + signUpError.message);
+            if (signUpError.message.includes('Password should be')) {
+              alert('A senha padrão é muito fraca para o Supabase. Contate o admin.');
+            }
+          } else {
             // Conta criada com sucesso! Logar automaticamente agora.
             const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
               email,
@@ -47,12 +51,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
             if (!retryError && retryData.user) {
               onLogin(username);
               return;
+            } else {
+              if (retryError?.message.includes('Email not confirmed')) {
+                alert('CONTA CRIADA, MAS BLOQUEADA.\n\nVocê precisa desativar a opção "Confirm Email" no painel do Supabase (Authentication -> Providers -> Email) para que o login funcione sem verificação de email.');
+              } else {
+                alert('Conta criada mas erro no login automático: ' + retryError?.message);
+              }
             }
           }
         }
 
         if (authError.message.includes('Invalid login credentials')) {
           setError('Usuário ou senha incorretos.');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('Email não confirmado. Desative "Confirm Email" no Supabase.');
+          alert('ATENÇÃO: Vá no Supabase -> Authentication -> Providers -> Email e desative "Confirm Email".');
         } else {
           setError(authError.message);
         }

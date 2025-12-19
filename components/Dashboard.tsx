@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { generateBetoResponse } from '../services/geminiService';
 import { supabase } from '../services/supabaseClient';
+import { authService } from '../services/authService';
 import { ChatMessage, MeshType, TrussType, Lead } from '../types';
 
 const mockData = [
@@ -2617,7 +2618,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
                   <p className="text-slate-500">Controle de acesso e permissões do sistema.</p>
                 </div>
                 <button
-                  onClick={() => alert('Para criar um novo usuário, por favor faça logout e use a opção de registro na tela de login (se disponível) ou contate o administrador do banco de dados.\n\nDevido a restrições de segurança, a criação direta por aqui requer privilégios administrativos de nível superior.')}
+                  onClick={() => setIsUserModalOpen(true)}
                   className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-bold shadow-sm"
                 >
                   <Plus size={20} />
@@ -2652,8 +2653,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
                             <td className="px-6 py-4 text-slate-600 font-bold">{u.username}</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                  u.role === 'gestor' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                    'bg-slate-100 text-slate-800 border-slate-200'
+                                u.role === 'gestor' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                  'bg-slate-100 text-slate-800 border-slate-200'
                                 }`}>
                                 {u.role.toUpperCase()}
                               </span>
@@ -2707,6 +2708,86 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setIsJobModalOpen(false)} className="px-4 py-2 text-slate-600 font-bold">Cancelar</button>
               <button onClick={handleSaveJob} className="px-4 py-2 bg-orange-600 text-white rounded-lg font-bold">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Criar Usuário */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Novo Usuário</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-bold text-slate-600">Nome de Usuário</label>
+                <div className="flex items-center border rounded mt-1 bg-slate-50">
+                  <User size={18} className="ml-3 text-slate-400" />
+                  <input
+                    placeholder="ex: joao"
+                    className="w-full p-2 bg-transparent outline-none"
+                    value={newUserParams.username}
+                    onChange={e => setNewUserParams({ ...newUserParams, username: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-slate-600">Senha Inicial</label>
+                <div className="flex items-center border rounded mt-1 bg-slate-50">
+                  <Lock size={18} className="ml-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="min. 6 caracteres"
+                    className="w-full p-2 bg-transparent outline-none"
+                    value={newUserParams.password}
+                    onChange={e => setNewUserParams({ ...newUserParams, password: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-slate-600">Função</label>
+                <select
+                  className="w-full border p-2 rounded mt-1 bg-white"
+                  value={newUserParams.role}
+                  onChange={e => setNewUserParams({ ...newUserParams, role: e.target.value })}
+                >
+                  <option value="user">Usuário (Padrão)</option>
+                  <option value="gestor">Gestor</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded">Cancelar</button>
+              <button
+                onClick={async () => {
+                  if (!newUserParams.username || !newUserParams.password) return alert('Preencha todos os campos');
+                  if (newUserParams.password.length < 6) return alert('Senha deve ter no mínimo 6 caracteres');
+
+                  try {
+                    const { error: signUpError } = await authService.signUp(newUserParams.username, newUserParams.password);
+                    if (signUpError) {
+                      alert('Erro ao criar: ' + signUpError.message);
+                      return;
+                    }
+
+                    // Warning about updating role manually if needed
+                    alert(`Usuário ${newUserParams.username} criado com sucesso!\n\nNOTA: Para definir a função como '${newUserParams.role}', você pode precisar ajustar manualmente na tabela 'profiles' do banco de dados se a trigger padrão definir apenas 'user'.\n\nNesta versão simples, o usuário entra como 'user' e o Admin pode promover depois.`);
+                    setIsUserModalOpen(false);
+                    setNewUserParams({ username: '', password: '', role: 'user' });
+                    // Refresh list
+                    const { data } = await supabase.from('profiles').select('*').order('created_at');
+                    if (data) setUsersList(data as any);
+
+                  } catch (e: any) {
+                    alert('Erro: ' + e.message);
+                  }
+                }}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700"
+              >
+                Criar Usuário
+              </button>
             </div>
           </div>
         </div>
