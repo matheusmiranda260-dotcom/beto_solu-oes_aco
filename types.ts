@@ -1,7 +1,9 @@
 export interface User {
+  id: string; // Supabase UUID
   username: string;
   role: 'admin' | 'gestor' | 'user';
   name: string;
+  email?: string;
 }
 
 export interface AuthState {

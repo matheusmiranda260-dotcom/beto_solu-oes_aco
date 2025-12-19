@@ -13,11 +13,6 @@ import { generateBetoResponse } from '../services/geminiService';
 import { supabase } from '../services/supabaseClient';
 import { ChatMessage, MeshType, TrussType, Lead } from '../types';
 
-interface DashboardProps {
-  username: string;
-  onLogout: () => void;
-}
-
 const mockData = [
   { name: 'Bobinas', stock: 4000, capacity: 5000 },
   { name: 'Chapas', stock: 3000, capacity: 4500 },
@@ -118,15 +113,21 @@ interface TrefilaRecipe {
   dies: number[];
 }
 
+interface DashboardProps {
+  username: string;
+  onLogout: () => void;
+  userRole?: 'admin' | 'gestor' | 'user';
+}
+
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
-const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads'>('dashboard');
+const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads' | 'usuarios'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]); // Local state for leads
 
   // Malhas State
-  const [meshes, setMeshes] = useState<MeshType[]>(initialMeshes);
+  const [meshes, setMeshes] = useState<MeshType[]>([]);
   const [isAddingMesh, setIsAddingMesh] = useState(false);
   const [newMesh, setNewMesh] = useState<Partial<MeshType>>({
     tela: '', metros: 0, bitola: 0, espacamento: '', dimensao: '', t: 0, l: 0, peso: 0
@@ -152,7 +153,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [recipeName, setRecipeName] = useState('');
 
   // Comissao State
-  const [companies, setCompanies] = useState(initialCompanies);
+  const [companies, setCompanies] = useState<{ id: string, name: string, percent: number }[]>([]);
   const [commissionData, setCommissionData] = useState<CommissionData>({});
   const [advances, setAdvances] = useState<FinancialRecord[]>([]);
   const [receipts, setReceipts] = useState<FinancialRecord[]>([]);
@@ -183,6 +184,11 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     taxPercent: 7
   });
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
+
+  // Users Management State
+  const [usersList, setUsersList] = useState<{ id: string, username: string, role: string, created_at: string }[]>([]);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [newUserParams, setNewUserParams] = useState({ username: '', password: '', role: 'user' });
 
   // Fetch Leads from Supabase
   useEffect(() => {
@@ -273,10 +279,69 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
           taxPercent: q.tax_percent
         })));
       }
+
+      // 5. Meshes (Malhas) - NEW
+      const { data: meshesData } = await supabase.from('meshes').select('*');
+      if (meshesData) {
+        setMeshes(meshesData.map(m => ({
+          id: m.id.toString(),
+          tela: m.tela,
+          metros: m.metros,
+          bitola: m.bitola,
+          espacamento: m.espacamento,
+          dimensao: m.dimensao,
+          t: m.t,
+          l: m.l,
+          peso: m.peso
+        })));
+      }
+
+      // 6. Companies (Comissões) - NEW
+      const { data: companiesData } = await supabase.from('companies').select('*');
+      if (companiesData) {
+        setCompanies(companiesData.map(c => ({
+          id: c.id.toString(),
+          name: c.name,
+          percent: c.percent
+        })));
+      }
+
+      // 7. Commission Entries (Data) - NEW
+      const { data: commissionEntries } = await supabase.from('commission_entries').select('*');
+      if (commissionEntries) {
+        const newData: CommissionData = {};
+        commissionEntries.forEach(entry => {
+          newData[`${entry.company_id}-${entry.month_index}`] = entry.value;
+        });
+        setCommissionData(newData);
+      }
+
+      // 8. Financial Records (Advances/Receipts) - NEW
+      // (Optional implementation if table created, currently mocked in Original code? Checked earlier, not using. Will implement basic fetch if user needs or stick to just companies/commissions first as they are key)
+      // Implementation for Financial Records:
+      const { data: finRecords } = await supabase.from('financial_records').select('*');
+      if (finRecords) {
+        setAdvances(finRecords.filter(r => r.type === 'advance').map(r => ({
+          id: r.id.toString(), value: r.value, companyName: r.company_name
+        })));
+        setReceipts(finRecords.filter(r => r.type === 'receipt').map(r => ({
+          id: r.id.toString(), value: r.value, companyName: r.company_name
+        })));
+      }
     };
 
     fetchAllData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'usuarios') {
+      const fetchUsers = async () => {
+        const { data } = await supabase.from('profiles').select('*').order('created_at');
+        if (data) setUsersList(data as any);
+      };
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   // Update dies array size when pass count changes
   useEffect(() => {
@@ -678,12 +743,30 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
 
   // Commission Logic
-  const handleCommissionChange = (companyId: string, monthIndex: number, value: string) => {
+  const handleCommissionChange = async (companyId: string, monthIndex: number, value: string) => {
     const key = `${companyId}-${monthIndex}`;
+    const numValue = parseFloat(value) || 0;
+
+    // Optimistic UI Update
     setCommissionData(prev => ({
       ...prev,
-      [key]: parseFloat(value) || 0
+      [key]: numValue
     }));
+
+    // Save to Supabase
+    try {
+      const { error } = await supabase.from('commission_entries').upsert({
+        company_id: Number(companyId),
+        month_index: monthIndex,
+        value: numValue
+      }, { onConflict: 'company_id,month_index' });
+
+      if (error) {
+        console.error('Supabase error:', error);
+      }
+    } catch (error) {
+      console.error('Error saving commission:', error);
+    }
   };
 
   const getCompanyTotal = (companyId: string) => {
@@ -698,30 +781,75 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setCompanies(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
-  const addCompany = () => {
-    const newId = (companies.length + 1).toString();
-    setCompanies([...companies, { id: newId, name: 'NOVA EMPRESA', percent: 5 }]);
-  };
+  const addCompany = async () => {
+    try {
+      const { data, error } = await supabase.from('companies').insert([{
+        name: 'NOVA EMPRESA',
+        percent: 5
+      }]).select();
 
-  const addAdvance = () => {
-    if (newAdvance.value && newAdvance.company) {
-      setAdvances([...advances, {
-        id: Date.now().toString(),
-        value: parseFloat(newAdvance.value) || 0,
-        companyName: newAdvance.company
-      }]);
-      setNewAdvance({ value: '', company: '' });
+      if (error) throw error;
+
+      if (data) {
+        setCompanies([...companies, { id: data[0].id.toString(), name: data[0].name, percent: data[0].percent }]);
+      }
+    } catch (error: any) {
+      console.error('Error adding company:', error);
+      alert('Erro ao adicionar empresa: ' + error.message);
     }
   };
 
-  const addReceipt = () => {
+  const addAdvance = async () => {
+    if (newAdvance.value && newAdvance.company) {
+      try {
+        const val = parseFloat(newAdvance.value) || 0;
+        const { data, error } = await supabase.from('financial_records').insert([{
+          type: 'advance',
+          value: val,
+          company_name: newAdvance.company
+        }]).select();
+
+        if (error) throw error;
+
+        if (data) {
+          setAdvances([...advances, {
+            id: data[0].id.toString(),
+            value: data[0].value,
+            companyName: data[0].company_name
+          }]);
+          setNewAdvance({ value: '', company: '' });
+        }
+      } catch (error: any) {
+        console.error('Error adding advance:', error);
+        alert('Erro ao salvar adiantamento: ' + error.message);
+      }
+    }
+  };
+
+  const addReceipt = async () => {
     if (newReceipt.value && newReceipt.company) {
-      setReceipts([...receipts, {
-        id: Date.now().toString(),
-        value: parseFloat(newReceipt.value) || 0,
-        companyName: newReceipt.company
-      }]);
-      setNewReceipt({ value: '', company: '' });
+      try {
+        const val = parseFloat(newReceipt.value) || 0;
+        const { data, error } = await supabase.from('financial_records').insert([{
+          type: 'receipt',
+          value: val,
+          company_name: newReceipt.company
+        }]).select();
+
+        if (error) throw error;
+
+        if (data) {
+          setReceipts([...receipts, {
+            id: data[0].id.toString(),
+            value: data[0].value,
+            companyName: data[0].company_name
+          }]);
+          setNewReceipt({ value: '', company: '' });
+        }
+      } catch (error: any) {
+        console.error('Error adding receipt:', error);
+        alert('Erro ao salvar recebimento: ' + error.message);
+      }
     }
   };
 
@@ -752,27 +880,56 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setIsTyping(false);
   };
 
-  const handleSaveMesh = () => {
+  const handleSaveMesh = async () => {
     if (newMesh.tela && newMesh.peso) {
-      const meshToAdd: MeshType = {
-        id: Date.now().toString(),
-        tela: newMesh.tela,
-        metros: Number(newMesh.metros) || 0,
-        bitola: Number(newMesh.bitola) || 0,
-        espacamento: newMesh.espacamento || '',
-        dimensao: newMesh.dimensao || '',
-        t: Number(newMesh.t) || 0,
-        l: Number(newMesh.l) || 0,
-        peso: Number(newMesh.peso) || 0,
-      };
-      setMeshes([...meshes, meshToAdd]);
-      setIsAddingMesh(false);
-      setNewMesh({ tela: '', metros: 0, bitola: 0, espacamento: '', dimensao: '', t: 0, l: 0, peso: 0 });
+      try {
+        const { data, error } = await supabase.from('meshes').insert([{
+          tela: newMesh.tela,
+          metros: Number(newMesh.metros) || 0,
+          bitola: Number(newMesh.bitola) || 0,
+          espacamento: newMesh.espacamento || '',
+          dimensao: newMesh.dimensao || '',
+          t: Number(newMesh.t) || 0,
+          l: Number(newMesh.l) || 0,
+          peso: Number(newMesh.peso) || 0,
+        }]).select();
+
+        if (error) throw error;
+
+        if (data) {
+          const meshToAdd: MeshType = {
+            id: data[0].id.toString(),
+            tela: data[0].tela,
+            metros: data[0].metros,
+            bitola: data[0].bitola,
+            espacamento: data[0].espacamento,
+            dimensao: data[0].dimensao,
+            t: data[0].t,
+            l: data[0].l,
+            peso: data[0].peso,
+          };
+          setMeshes([...meshes, meshToAdd]);
+          setIsAddingMesh(false);
+          setNewMesh({ tela: '', metros: 0, bitola: 0, espacamento: '', dimensao: '', t: 0, l: 0, peso: 0 });
+          alert('Malha salva com sucesso!');
+        }
+      } catch (error: any) {
+        console.error('Erro ao salvar malha:', error);
+        alert('Erro ao salvar malha: ' + (error.message || error));
+      }
     }
   };
 
-  const handleDeleteMesh = (id: string) => {
-    setMeshes(meshes.filter(m => m.id !== id));
+  const handleDeleteMesh = async (id: string) => {
+    try {
+      const { error } = await supabase.from('meshes').delete().eq('id', id);
+      if (error) throw error;
+      setMeshes(meshes.filter(m => m.id !== id));
+      alert('Malha excluída!');
+    } catch (error: any) {
+      console.error('Erro ao excluir malha:', error);
+      alert('Erro ao excluir malha: ' + (error.message || error));
+    }
   };
 
   // Consulting Job Handlers
@@ -1020,6 +1177,16 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             </div>
             <span>Recados do Site</span>
           </button>
+
+          {(userRole === 'admin' || userRole === 'gestor') && (
+            <button
+              onClick={() => setActiveTab('usuarios')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'usuarios' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <User size={20} />
+              <span>Gerenciar Usuários</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -2437,6 +2604,81 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'usuarios' && (
+            <div className="space-y-6 max-w-7xl mx-auto">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-800">Gerenciar Usuários</h1>
+                  <p className="text-slate-500">Controle de acesso e permissões do sistema.</p>
+                </div>
+                <button
+                  onClick={() => alert('Para criar um novo usuário, por favor faça logout e use a opção de registro na tela de login (se disponível) ou contate o administrador do banco de dados.\n\nDevido a restrições de segurança, a criação direta por aqui requer privilégios administrativos de nível superior.')}
+                  className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-bold shadow-sm"
+                >
+                  <Plus size={20} />
+                  Novo Usuário
+                </button>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                      <tr>
+                        <th className="px-6 py-4">Data Criação</th>
+                        <th className="px-6 py-4">Usuário</th>
+                        <th className="px-6 py-4">Função</th>
+                        <th className="px-6 py-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {usersList.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                            Nenhum usuário encontrado (ou sem permissão para listar).
+                          </td>
+                        </tr>
+                      ) : (
+                        usersList.map((u) => (
+                          <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-medium text-slate-900">
+                              {new Date(u.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-slate-600 font-bold">{u.username}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                  u.role === 'gestor' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                    'bg-slate-100 text-slate-800 border-slate-200'
+                                }`}>
+                                {u.role.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center gap-1 text-green-600 font-medium text-xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                Ativo
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h4 className="font-bold text-blue-800 text-sm">Informação Importante</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Cada usuário possui seu próprio ambiente de dados isolado. O que é criado por um usuário (orçamentos, malhas, etc.) não é visível para outros, exceto para Administradores.
+                  </p>
                 </div>
               </div>
             </div>

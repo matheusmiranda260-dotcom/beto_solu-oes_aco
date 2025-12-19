@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, HardHat, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { authService } from '../services/authService';
+import { supabase } from '../services/supabaseClient';
 
 interface LoginScreenProps {
   onLogin: (username: string) => void;
@@ -12,20 +14,39 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate network delay for better UX
-    setTimeout(() => {
-      if ((username === 'gestor' && password === '070223') || (username === 'beto' && password === '120674')) {
-        onLogin(username);
-      } else {
-        setError('Acesso negado. Verifique suas credenciais.');
+    try {
+      const { email } = await authService.signIn(username);
+      // Try to sign in with Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) {
+        if (authError.message.includes('Invalid login credentials')) {
+          setError('Usuário ou senha incorretos.');
+        } else {
+          setError(authError.message);
+        }
         setIsLoading(false);
+        return;
       }
-    }, 800);
+
+      if (data.user) {
+        // Successful login, onLogin callback will be triggered by App.tsx through auth state change ideally,
+        // but here we pass the user data to keep existing flow if App.tsx uses it.
+        // Actually, we should wait for App.tsx to detect session change.
+        onLogin(username);
+      }
+    } catch (err: any) {
+      setError('Erro ao tentar conectar. ' + err.message);
+      setIsLoading(false);
+    }
   };
 
   return (
