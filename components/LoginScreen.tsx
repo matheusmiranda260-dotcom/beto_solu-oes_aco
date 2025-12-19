@@ -21,13 +21,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
 
     try {
       const { email } = await authService.signIn(username);
-      // Try to sign in with Supabase
+
+      // 1. Tenta logar normalmente
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (authError) {
+        // Se falhar o login, verificamos se é um usuário legado tentando entrar pela primeira vez
+        const isLegacyUser = (username === 'gestor' && password === '070223') || (username === 'beto' && password === '120674');
+
+        if (isLegacyUser && authError.message.includes('Invalid login credentials')) {
+          // É um usuário antigo tentando logar e falhou (conta não existe no Supabase). Vamos criar!
+          console.log("Migrando usuário legado para Supabase...");
+          const { error: signUpError } = await authService.signUp(username, password);
+
+          if (!signUpError) {
+            // Conta criada com sucesso! Logar automaticamente agora.
+            const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+
+            if (!retryError && retryData.user) {
+              onLogin(username);
+              return;
+            }
+          }
+        }
+
         if (authError.message.includes('Invalid login credentials')) {
           setError('Usuário ou senha incorretos.');
         } else {
@@ -38,9 +61,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
       }
 
       if (data.user) {
-        // Successful login, onLogin callback will be triggered by App.tsx through auth state change ideally,
-        // but here we pass the user data to keep existing flow if App.tsx uses it.
-        // Actually, we should wait for App.tsx to detect session change.
         onLogin(username);
       }
     } catch (err: any) {
