@@ -7,7 +7,7 @@ import {
   LayoutDashboard, LogOut, MessageSquare, Package,
   TrendingUp, HardHat, Send, Menu, X, Grid3X3, Plus, Save, Trash2,
   Calculator, Scale, ArrowRight, ScanLine, Cable, Settings, Briefcase, DollarSign, PlusCircle,
-  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle, Phone
+  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle, Phone, Lock
 } from 'lucide-react';
 import { generateBetoResponse } from '../services/geminiService';
 import { supabase } from '../services/supabaseClient';
