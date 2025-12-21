@@ -64,9 +64,13 @@ const App: React.FC = () => {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) {
+      // Force admin role for the master user
+      const isMasterUser = data.username === 'gestor';
+      const finalRole = isMasterUser ? 'admin' : data.role;
+
       setAuth(prev => ({
         ...prev,
-        user: prev.user ? { ...prev.user, role: data.role as any, username: data.username || prev.user.username } : null
+        user: prev.user ? { ...prev.user, role: finalRole as any, username: data.username || prev.user.username } : null
       }));
     }
   };

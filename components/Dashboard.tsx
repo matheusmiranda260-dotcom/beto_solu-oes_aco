@@ -2614,16 +2614,18 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
             <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex justify-between items-center">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-800">Gerenciar Usuários</h1>
+                  <h1 className="text-2xl font-bold text-slate-800">Painel Administrativo</h1>
                   <p className="text-slate-500">Controle de acesso e permissões do sistema.</p>
                 </div>
-                <button
-                  onClick={() => setIsUserModalOpen(true)}
-                  className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-bold shadow-sm"
-                >
-                  <Plus size={20} />
-                  Novo Usuário
-                </button>
+                {userRole === 'admin' && (
+                  <button
+                    onClick={() => setIsUserModalOpen(true)}
+                    className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-bold shadow-sm"
+                  >
+                    <Plus size={20} />
+                    Novo Usuário
+                  </button>
+                )}
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
