@@ -18,7 +18,7 @@ export const authService = {
     },
 
     // Helper para criar usuário (apenas para uso interno/admin)
-    signUp: async (username: string, password: string) => {
+    signUp: async (username: string, password: string, role: string = 'user', permissions: string[] = []) => {
         const email = authService.getEmailFromUsername(username);
 
         // Armazena username no metadata para usar no trigger de profile
@@ -27,7 +27,9 @@ export const authService = {
             password,
             options: {
                 data: {
-                    username: username.trim()
+                    username: username.trim(),
+                    role: role,
+                    permissions: permissions
                 }
             }
         });

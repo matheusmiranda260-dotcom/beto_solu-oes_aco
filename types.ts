@@ -4,6 +4,7 @@ export interface User {
   role: 'admin' | 'gestor' | 'user';
   name: string;
   email?: string;
+  permissions?: string[];
 }
 
 export interface AuthState {

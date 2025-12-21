@@ -70,7 +70,12 @@ const App: React.FC = () => {
 
       setAuth(prev => ({
         ...prev,
-        user: prev.user ? { ...prev.user, role: finalRole as any, username: data.username || prev.user.username } : null
+        user: prev.user ? {
+          ...prev.user,
+          role: finalRole as any,
+          username: data.username || prev.user.username,
+          permissions: data.permissions || []
+        } : null
       }));
     }
   };
@@ -99,6 +104,7 @@ const App: React.FC = () => {
         username={auth.user?.name || 'Gestor'}
         onLogout={handleLogout}
         userRole={auth.user?.role} // Pass role to Dashboard
+        userPermissions={auth.user?.permissions || []}
       />
     );
   }

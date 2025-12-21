@@ -117,14 +117,22 @@ interface TrefilaRecipe {
 interface DashboardProps {
   username: string;
   onLogout: () => void;
-  userRole?: 'admin' | 'gestor' | 'user';
+  userRole?: 'admin' | 'gestor' | 'user'; // Optional role
+  userPermissions?: string[];
 }
 
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
-const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) => {
+const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'user', userPermissions = [] }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads' | 'usuarios'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Helper to check permissions
+  // Admins and Gestors have full access by default (ignoring permissions array)
+  const hasPermission = (module: string) => {
+    if (userRole === 'admin' || userRole === 'gestor') return true;
+    return userPermissions.includes(module);
+  };
   const [leads, setLeads] = useState<Lead[]>([]); // Local state for leads
 
   // Malhas State
@@ -189,7 +197,12 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
   // Users Management State
   const [usersList, setUsersList] = useState<{ id: string, username: string, role: string, created_at: string }[]>([]);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [newUserParams, setNewUserParams] = useState({ username: '', password: '', role: 'user' });
+  const [newUserParams, setNewUserParams] = useState({
+    username: '',
+    password: '',
+    role: 'user',
+    permissions: [] as string[]
+  });
 
   // Fetch Leads from Supabase
   useEffect(() => {
@@ -1117,67 +1130,81 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
             <span>Visão Geral</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('consultorias')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'consultorias' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <Calendar size={20} />
-            <span>Consultorias</span>
-          </button>
+          {hasPermission('consultorias') && (
+            <button
+              onClick={() => setActiveTab('consultorias')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'consultorias' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <Calendar size={20} />
+              <span>Consultorias</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('malhas')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'malhas' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <Grid3X3 size={20} />
-            <span>Malhas</span>
-          </button>
+          {hasPermission('malhas') && (
+            <button
+              onClick={() => setActiveTab('malhas')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'malhas' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <Grid3X3 size={20} />
+              <span>Malhas</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('trelica')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'trelica' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <Triangle size={20} />
-            <span>Treliças</span>
-          </button>
+          {hasPermission('trelicas') && (
+            <button
+              onClick={() => setActiveTab('trelica')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'trelica' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <Triangle size={20} />
+              <span>Treliças</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('trefila')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'trefila' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <Cable size={20} />
-            <span>Máquina Trefila</span>
-          </button>
+          {hasPermission('trefila') && (
+            <button
+              onClick={() => setActiveTab('trefila')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'trefila' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <Cable size={20} />
+              <span>Máquina Trefila</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('comissao')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'comissao' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <Briefcase size={20} />
-            <span>Comissão</span>
-          </button>
+          {hasPermission('comissao') && (
+            <button
+              onClick={() => setActiveTab('comissao')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'comissao' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <Briefcase size={20} />
+              <span>Comissão</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'chat' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <span>Fale com o Beto</span>
-          </button>
+          {hasPermission('chat') && (
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'chat' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <span>Fale com o Beto</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('leads')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leads' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-          >
-            <div className="relative">
-              <MessageSquare size={20} />
-              {leads && leads.length > 0 && (
-                <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white border-2 border-slate-900">
-                  {leads.length}
-                </span>
-              )}
-            </div>
-            <span>Recados do Site</span>
-          </button>
+          {hasPermission('leads') && (
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leads' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <div className="relative">
+                <MessageSquare size={20} />
+                {leads && leads.length > 0 && (
+                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white border-2 border-slate-900">
+                    {leads.length}
+                  </span>
+                )}
+              </div>
+              <span>Recados do Site</span>
+            </button>
+          )}
 
           {(userRole === 'admin' || userRole === 'gestor') && (
             <button
@@ -2758,6 +2785,29 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
                   <option value="admin">Administrador</option>
                 </select>
               </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-600 mb-2 block">Permissões de Acesso</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded bg-slate-50">
+                  {['malhas', 'trelicas', 'trefila', 'comissao', 'consultorias', 'chat', 'leads'].map(module => (
+                    <label key={module} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-100 rounded">
+                      <input
+                        type="checkbox"
+                        checked={newUserParams.permissions.includes(module)}
+                        onChange={(e) => {
+                          const newPerms = e.target.checked
+                            ? [...newUserParams.permissions, module]
+                            : newUserParams.permissions.filter(p => p !== module);
+                          setNewUserParams({ ...newUserParams, permissions: newPerms });
+                        }}
+                        className="rounded text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="text-sm capitalize">{module}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -2768,16 +2818,22 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole }) =
                   if (newUserParams.password.length < 6) return alert('Senha deve ter no mínimo 6 caracteres');
 
                   try {
-                    const { error: signUpError } = await authService.signUp(newUserParams.username, newUserParams.password);
+                    // Sign up passing role AND permissions
+                    const { error: signUpError } = await authService.signUp(
+                      newUserParams.username,
+                      newUserParams.password,
+                      newUserParams.role,
+                      newUserParams.permissions
+                    );
+
                     if (signUpError) {
                       alert('Erro ao criar: ' + signUpError.message);
                       return;
                     }
 
-                    // Warning about updating role manually if needed
-                    alert(`Usuário ${newUserParams.username} criado com sucesso!\n\nNOTA: Para definir a função como '${newUserParams.role}', você pode precisar ajustar manualmente na tabela 'profiles' do banco de dados se a trigger padrão definir apenas 'user'.\n\nNesta versão simples, o usuário entra como 'user' e o Admin pode promover depois.`);
+                    alert(`Usuário ${newUserParams.username} criado com sucesso!`);
                     setIsUserModalOpen(false);
-                    setNewUserParams({ username: '', password: '', role: 'user' });
+                    setNewUserParams({ username: '', password: '', role: 'user', permissions: [] });
                     // Refresh list
                     const { data } = await supabase.from('profiles').select('*').order('created_at');
                     if (data) setUsersList(data as any);
