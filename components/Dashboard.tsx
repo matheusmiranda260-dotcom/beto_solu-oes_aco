@@ -294,8 +294,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
         })));
       }
 
-      // 5. Meshes (Malhas) - NEW
-      const { data: meshesData } = await supabase.from('meshes').select('*');
+      // 5. Meshes - NEW
+      const { data: meshesData } = await supabase.from('meshes').select('*').order('is_template', { ascending: false }).order('tela', { ascending: true });
       if (meshesData) {
         setMeshes(meshesData.map(m => ({
           id: m.id.toString(),
@@ -306,7 +306,8 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
           dimensao: m.dimensao,
           t: m.t,
           l: m.l,
-          peso: m.peso
+          peso: m.peso,
+          isTemplate: m.is_template
         })));
       }
 
@@ -1469,23 +1470,36 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {meshes.map((mesh, idx) => (
-                        <tr key={mesh.id} className={idx % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
-                          <td className="px-4 py-3 font-medium text-slate-900">{mesh.tela}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.metros}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.bitola}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.espacamento}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.dimensao}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.t}</td>
-                          <td className="px-4 py-3 text-slate-600">{mesh.l}</td>
-                          <td className="px-4 py-3 font-bold text-slate-800">{mesh.peso}</td>
-                          <td className="px-4 py-3 text-center">
-                            <button onClick={() => handleDeleteMesh(mesh.id)} className="text-red-400 hover:text-red-600">
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {meshes.length === 0 ? (
+                        <tr><td colSpan={10} className="p-4 text-center text-slate-400">Nenhuma malha cadastrada.</td></tr>
+                      ) : (
+                        meshes.map((mesh) => (
+                          <tr key={mesh.id} className={`hover:bg-slate-50 transition-colors ${mesh.isTemplate ? 'bg-orange-50/30' : ''}`}>
+                            <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-2">
+                              {mesh.tela}
+                              {mesh.isTemplate && <span className="text-[10px] bg-orange-200 text-orange-800 px-1 py-0.5 rounded font-bold uppercase tracking-wider">Padão</span>}
+                            </td>
+                            <td className="px-6 py-4">{mesh.metros}</td>
+                            <td className="px-6 py-4">{mesh.bitola}</td>
+                            <td className="px-6 py-4">{mesh.espacamento}</td>
+                            <td className="px-6 py-4">{mesh.dimensao}</td>
+                            <td className="px-6 py-4">{mesh.t}</td>
+                            <td className="px-6 py-4">{mesh.l}</td>
+                            <td className="px-6 py-4 font-bold text-orange-700">{mesh.peso}</td>
+                            <td className="px-6 py-4 text-right">
+                              {/* Prevent deleting templates unless admin - handled by RLS mostly but good UI */}
+                              {!mesh.isTemplate && (
+                                <button
+                                  onClick={() => handleDeleteMesh(mesh.id)}
+                                  className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

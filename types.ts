@@ -37,6 +37,7 @@ export interface MeshType {
   t: number;
   l: number;
   peso: number;
+  isTemplate?: boolean;
 }
 
 export interface TrussType {
