@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Package,
     Search,
@@ -13,6 +13,7 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 import { SparePart } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface SparePartsManagerProps {
     initialParts?: SparePart[];
@@ -21,17 +22,12 @@ interface SparePartsManagerProps {
 const SparePartsManager: React.FC<SparePartsManagerProps> = ({
     initialParts = []
 }) => {
-    // Temporary Mock Data if initialParts is empty
-    const [parts, setParts] = useState<SparePart[]>(initialParts.length > 0 ? initialParts : [
-        { id: '1', name: 'Fieira de Tugstênio 5.5mm', code: 'W-550', category: 'Trefila', quantity: 5, minLevel: 2, location: 'Gaveta A1' },
-        { id: '2', name: 'Fieira de Tugstênio 4.2mm', code: 'W-420', category: 'Trefila', quantity: 1, minLevel: 2, location: 'Gaveta A2' },
-        { id: '3', name: 'Lubrificante em Pó (Saco 25kg)', code: 'LUB-25', category: 'Insumo', quantity: 12, minLevel: 5, location: 'Depósito' },
-        { id: '4', name: 'Rolamento 6205', code: 'ROL-6205', category: 'Manutenção', quantity: 8, minLevel: 3, location: 'Estante B' },
-    ]);
-
+    const [parts, setParts] = useState<SparePart[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     // New Part Form State
     const [formData, setFormData] = useState<Partial<SparePart>>({
@@ -40,8 +36,47 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
         quantity: 0,
         minLevel: 1,
         location: '',
-        category: 'Trefila'
+        category: 'Trefila',
+        imageUrl: ''
     });
+
+    useEffect(() => {
+        const init = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setUserId(user.id);
+                fetchParts();
+            } else {
+                setLoading(false);
+            }
+        };
+        init();
+    }, []);
+
+    const fetchParts = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('spare_parts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching parts:', error);
+        } else if (data) {
+            const mappedParts: SparePart[] = data.map(item => ({
+                id: item.id,
+                name: item.name,
+                code: item.code,
+                category: item.category,
+                quantity: item.quantity,
+                minLevel: item.min_level,
+                location: item.location,
+                imageUrl: item.image_url
+            }));
+            setParts(mappedParts);
+        }
+        setLoading(false);
+    };
 
     const getStatusColor = (current: number, min: number) => {
         if (current === 0) return 'text-red-600 bg-red-100 border-red-200';
@@ -55,27 +90,41 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
         return 'Estoque Bom';
     };
 
-    const handleAddOrUpdate = () => {
-        if (!formData.name) return;
+    const handleAddOrUpdate = async () => {
+        if (!formData.name || !userId) return;
+
+        const dbPart = {
+            name: formData.name,
+            code: formData.code,
+            category: formData.category || 'Trefila',
+            quantity: formData.quantity || 0,
+            min_level: formData.minLevel || 1,
+            location: formData.location,
+            image_url: formData.imageUrl,
+            user_id: userId
+        };
 
         if (editingId) {
-            setParts(parts.map(p => p.id === editingId ? { ...p, ...formData } as SparePart : p));
+            // Update
+            const { error } = await supabase
+                .from('spare_parts')
+                .update({ ...dbPart, user_id: undefined }) // Don't update user_id
+                .eq('id', editingId);
+
+            if (error) console.error('Error updating part:', error);
         } else {
-            const newPart: SparePart = {
-                id: Date.now().toString(),
-                name: formData.name || 'Nova Peça',
-                code: formData.code,
-                category: formData.category || 'Trefila',
-                quantity: formData.quantity || 0,
-                minLevel: formData.minLevel || 1,
-                location: formData.location
-            };
-            setParts([...parts, newPart]);
+            // Insert
+            const { error } = await supabase
+                .from('spare_parts')
+                .insert(dbPart);
+
+            if (error) console.error('Error adding part:', error);
         }
 
+        await fetchParts();
         setIsModalOpen(false);
         setEditingId(null);
-        setFormData({ name: '', code: '', quantity: 0, minLevel: 1, location: '', category: 'Trefila' });
+        setFormData({ name: '', code: '', quantity: 0, minLevel: 1, location: '', category: 'Trefila', imageUrl: '' });
     };
 
     const handleEdit = (part: SparePart) => {
@@ -84,9 +133,19 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
         setIsModalOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('Tem certeza que deseja excluir este item?')) {
-            setParts(parts.filter(p => p.id !== id));
+            const { error } = await supabase
+                .from('spare_parts')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error('Error deleting part:', error);
+                alert('Erro ao excluir item.');
+            } else {
+                fetchParts();
+            }
         }
     };
 
@@ -119,7 +178,7 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
                     <button
                         onClick={() => {
                             setEditingId(null);
-                            setFormData({ name: '', code: '', quantity: 0, minLevel: 1, location: '', category: 'Trefila' });
+                            setFormData({ name: '', code: '', quantity: 0, minLevel: 1, location: '', category: 'Trefila', imageUrl: '' });
                             setIsModalOpen(true);
                         }}
                         className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-orange-900/20 active:scale-95 whitespace-nowrap"
@@ -129,69 +188,76 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredParts.map(part => (
-                    <div key={part.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow group relative overflow-hidden">
-                        {/* Stock Status Bar */}
-                        <div className={`absolute top-0 left-0 w-1.5 h-full ${part.quantity <= part.minLevel ? (part.quantity === 0 ? 'bg-red-500' : 'bg-orange-500') : 'bg-emerald-500'}`}></div>
+            {loading ? (
+                <div className="text-center py-12 text-slate-500">
+                    <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    Carregando estoque...
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredParts.map(part => (
+                        <div key={part.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow group relative overflow-hidden">
+                            {/* Stock Status Bar */}
+                            <div className={`absolute top-0 left-0 w-1.5 h-full ${part.quantity <= part.minLevel ? (part.quantity === 0 ? 'bg-red-500' : 'bg-orange-500') : 'bg-emerald-500'}`}></div>
 
-                        <div className="flex justify-between items-start pl-3">
-                            <div>
-                                {part.imageUrl && (
-                                    <div className="w-16 h-16 rounded-md bg-white border border-slate-200 flex-shrink-0 overflow-hidden mb-2">
-                                        <img src={part.imageUrl} alt={part.name} className="w-full h-full object-cover" />
-                                    </div>
-                                )}
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{part.code || 'S/N'}</span>
-                                <h3 className="font-bold text-slate-800 text-lg leading-tight mb-1">{part.name}</h3>
-                                <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <Package size={12} /> {part.location || 'Local não definido'}
-                                </p>
+                            <div className="flex justify-between items-start pl-3">
+                                <div className="flex-1 min-w-0 pr-2">
+                                    {part.imageUrl && (
+                                        <div className="w-16 h-16 rounded-md bg-white border border-slate-200 flex-shrink-0 overflow-hidden mb-2 group-hover:scale-105 transition-transform">
+                                            <img src={part.imageUrl} alt={part.name} className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{part.code || 'S/N'}</span>
+                                    <h3 className="font-bold text-slate-800 text-lg leading-tight mb-1 truncate" title={part.name}>{part.name}</h3>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                                        <Package size={12} /> {part.location || 'Local não definido'}
+                                    </p>
+                                </div>
+                                <div className={`px-2 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 flex-shrink-0 ${getStatusColor(part.quantity, part.minLevel)}`}>
+                                    {part.quantity <= part.minLevel ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
+                                    {getStatusText(part.quantity, part.minLevel)}
+                                </div>
                             </div>
-                            <div className={`px-2 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 ${getStatusColor(part.quantity, part.minLevel)}`}>
-                                {part.quantity <= part.minLevel ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
-                                {getStatusText(part.quantity, part.minLevel)}
+
+                            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between pl-3">
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-slate-400 font-medium uppercase">Quantidade</span>
+                                    <span className={`text-2xl font-black ${part.quantity <= part.minLevel ? 'text-red-600' : 'text-slate-800'}`}>
+                                        {part.quantity} <span className="text-sm font-normal text-slate-400">un</span>
+                                    </span>
+                                </div>
+
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => handleEdit(part)}
+                                        className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                                        title="Editar"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(part.id)}
+                                        className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors"
+                                        title="Excluir"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    ))}
 
-                        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between pl-3">
-                            <div className="flex flex-col">
-                                <span className="text-xs text-slate-400 font-medium uppercase">Quantidade</span>
-                                <span className={`text-2xl font-black ${part.quantity <= part.minLevel ? 'text-red-600' : 'text-slate-800'}`}>
-                                    {part.quantity} <span className="text-sm font-normal text-slate-400">un</span>
-                                </span>
+                    {filteredParts.length === 0 && (
+                        <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <Package className="text-slate-300" size={32} />
                             </div>
-
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={() => handleEdit(part)}
-                                    className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors"
-                                    title="Editar"
-                                >
-                                    <Edit2 size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(part.id)}
-                                    className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors"
-                                    title="Excluir"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
+                            <p className="text-slate-500 font-medium">Nenhuma peça encontrada no estoque.</p>
+                            <p className="text-sm text-slate-400">Adicione novos itens para começar.</p>
                         </div>
-                    </div>
-                ))}
-
-                {filteredParts.length === 0 && (
-                    <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Package className="text-slate-300" size={32} />
-                        </div>
-                        <p className="text-slate-500 font-medium">Nenhuma peça encontrada no estoque.</p>
-                        <p className="text-sm text-slate-400">Adicione novos itens ou ajuste sua busca.</p>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* Modal */}
             {isModalOpen && (
@@ -273,6 +339,7 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
                                         className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                                         value={formData.minLevel}
                                         onChange={e => setFormData({ ...formData, minLevel: parseInt(e.target.value) || 0 })}
+                                        placeholder="1"
                                     />
                                 </div>
                             </div>
