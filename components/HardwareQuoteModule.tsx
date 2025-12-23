@@ -12,7 +12,7 @@ const HardwareQuoteModule: React.FC = () => {
   const [selectedClientForQuote, setSelectedClientForQuote] = useState<Client | null>(null);
   const [isSelectingClient, setIsSelectingClient] = useState(false);
   const [summaryQuote, setSummaryQuote] = useState<Quote | null>(null);
-  
+
   // Balcão temporary state
   const [quoteMode, setQuoteMode] = useState<'registered' | 'counter'>('registered');
   const [counterData, setCounterData] = useState({ name: '', phone: '', obs: '' });
@@ -59,16 +59,16 @@ const HardwareQuoteModule: React.FC = () => {
   };
 
   const handleSaveQuote = (quote: Quote) => {
-    const finalQuote = selectedClientForQuote?.id === 'counter' 
-      ? { 
-          ...quote, 
-          isCounter: true, 
-          counterName: counterData.name, 
-          counterPhone: counterData.phone,
-          observation: counterData.obs 
-        } 
+    const finalQuote = selectedClientForQuote?.id === 'counter'
+      ? {
+        ...quote,
+        isCounter: true,
+        counterName: counterData.name,
+        counterPhone: counterData.phone,
+        observation: counterData.obs
+      }
       : quote;
-    
+
     setQuotes(prev => [...prev, finalQuote]);
     setSelectedClientForQuote(null);
     setCounterData({ name: '', phone: '', obs: '' });
@@ -99,8 +99,8 @@ const HardwareQuoteModule: React.FC = () => {
   const renderContent = () => {
     if (selectedClientForQuote) {
       return (
-        <QuoteBuilder 
-          client={selectedClientForQuote} 
+        <QuoteBuilder
+          client={selectedClientForQuote}
           onSave={handleSaveQuote}
           onCancel={() => setSelectedClientForQuote(null)}
           isCounter={selectedClientForQuote.id === 'counter'}
@@ -117,13 +117,13 @@ const HardwareQuoteModule: React.FC = () => {
             <div className="bg-slate-50 p-6 border-b border-slate-100">
               <h2 className="text-2xl font-black text-slate-800">Novo Orçamento</h2>
               <div className="flex bg-slate-200 p-1 rounded-xl mt-4">
-                <button 
+                <button
                   onClick={() => setQuoteMode('registered')}
                   className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${quoteMode === 'registered' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500'}`}
                 >
                   Clientes Cadastrados
                 </button>
-                <button 
+                <button
                   onClick={() => setQuoteMode('counter')}
                   className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${quoteMode === 'counter' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500'}`}
                 >
@@ -143,7 +143,7 @@ const HardwareQuoteModule: React.FC = () => {
                       </div>
                     ) : (
                       clients.map(c => (
-                        <button 
+                        <button
                           key={c.id}
                           onClick={() => handleSelectClient(c)}
                           className="w-full text-left p-4 rounded-2xl border border-slate-100 hover:border-amber-500 hover:bg-amber-50 transition-all font-bold text-slate-700 flex justify-between items-center group"
@@ -161,29 +161,29 @@ const HardwareQuoteModule: React.FC = () => {
                 <div className="space-y-4 mb-8">
                   <p className="text-slate-500 font-medium text-sm">Venda rápida sem cadastro prévio:</p>
                   <div className="space-y-3">
-                    <input 
-                      type="text" 
-                      placeholder="Nome do Cliente (Obrigatório)" 
+                    <input
+                      type="text"
+                      placeholder="Nome do Cliente (Obrigatório)"
                       value={counterData.name}
-                      onChange={e => setCounterData({...counterData, name: e.target.value})}
+                      onChange={e => setCounterData({ ...counterData, name: e.target.value })}
                       className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none font-medium"
                     />
-                    <input 
-                      type="text" 
-                      placeholder="WhatsApp / Telefone" 
+                    <input
+                      type="text"
+                      placeholder="WhatsApp / Telefone"
                       value={counterData.phone}
-                      onChange={e => setCounterData({...counterData, phone: e.target.value})}
+                      onChange={e => setCounterData({ ...counterData, phone: e.target.value })}
                       className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none font-medium"
                     />
-                    <textarea 
-                      placeholder="Observações do pedido..." 
+                    <textarea
+                      placeholder="Observações do pedido..."
                       rows={3}
                       value={counterData.obs}
-                      onChange={e => setCounterData({...counterData, obs: e.target.value})}
+                      onChange={e => setCounterData({ ...counterData, obs: e.target.value })}
                       className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none font-medium resize-none"
                     ></textarea>
                   </div>
-                  <button 
+                  <button
                     onClick={handleStartCounterQuote}
                     className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
                   >
@@ -193,13 +193,13 @@ const HardwareQuoteModule: React.FC = () => {
               )}
 
               <div className="flex gap-4 border-t border-slate-50 pt-6">
-                <button 
+                <button
                   onClick={() => setIsSelectingClient(false)}
                   className="flex-1 py-3 font-bold text-slate-400 hover:text-slate-600 text-sm"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   onClick={() => { setIsSelectingClient(false); setActiveTab('clients'); }}
                   className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 text-sm"
                 >
@@ -214,8 +214,8 @@ const HardwareQuoteModule: React.FC = () => {
 
     if (activeTab === 'clients') {
       return (
-        <ClientManager 
-          clients={clients} 
+        <ClientManager
+          clients={clients}
           onAddClient={handleAddClient}
           onSelectClient={handleSelectClient}
         />
@@ -225,23 +225,24 @@ const HardwareQuoteModule: React.FC = () => {
     return (
       <>
         <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-           <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Cálculo de Ferragens</h1>
-              <p className="text-slate-500 font-bold text-sm mt-1">Gerencie orçamentos e clientes.</p>
-           </div>
-           <button 
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Cálculo de Ferragens</h1>
+            <p className="text-slate-500 font-bold text-sm mt-1">Gerencie orçamentos e clientes.</p>
+          </div>
+          <button
             onClick={handleNewQuoteClick}
             className="bg-amber-500 text-white px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95"
-           >
-             Novo Orçamento
-           </button>
+          >
+            Novo Orçamento
+          </button>
         </div>
 
-        <QuoteList 
-          quotes={quotes} 
-          clients={clients} 
+        <QuoteList
+          quotes={quotes}
+          clients={clients}
           onDelete={handleDeleteQuote}
           onFinalize={handleFinalizeQuote}
+          onViewSummary={(quote) => setSummaryQuote(quote)}
         />
         {summaryQuote && (
           <SteelSummary quote={summaryQuote} onClose={() => setSummaryQuote(null)} />
@@ -251,7 +252,7 @@ const HardwareQuoteModule: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-full max-w-7xl mx-auto py-6">
       {renderContent()}
     </div>
   );
