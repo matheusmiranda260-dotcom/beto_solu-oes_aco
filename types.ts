@@ -59,3 +59,13 @@ export interface Lead {
   date: Date;
   status: 'New' | 'Contacted';
 }
+
+export interface SparePart {
+  id: string;
+  name: string;
+  code?: string;
+  category: string; // e.g. 'Trefila', 'Geral'
+  quantity: number;
+  minLevel: number; // For low stock alerts
+  location?: string;
+}

@@ -7,8 +7,10 @@ import {
   LayoutDashboard, LogOut, MessageSquare, Package,
   TrendingUp, HardHat, Send, Menu, X, Grid3X3, Plus, Save, Trash2,
   Calculator, Scale, ArrowRight, ScanLine, Cable, Settings, Briefcase, DollarSign, PlusCircle,
-  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle, Phone, Lock
+  Calendar, FileText, Printer, Clock, CheckSquare, User, Edit, ArrowUpRight, Triangle, Layers, AlertCircle, Phone, Lock,
+  Archive, FolderOpen
 } from 'lucide-react';
+import SparePartsManager from './SparePartsManager';
 import { generateBetoResponse } from '../services/geminiService';
 import { supabase } from '../services/supabaseClient';
 import { authService } from '../services/authService';
@@ -158,6 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
   const [trefilaDies, setTrefilaDies] = useState<number[]>([4.7, 4.05, 3.56, 3.2]);
   const [trefilaReductions, setTrefilaReductions] = useState<{ pass: number, reduction: number }[]>([]);
   const [trefilaMode, setTrefilaMode] = useState<'cacetes' | 'frieiras'>('cacetes');
+  const [trefilaTab, setTrefilaTab] = useState<'calculo' | 'estoque'>('calculo');
   const [savedRecipes, setSavedRecipes] = useState<TrefilaRecipe[]>([]);
   const [recipeName, setRecipeName] = useState('');
 
@@ -1797,277 +1800,295 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
             <div className="space-y-6 max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-800">Cálculo de Trefilação</h1>
-                  <p className="text-slate-500">Otimização de passes e controle de área de redução</p>
+                  <h1 className="text-2xl font-bold text-slate-800">Módulo Trefila</h1>
+                  <p className="text-slate-500">Gestão de produção, cálculos e estoque</p>
+                </div>
+                <div className="flex bg-slate-200 p-1 rounded-lg">
+                  <button
+                    onClick={() => setTrefilaTab('calculo')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${trefilaTab === 'calculo' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                  >
+                    <Calculator size={16} /> Calculadora
+                  </button>
+                  <button
+                    onClick={() => setTrefilaTab('estoque')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${trefilaTab === 'estoque' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                  >
+                    <Archive size={16} /> Estoque
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Cable className="text-orange-500" /> Parâmetros
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Trefilação</label>
-                      <div className="flex bg-slate-100 rounded-lg p-1">
-                        <button
-                          onClick={() => setTrefilaMode('cacetes')}
-                          className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'cacetes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                          K-7 Ca 60
-                        </button>
-                        <button
-                          onClick={() => setTrefilaMode('frieiras')}
-                          className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'frieiras' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                          Fieiras BTC
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Diâmetro de Entrada (mm)</label>
-                      <input
-                        type="number" step="0.01"
-                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                        value={trefilaEntry}
-                        onChange={(e) => setTrefilaEntry(parseFloat(e.target.value))}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Diâmetro Final (mm)</label>
-                      <input
-                        type="number" step="0.01"
-                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                        value={trefilaExit}
-                        onChange={(e) => setTrefilaExit(parseFloat(e.target.value))}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Número de Passes</label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                        value={trefilaPassCount}
-                        onChange={(e) => setTrefilaPassCount(parseInt(e.target.value))}
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => trefilaMode === 'cacetes' ? calculateIdealPasses() : calculateEqualPasses()}
-                      className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 mt-4"
-                    >
-                      <Settings size={18} /> Calcular Distribuição
-                    </button>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Visual Blocks Representation */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <h3 className="text-lg font-bold text-slate-800 mb-6 uppercase tracking-wider flex items-center gap-2">
-                      <ScanLine className="text-blue-600" /> Fluxo de Redução
-                    </h3>
-
-                    <div className="flex items-center gap-2 overflow-x-auto pb-6 px-4">
-                      {/* INPUT BLOCK */}
-                      <div className="flex flex-col items-center flex-shrink-0">
-                        <div className="w-32 h-24 bg-slate-800 text-white flex flex-col items-center justify-center rounded-l-lg shadow-lg relative group">
-                          <span className="text-xs text-slate-400 absolute top-2 left-2">Entrada</span>
-                          <span className="text-2xl font-black">{trefilaEntry.toFixed(2)}</span>
-                          <span className="text-xs">mm</span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-300 mt-[-1px]"></div>
-                      </div>
-
-                      {/* PASSES CHAIN */}
-                      {trefilaDies.map((die, i) => {
-                        const red = trefilaReductions[i]?.reduction || 0;
-                        const isHigh = trefilaMode === 'cacetes'
-                          ? (red > 29)
-                          : (red > 23 || red < 19);
-
-                        const isLastHigh = trefilaMode === 'cacetes'
-                          ? ((i === trefilaDies.length - 1) && red > 19)
-                          : false; // Uniform distribution covers all passes
-
-                        return (
-                          <div key={i} className="flex flex-col items-center flex-shrink-0">
-                            {/* Connecting Wire */}
-                            <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
-
-                            {/* Die Representation */}
-                            <div className="relative flex flex-col items-center mx-2 transform hover:scale-105 transition-transform z-10">
-                              <div className="w-24 h-24 bg-slate-200 border-4 border-slate-400 flex flex-col items-center justify-center shadow-md relative"
-                                style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}>
-                                <span className="text-xs font-bold text-slate-500 mb-1">Passe {i + 1}</span>
-                                <span className="text-xl font-bold text-slate-800">{die.toFixed(2)}</span>
-                              </div>
-
-                              {/* Reduction Tag */}
-                              <div className={`mt-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${isHigh || isLastHigh ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-100 text-blue-600'
-                                }`}>
-                                {red.toFixed(1)}%
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-
-                      {/* OUTPUT BLOCK */}
-                      <div className="flex flex-col items-center flex-shrink-0">
-                        <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
-                        <div className="ml-2 w-32 h-24 bg-green-600 text-white flex flex-col items-center justify-center rounded-r-lg shadow-lg relative">
-                          <span className="text-xs text-green-200 absolute top-2 right-2">Final</span>
-                          <span className="text-2xl font-black">{trefilaExit.toFixed(2)}</span>
-                          <span className="text-xs">mm</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Graph Section */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Gráfico de Redução (% da Área)</h3>
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={trefilaReductions} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="pass" stroke="#64748b" label={{ value: 'Passe', position: 'insideBottom', offset: -5 }} />
-                          <YAxis stroke="#64748b" label={{ value: '% Redução', angle: -90, position: 'insideLeft' }} />
-                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                          {/* Limit Lines */}
-                          {trefilaMode === 'cacetes' ? (
-                            <>
-                              <ReferenceLine y={29} label="Max Inicial (29%)" stroke="red" strokeDasharray="3 3" />
-                              <ReferenceLine y={19} label="Max Final (19%)" stroke="orange" strokeDasharray="3 3" />
-                            </>
-                          ) : (
-                            <>
-                              <ReferenceLine y={23} label="Max (23%)" stroke="red" strokeDasharray="3 3" />
-                              <ReferenceLine y={19} label="Min (19%)" stroke="orange" strokeDasharray="3 3" />
-                            </>
-                          )}
-
-                          <Line type="monotone" dataKey="reduction" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Save Recipe Section */}
+              {trefilaTab === 'calculo' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                      <Save size={20} className="text-orange-500" /> Salvar Receita
+                      <Cable className="text-orange-500" /> Parâmetros
                     </h3>
-                    <div className="flex gap-4 mb-6">
-                      <input
-                        type="text"
-                        placeholder="Nome da Receita (Ex: Trefila 5.5 -> 3.2)"
-                        className="flex-1 p-2 border border-slate-300 rounded-lg"
-                        value={recipeName}
-                        onChange={(e) => setRecipeName(e.target.value)}
-                      />
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Trefilação</label>
+                        <div className="flex bg-slate-100 rounded-lg p-1">
+                          <button
+                            onClick={() => setTrefilaMode('cacetes')}
+                            className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'cacetes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            K-7 Ca 60
+                          </button>
+                          <button
+                            onClick={() => setTrefilaMode('frieiras')}
+                            className={`flex-1 py-1 px-3 rounded-md text-xs font-bold uppercase transition-all ${trefilaMode === 'frieiras' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            Fieiras BTC
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Diâmetro de Entrada (mm)</label>
+                        <input
+                          type="number" step="0.01"
+                          className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                          value={trefilaEntry}
+                          onChange={(e) => setTrefilaEntry(parseFloat(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Diâmetro Final (mm)</label>
+                        <input
+                          type="number" step="0.01"
+                          className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                          value={trefilaExit}
+                          onChange={(e) => setTrefilaExit(parseFloat(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Número de Passes</label>
+                        <input
+                          type="number"
+                          className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                          value={trefilaPassCount}
+                          onChange={(e) => setTrefilaPassCount(parseInt(e.target.value))}
+                        />
+                      </div>
+
                       <button
-                        onClick={handleSaveRecipe}
-                        className="bg-orange-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50"
-                        disabled={!recipeName.trim()}
+                        onClick={() => trefilaMode === 'cacetes' ? calculateIdealPasses() : calculateEqualPasses()}
+                        className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 mt-4"
                       >
-                        Salvar
+                        <Settings size={18} /> Calcular Distribuição
                       </button>
                     </div>
+                  </div>
 
-                    {savedRecipes.length > 0 && (
-                      <div className="border rounded-lg overflow-hidden">
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Visual Blocks Representation */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
+                      <h3 className="text-lg font-bold text-slate-800 mb-6 uppercase tracking-wider flex items-center gap-2">
+                        <ScanLine className="text-blue-600" /> Fluxo de Redução
+                      </h3>
+
+                      <div className="flex items-center gap-2 overflow-x-auto pb-6 px-4">
+                        {/* INPUT BLOCK */}
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div className="w-32 h-24 bg-slate-800 text-white flex flex-col items-center justify-center rounded-l-lg shadow-lg relative group">
+                            <span className="text-xs text-slate-400 absolute top-2 left-2">Entrada</span>
+                            <span className="text-2xl font-black">{trefilaEntry.toFixed(2)}</span>
+                            <span className="text-xs">mm</span>
+                          </div>
+                          <div className="h-1 w-full bg-slate-300 mt-[-1px]"></div>
+                        </div>
+
+                        {/* PASSES CHAIN */}
+                        {trefilaDies.map((die, i) => {
+                          const red = trefilaReductions[i]?.reduction || 0;
+                          const isHigh = trefilaMode === 'cacetes'
+                            ? (red > 29)
+                            : (red > 23 || red < 19);
+
+                          const isLastHigh = trefilaMode === 'cacetes'
+                            ? ((i === trefilaDies.length - 1) && red > 19)
+                            : false; // Uniform distribution covers all passes
+
+                          return (
+                            <div key={i} className="flex flex-col items-center flex-shrink-0">
+                              {/* Connecting Wire */}
+                              <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
+
+                              {/* Die Representation */}
+                              <div className="relative flex flex-col items-center mx-2 transform hover:scale-105 transition-transform z-10">
+                                <div className="w-24 h-24 bg-slate-200 border-4 border-slate-400 flex flex-col items-center justify-center shadow-md relative"
+                                  style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}>
+                                  <span className="text-xs font-bold text-slate-500 mb-1">Passe {i + 1}</span>
+                                  <span className="text-xl font-bold text-slate-800">{die.toFixed(2)}</span>
+                                </div>
+
+                                {/* Reduction Tag */}
+                                <div className={`mt-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${isHigh || isLastHigh ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                  {red.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* OUTPUT BLOCK */}
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div className="w-full h-2 bg-slate-300 relative top-[48px] -z-10"></div>
+                          <div className="ml-2 w-32 h-24 bg-green-600 text-white flex flex-col items-center justify-center rounded-r-lg shadow-lg relative">
+                            <span className="text-xs text-green-200 absolute top-2 right-2">Final</span>
+                            <span className="text-2xl font-black">{trefilaExit.toFixed(2)}</span>
+                            <span className="text-xs">mm</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Graph Section */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                      <h3 className="text-lg font-bold text-slate-800 mb-4">Gráfico de Redução (% da Área)</h3>
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={trefilaReductions} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="pass" stroke="#64748b" label={{ value: 'Passe', position: 'insideBottom', offset: -5 }} />
+                            <YAxis stroke="#64748b" label={{ value: '% Redução', angle: -90, position: 'insideLeft' }} />
+                            <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                            {/* Limit Lines */}
+                            {trefilaMode === 'cacetes' ? (
+                              <>
+                                <ReferenceLine y={29} label="Max Inicial (29%)" stroke="red" strokeDasharray="3 3" />
+                                <ReferenceLine y={19} label="Max Final (19%)" stroke="orange" strokeDasharray="3 3" />
+                              </>
+                            ) : (
+                              <>
+                                <ReferenceLine y={23} label="Max (23%)" stroke="red" strokeDasharray="3 3" />
+                                <ReferenceLine y={19} label="Min (19%)" stroke="orange" strokeDasharray="3 3" />
+                              </>
+                            )}
+
+                            <Line type="monotone" dataKey="reduction" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Save Recipe Section */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <Save size={20} className="text-orange-500" /> Salvar Receita
+                      </h3>
+                      <div className="flex gap-4 mb-6">
+                        <input
+                          type="text"
+                          placeholder="Nome da Receita (Ex: Trefila 5.5 -> 3.2)"
+                          className="flex-1 p-2 border border-slate-300 rounded-lg"
+                          value={recipeName}
+                          onChange={(e) => setRecipeName(e.target.value)}
+                        />
+                        <button
+                          onClick={handleSaveRecipe}
+                          className="bg-orange-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50"
+                          disabled={!recipeName.trim()}
+                        >
+                          Salvar
+                        </button>
+                      </div>
+
+                      {savedRecipes.length > 0 && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                              <tr>
+                                <th className="px-4 py-3">Nome</th>
+                                <th className="px-4 py-3">Entrada</th>
+                                <th className="px-4 py-3">Saída</th>
+                                <th className="px-4 py-3">Passes</th>
+                                <th className="px-4 py-3 text-right">Ações</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {savedRecipes.map(recipe => (
+                                <tr key={recipe.id} className="hover:bg-slate-50">
+                                  <td className="px-4 py-3 font-bold text-slate-700">{recipe.name}</td>
+                                  <td className="px-4 py-3">{recipe.entry}mm</td>
+                                  <td className="px-4 py-3">{recipe.exit}mm</td>
+                                  <td className="px-4 py-3">{recipe.passes}</td>
+                                  <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                    <button onClick={() => handleLoadRecipe(recipe)} className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase">Carregar</button>
+                                    <button onClick={() => handleDeleteRecipe(recipe.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Edit Table */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                      <h3 className="text-lg font-bold text-slate-800 mb-4">Tabela Detalhada</h3>
+                      <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                           <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
                             <tr>
-                              <th className="px-4 py-3">Nome</th>
-                              <th className="px-4 py-3">Entrada</th>
-                              <th className="px-4 py-3">Saída</th>
-                              <th className="px-4 py-3">Passes</th>
-                              <th className="px-4 py-3 text-right">Ações</th>
+                              <th className="px-4 py-3">Passe</th>
+                              <th className="px-4 py-3">Diâmetro (mm)</th>
+                              <th className="px-4 py-3">Redução (%)</th>
+                              <th className="px-4 py-3">Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {savedRecipes.map(recipe => (
-                              <tr key={recipe.id} className="hover:bg-slate-50">
-                                <td className="px-4 py-3 font-bold text-slate-700">{recipe.name}</td>
-                                <td className="px-4 py-3">{recipe.entry}mm</td>
-                                <td className="px-4 py-3">{recipe.exit}mm</td>
-                                <td className="px-4 py-3">{recipe.passes}</td>
-                                <td className="px-4 py-3 text-right flex justify-end gap-2">
-                                  <button onClick={() => handleLoadRecipe(recipe)} className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase">Carregar</button>
-                                  <button onClick={() => handleDeleteRecipe(recipe.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
-                                </td>
-                              </tr>
-                            ))}
+                            {trefilaDies.map((die, index) => {
+                              const reduction = trefilaReductions[index]?.reduction || 0;
+
+                              let status = 'OK';
+                              if (trefilaMode === 'cacetes') {
+                                if (reduction > 29) status = 'Crítica';
+                                else if (reduction > 22) status = 'Alta';
+                              } else {
+                                if (reduction > 23) status = 'Alta';
+                                if (reduction < 19) status = 'Baixa';
+                              }
+
+                              const isWarning = status !== 'OK';
+
+                              return (
+                                <tr key={index} className="bg-white hover:bg-slate-50">
+                                  <td className="px-4 py-3 font-medium text-slate-900">#{index + 1}</td>
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="number" step="0.01"
+                                      className="w-24 p-1 border border-slate-300 rounded text-center focus:ring-2 focus:ring-blue-500 outline-none"
+                                      value={die}
+                                      onChange={(e) => handleDieChange(index, e.target.value)}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 font-bold text-slate-700">
+                                    {reduction.toFixed(3)}%
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {isWarning ? (
+                                      <span className="text-red-500 font-bold text-xs flex items-center gap-1"><AlertCircle size={12} /> {status}</span>
+                                    ) : (
+                                      <span className="text-green-500 font-bold text-xs flex items-center gap-1"><CheckSquare size={12} /> OK</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Quick Edit Table */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Tabela Detalhada</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
-                          <tr>
-                            <th className="px-4 py-3">Passe</th>
-                            <th className="px-4 py-3">Diâmetro (mm)</th>
-                            <th className="px-4 py-3">Redução (%)</th>
-                            <th className="px-4 py-3">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {trefilaDies.map((die, index) => {
-                            const reduction = trefilaReductions[index]?.reduction || 0;
-
-                            let status = 'OK';
-                            if (trefilaMode === 'cacetes') {
-                              if (reduction > 29) status = 'Crítica';
-                              else if (reduction > 22) status = 'Alta';
-                            } else {
-                              if (reduction > 23) status = 'Alta';
-                              if (reduction < 19) status = 'Baixa';
-                            }
-
-                            const isWarning = status !== 'OK';
-
-                            return (
-                              <tr key={index} className="bg-white hover:bg-slate-50">
-                                <td className="px-4 py-3 font-medium text-slate-900">#{index + 1}</td>
-                                <td className="px-4 py-3">
-                                  <input
-                                    type="number" step="0.01"
-                                    className="w-24 p-1 border border-slate-300 rounded text-center focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={die}
-                                    onChange={(e) => handleDieChange(index, e.target.value)}
-                                  />
-                                </td>
-                                <td className="px-4 py-3 font-bold text-slate-700">
-                                  {reduction.toFixed(3)}%
-                                </td>
-                                <td className="px-4 py-3">
-                                  {isWarning ? (
-                                    <span className="text-red-500 font-bold text-xs flex items-center gap-1"><AlertCircle size={12} /> {status}</span>
-                                  ) : (
-                                    <span className="text-green-500 font-bold text-xs flex items-center gap-1"><CheckSquare size={12} /> OK</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <SparePartsManager />
+              )}
             </div>
           )}
 
