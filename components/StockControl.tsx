@@ -84,7 +84,12 @@ const StockControl: React.FC = () => {
 
     const handleAddGauge = async () => {
         if (!newGauge.value) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return alert('Você precisa estar logado para adicionar bitolas.');
+
         const { error } = await supabase.from('stock_gauges').insert([{
+            user_id: user.id,
             type: newGauge.type,
             gauge: parseFloat(newGauge.value)
         }]);
