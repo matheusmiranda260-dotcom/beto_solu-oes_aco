@@ -68,4 +68,5 @@ export interface SparePart {
   quantity: number;
   minLevel: number; // For low stock alerts
   location?: string;
+  imageUrl?: string;
 }

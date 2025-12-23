@@ -8,7 +8,9 @@ import {
     Trash2,
     Edit2,
     Settings,
-    Archive
+    Archive,
+    Camera,
+    Image as ImageIcon
 } from 'lucide-react';
 import { SparePart } from '../types';
 
@@ -135,6 +137,11 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
 
                         <div className="flex justify-between items-start pl-3">
                             <div>
+                                {part.imageUrl && (
+                                    <div className="w-16 h-16 rounded-md bg-white border border-slate-200 flex-shrink-0 overflow-hidden mb-2">
+                                        <img src={part.imageUrl} alt={part.name} className="w-full h-full object-cover" />
+                                    </div>
+                                )}
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{part.code || 'S/N'}</span>
                                 <h3 className="font-bold text-slate-800 text-lg leading-tight mb-1">{part.name}</h3>
                                 <p className="text-xs text-slate-500 flex items-center gap-1">
@@ -279,6 +286,50 @@ const SparePartsManager: React.FC<SparePartsManagerProps> = ({
                                     onChange={e => setFormData({ ...formData, location: e.target.value })}
                                     placeholder="Ex: Armário 2, Prateleira 3"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Imagem</label>
+                                <div className="space-y-2">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            className="flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                            value={formData.imageUrl || ''}
+                                            onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                            placeholder="URL da Imagem..."
+                                        />
+                                        <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-lg cursor-pointer transition-colors" title="Carregar foto">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setFormData({ ...formData, imageUrl: reader.result as string });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            <Camera size={20} />
+                                        </label>
+                                    </div>
+                                    {formData.imageUrl && (
+                                        <div className="relative w-full h-32 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 group">
+                                            <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-contain" />
+                                            <button
+                                                onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                                                className="absolute top-2 right-2 p-1 bg-white/90 rounded-full text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <button
