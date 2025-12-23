@@ -351,6 +351,27 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
     fetchAllData();
   }, []);
 
+  // Tracking: Increment Login Count on Mount (once per session ideally, but simplified here to component mount)
+  useEffect(() => {
+    const trackLogin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.rpc('increment_login_count', { user_id: user.id });
+      }
+    };
+    trackLogin();
+
+    // Heartbeat every minute
+    const interval = setInterval(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.rpc('update_heartbeat', { user_id: user.id, minutes_added: 1 });
+      }
+    }, 60000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'usuarios') {
       const fetchUsers = async () => {
@@ -2695,39 +2716,69 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
                   <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
                       <tr>
-                        <th className="px-6 py-4">Data Criação</th>
                         <th className="px-6 py-4">Usuário</th>
+                        <th className="px-6 py-4 text-center">Logins</th>
+                        <th className="px-6 py-4 text-center">Visto em</th>
+                        <th className="px-6 py-4 text-center">Tempo Total</th>
                         <th className="px-6 py-4">Função</th>
-                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {usersList.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                          <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                             Nenhum usuário encontrado (ou sem permissão para listar).
                           </td>
                         </tr>
                       ) : (
-                        usersList.map((u) => (
+                        usersList.map((u: any) => (
                           <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-medium text-slate-900">
-                              {new Date(u.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 text-slate-600 font-bold">{u.username}</td>
                             <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-800">{u.username}</span>
+                                <span className="text-xs text-slate-400">Criado em {new Date(u.created_at).toLocaleDateString()}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center font-medium text-slate-600">
+                              {u.login_count || 0}
+                            </td>
+                            <td className="px-6 py-4 text-center text-slate-600">
+                              {u.last_seen_at ? new Date(u.last_seen_at).toLocaleString() : '-'}
+                            </td>
+                            <td className="px-6 py-4 text-center text-slate-600">
+                              {u.total_activity_minutes ? `${Math.floor(u.total_activity_minutes / 60)}h ${u.total_activity_minutes % 60}m` : '0m'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                                 u.role === 'gestor' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                                   'bg-slate-100 text-slate-800 border-slate-200'
                                 }`}>
-                                {u.role.toUpperCase()}
+                                {u.role}
                               </span>
                             </td>
-                            <td className="px-6 py-4">
-                              <span className="inline-flex items-center gap-1 text-green-600 font-medium text-xs">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                Ativo
-                              </span>
+                            <td className="px-6 py-4 text-right">
+                              {userRole === 'admin' && u.role !== 'admin' && (
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm(`Tem certeza que deseja DELETAR o usuário ${u.username}? Esta ação não pode ser desfeita.`)) {
+                                      try {
+                                        const { error } = await supabase.rpc('admin_delete_user', { target_user_id: u.id });
+                                        if (error) throw error;
+
+                                        // Also remove from local list
+                                        setUsersList(usersList.filter((user: any) => user.id !== u.id));
+                                        alert('Usuário excluído com sucesso.');
+                                      } catch (err: any) {
+                                        alert('Erro ao excluir: ' + err.message);
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-500 hover:text-red-700 font-bold text-xs border border-red-200 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                                >
+                                  Excluir
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))

@@ -5,6 +5,11 @@ export interface User {
   name: string;
   email?: string;
   permissions?: string[];
+  // Tracking Stats
+  loginCount?: number;
+  lastSeen?: string;
+  isOnline?: boolean;
+  totalTime?: number;
 }
 
 export interface AuthState {
