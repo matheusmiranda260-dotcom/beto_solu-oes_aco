@@ -11,6 +11,7 @@ import {
   Archive, FolderOpen
 } from 'lucide-react';
 import SparePartsManager from './SparePartsManager';
+import StockControl from './StockControl';
 import { generateBetoResponse } from '../services/geminiService';
 import { supabase } from '../services/supabaseClient';
 import { authService } from '../services/authService';
@@ -126,7 +127,7 @@ interface DashboardProps {
 const COLORS = ['#3b82f6', '#f97316', '#22c55e']; // Blue (Agendado), Orange (Em Andamento), Green (Concluido)
 
 const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'user', userPermissions = [] }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads' | 'usuarios'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'malhas' | 'trelica' | 'trefila' | 'comissao' | 'consultorias' | 'leads' | 'usuarios' | 'estoque_lotes'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Helper to check permissions
@@ -1195,6 +1196,14 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
             </button>
           )}
 
+          <button
+            onClick={() => setActiveTab('estoque_lotes')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'estoque_lotes' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <Scale size={20} />
+            <span>Controle de Estoque</span>
+          </button>
+
           {hasPermission('comissao') && (
             <button
               onClick={() => setActiveTab('comissao')}
@@ -1636,6 +1645,10 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
                 )}
               </div>
             </div>
+          )}
+
+          {activeTab === 'estoque_lotes' && (
+            <StockControl />
           )}
 
           {activeTab === 'trelica' && (

@@ -75,3 +75,15 @@ export interface SparePart {
   location?: string;
   imageUrl?: string;
 }
+
+export interface StockLot {
+  id: string;
+  lotNumber: string;
+  supplier: string;
+  labelWeight: number;
+  scaleWeight: number;
+  difference?: number;
+  status: string;
+  notes?: string;
+  createdAt?: string;
+}
