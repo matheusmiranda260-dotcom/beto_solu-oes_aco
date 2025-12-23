@@ -9,30 +9,51 @@ import {
     CheckCircle,
     AlertTriangle,
     History,
-    FileText
+    FileText,
+    Settings,
+    X
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { StockLot } from '../types';
+
+interface Gauge {
+    id: string;
+    type: 'Fio Máquina' | 'CA60';
+    gauge: number;
+}
 
 const StockControl: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [history, setHistory] = useState<StockLot[]>([]);
 
+    // Config State
+    const [showConfig, setShowConfig] = useState(false);
+    const [gauges, setGauges] = useState<Gauge[]>([]);
+    const [newGauge, setNewGauge] = useState<{ type: 'Fio Máquina' | 'CA60', value: string }>({ type: 'Fio Máquina', value: '' });
+
     // Form State
-    const [currentLot, setCurrentLot] = useState<Partial<StockLot>>({
+    const [currentLot, setCurrentLot] = useState<Partial<StockLot> & { materialType?: string, gauge?: number }>({
         lotNumber: '',
         supplier: '',
         labelWeight: 0,
         scaleWeight: 0,
-        notes: ''
+        notes: '',
+        materialType: 'Fio Máquina', // default
+        gauge: 0
     });
 
     // Current Session (Buffer)
-    const [conferenceBuffer, setConferenceBuffer] = useState<Partial<StockLot>[]>([]);
+    const [conferenceBuffer, setConferenceBuffer] = useState<(Partial<StockLot> & { materialType?: string, gauge?: number })[]>([]);
 
     useEffect(() => {
         fetchHistory();
+        fetchGauges();
     }, []);
+
+    const fetchGauges = async () => {
+        const { data } = await supabase.from('stock_gauges').select('*').order('gauge', { ascending: true });
+        if (data) setGauges(data as any);
+    };
 
     const fetchHistory = async () => {
         const { data, error } = await supabase
@@ -53,14 +74,40 @@ const StockControl: React.FC = () => {
                 difference: item.difference,
                 status: item.status,
                 notes: item.notes,
-                createdAt: item.created_at
-            })));
+                createdAt: item.created_at,
+                // Add these if we update main type, but mainly for display here
+                materialType: item.material_type,
+                gauge: item.gauge
+            } as any)));
+        }
+    };
+
+    const handleAddGauge = async () => {
+        if (!newGauge.value) return;
+        const { error } = await supabase.from('stock_gauges').insert([{
+            type: newGauge.type,
+            gauge: parseFloat(newGauge.value)
+        }]);
+
+        if (error) {
+            alert('Erro ao salvar: ' + error.message);
+        } else {
+            setNewGauge({ ...newGauge, value: '' });
+            fetchGauges();
+        }
+    };
+
+    const handleDeleteGauge = async (id: string) => {
+        if (window.confirm('Excluir bitola?')) {
+            await supabase.from('stock_gauges').delete().eq('id', id);
+            fetchGauges();
         }
     };
 
     const addToBuffer = () => {
         if (!currentLot.lotNumber || !currentLot.supplier) return alert('Preencha Lote e Fornecedor');
         if (!currentLot.scaleWeight && !currentLot.labelWeight) return alert('Preencha os pesos');
+        if (!currentLot.gauge) return alert('Selecione a Bitola');
 
         const newItem = {
             ...currentLot,
@@ -70,11 +117,13 @@ const StockControl: React.FC = () => {
 
         setConferenceBuffer([...conferenceBuffer, newItem]);
         setCurrentLot({
+            ...currentLot,
             lotNumber: '',
-            supplier: currentLot.supplier, // Keep supplier for convenience
+            // supplier: currentLot.supplier, // Keep supplier? Maybe
             labelWeight: 0,
             scaleWeight: 0,
             notes: ''
+            // Keep gauge and type for faster entry
         });
     };
 
@@ -100,7 +149,9 @@ const StockControl: React.FC = () => {
             label_weight: item.labelWeight,
             scale_weight: item.scaleWeight,
             status: 'Conferido',
-            notes: item.notes
+            notes: item.notes,
+            material_type: item.materialType,
+            gauge: item.gauge
         }));
 
         const { error } = await supabase.from('stock_lots').insert(rows);
@@ -115,28 +166,128 @@ const StockControl: React.FC = () => {
         setLoading(false);
     };
 
+    // Derived list of available gauges for current selected type
+    const availableGauges = gauges.filter(g => g.type === currentLot.materialType);
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500 relative">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-900 to-indigo-900 p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-900 to-indigo-900 p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden flex justify-between items-start">
+                <div className="relative z-10">
+                    <h2 className="text-3xl font-black flex items-center gap-3 mb-2">
+                        <Scale className="text-indigo-400" /> Controle de Estoque
+                    </h2>
+                    <p className="text-indigo-200">Conferência de recebimento (Fio Máquina e CA60).</p>
+                </div>
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                     <Scale size={120} />
                 </div>
-                <h2 className="text-3xl font-black flex items-center gap-3 mb-2">
-                    <Scale className="text-indigo-400" /> Controle de Estoque de Lotes
-                </h2>
-                <p className="text-indigo-200">Conferência de recebimento, pesos e gestão de lotes de matéria-prima.</p>
+                <button
+                    onClick={() => setShowConfig(!showConfig)}
+                    className="relative z-10 bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors border border-white/20"
+                    title="Configurar Bitolas"
+                >
+                    <Settings className="text-white" />
+                </button>
             </div>
+
+            {showConfig && (
+                <div className="bg-white p-6 rounded-2xl shadow-xl border-2 border-indigo-100 mb-8 animate-in slide-in-from-top-4">
+                    <div className="flex justify-between items-center mb-6 border-b pb-4">
+                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <Settings className="text-indigo-600" /> Configuração de Bitolas
+                        </h3>
+                        <button onClick={() => setShowConfig(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 className="font-bold text-sm uppercase text-slate-500 mb-3">Adicionar Nova</h4>
+                            <div className="flex gap-2 mb-2">
+                                <select
+                                    className="p-2 border rounded-lg bg-slate-50 font-medium"
+                                    value={newGauge.type}
+                                    onChange={e => setNewGauge({ ...newGauge, type: e.target.value as any })}
+                                >
+                                    <option value="Fio Máquina">Fio Máquina</option>
+                                    <option value="CA60">CA60</option>
+                                </select>
+                                <input
+                                    type="number"
+                                    placeholder="Bitola (mm)"
+                                    className="p-2 border rounded-lg w-full"
+                                    value={newGauge.value}
+                                    onChange={e => setNewGauge({ ...newGauge, value: e.target.value })}
+                                />
+                                <button
+                                    onClick={handleAddGauge}
+                                    className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700"
+                                >
+                                    <Plus />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-bold text-sm uppercase text-slate-500 mb-3">Bitolas Cadastradas</h4>
+                            <div className="grid grid-cols-2 gap-4 max-h-40 overflow-y-auto pr-2">
+                                {gauges.map(g => (
+                                    <div key={g.id} className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-slate-800">{g.gauge} mm</span>
+                                            <span className="text-xs text-slate-500">{g.type}</span>
+                                        </div>
+                                        <button onClick={() => handleDeleteGauge(g.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Input Form */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
                         <h3 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-                            <Plus className="text-indigo-600" /> Adicionar Item
+                            <Plus className="text-indigo-600" /> Nova Entrada
                         </h3>
 
                         <div className="space-y-4">
+                            {/* Material Type Selection */}
+                            <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                                <button
+                                    onClick={() => setCurrentLot({ ...currentLot, materialType: 'Fio Máquina' })}
+                                    className={`py-2 text-sm font-bold rounded-lg transition-all ${currentLot.materialType === 'Fio Máquina' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Fio Máquina
+                                </button>
+                                <button
+                                    onClick={() => setCurrentLot({ ...currentLot, materialType: 'CA60' })}
+                                    className={`py-2 text-sm font-bold rounded-lg transition-all ${currentLot.materialType === 'CA60' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    CA60
+                                </button>
+                            </div>
+
+                            {/* Gauge Selection */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Bitola (mm)</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {availableGauges.map(g => (
+                                        <button
+                                            key={g.id}
+                                            onClick={() => setCurrentLot({ ...currentLot, gauge: g.gauge })}
+                                            className={`p-2 rounded-lg border text-sm font-bold transition-all ${currentLot.gauge === g.gauge ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-indigo-300 text-slate-600'}`}
+                                        >
+                                            {g.gauge}
+                                        </button>
+                                    ))}
+                                    {availableGauges.length === 0 && <span className="text-xs text-red-400 col-span-3">Nenhuma bitola cadastrada para este tipo. Configure acima.</span>}
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Número do Lote</label>
                                 <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
@@ -231,6 +382,7 @@ const StockControl: React.FC = () => {
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
                                         <tr>
+                                            <th className="px-4 py-3">Tipo/Bitola</th>
                                             <th className="px-4 py-3">Lote</th>
                                             <th className="px-4 py-3">Fornecedor</th>
                                             <th className="px-4 py-3 text-right">Etiqueta</th>
@@ -246,6 +398,10 @@ const StockControl: React.FC = () => {
 
                                             return (
                                                 <tr key={idx} className="hover:bg-slate-50">
+                                                    <td className="px-4 py-3 font-medium text-slate-700 text-xs">
+                                                        <span className="block font-bold">{item.materialType}</span>
+                                                        {item.gauge}mm
+                                                    </td>
                                                     <td className="px-4 py-3 font-medium">{item.lotNumber}</td>
                                                     <td className="px-4 py-3 text-slate-500">{item.supplier}</td>
                                                     <td className="px-4 py-3 text-right">{item.labelWeight} kg</td>
@@ -279,32 +435,37 @@ const StockControl: React.FC = () => {
                                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
                                     <tr>
                                         <th className="px-4 py-3">Data</th>
+                                        <th className="px-4 py-3">Matéria</th>
                                         <th className="px-4 py-3">Lote</th>
                                         <th className="px-4 py-3">Fornecedor</th>
-                                        <th className="px-4 py-3 text-right">Pesos (Etq / Bal)</th>
-                                        <th className="px-4 py-3 text-right">Diferença</th>
+                                        <th className="px-4 py-3 text-right">Pesos</th>
+                                        <th className="px-4 py-3 text-right">Dif.</th>
                                         <th className="px-4 py-3 text-center">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {history.length === 0 ? (
-                                        <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Nenhum registro encontrado.</td></tr>
+                                        <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Nenhum registro encontrado.</td></tr>
                                     ) : (
                                         history.map(item => (
                                             <tr key={item.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-3 text-slate-500">{new Date(item.createdAt!).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-slate-500 text-xs">{new Date(item.createdAt!).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-xs">
+                                                    <span className="font-bold text-slate-700 block text-[10px] uppercase">{(item as any).materialType}</span>
+                                                    {(item as any).gauge}mm
+                                                </td>
                                                 <td className="px-4 py-3 font-bold text-slate-800">{item.lotNumber}</td>
-                                                <td className="px-4 py-3 text-slate-600">{item.supplier}</td>
+                                                <td className="px-4 py-3 text-slate-600 text-xs truncate max-w-[100px]">{item.supplier}</td>
                                                 <td className="px-4 py-3 text-right text-xs">
                                                     <span className="block text-slate-400">E: {item.labelWeight}</span>
                                                     <span className="block text-indigo-600 font-bold">B: {item.scaleWeight}</span>
                                                 </td>
-                                                <td className={`px-4 py-3 text-right font-medium ${Math.abs(item.difference || 0) > 5 ? 'text-red-500' : 'text-green-600'}`}>
+                                                <td className={`px-4 py-3 text-right font-medium text-xs ${Math.abs(item.difference || 0) > 5 ? 'text-red-500' : 'text-green-600'}`}>
                                                     {(item.difference || 0) > 0 ? '+' : ''}{(item.difference || 0).toFixed(2)}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-                                                        <CheckCircle size={12} /> Conferido
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">
+                                                        <CheckCircle size={10} /> Ok
                                                     </span>
                                                 </td>
                                             </tr>
