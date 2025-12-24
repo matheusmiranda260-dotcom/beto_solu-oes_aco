@@ -223,16 +223,32 @@ const HardwareQuoteModule: React.FC = () => {
     }
 
     return (
+
       <>
-        <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Cálculo de Ferragens</h1>
-            <p className="text-slate-500 font-bold text-sm mt-1">Gerencie orçamentos e clientes.</p>
+        {/* Header Premium */}
+        <div className="mb-8 flex flex-col md:flex-row justify-between items-center bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
+
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-white tracking-tight">Cálculo de Ferragens</h1>
+              <p className="text-slate-400 font-bold text-sm mt-1">Gerencie orçamentos, clientes e produção de aço.</p>
+            </div>
           </div>
+
           <button
             onClick={handleNewQuoteClick}
-            className="bg-amber-500 text-white px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95"
+            className="mt-6 md:mt-0 relative z-10 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-95 flex items-center gap-3"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
             Novo Orçamento
           </button>
         </div>
@@ -252,7 +268,7 @@ const HardwareQuoteModule: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full max-w-7xl mx-auto py-6">
+    <div className="min-h-full w-full mx-auto py-2">
       {renderContent()}
     </div>
   );

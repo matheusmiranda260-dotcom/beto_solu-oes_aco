@@ -18,16 +18,23 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
 
   if (quotes.length === 0) {
     return (
-      <div className="text-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200">
-        <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+
+      <div className="flex flex-col items-center justify-center py-32 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[3rem] border-2 border-dashed border-slate-200 hover:border-amber-200 transition-colors group">
+        <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-100 mb-8 border border-slate-50 group-hover:scale-110 transition-transform duration-500">
+          <div className="bg-gradient-to-br from-amber-100 to-orange-100 w-20 h-20 rounded-2xl flex items-center justify-center text-amber-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
         </div>
-        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Vazio por aqui</h3>
-        <p className="text-slate-400 max-w-xs mx-auto mt-2 font-medium">Inicie um novo orçamento usando o botão no topo da página.</p>
+        <h3 className="text-3xl font-black text-slate-800 tracking-tight mb-3">Vazio por aqui</h3>
+        <p className="text-slate-400 font-medium max-w-sm text-center leading-relaxed">
+          Sua lista de orçamentos está limpa. <br />
+          Toque no botão <span className="text-amber-600 font-bold">Novo Orçamento</span> no topo para começar.
+        </p>
       </div>
     );
+
   }
 
   return (
@@ -54,7 +61,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
         {[...quotes].reverse().map(quote => {
           const isDraft = quote.status === 'Draft';
           const displayName = getClientName(quote);
-          
+
           return (
             <div key={quote.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl hover:border-amber-200 transition-all flex flex-col group relative">
               {quote.isCounter && (
@@ -62,7 +69,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
                   Balcão
                 </div>
               )}
-              
+
               <div className="p-8 flex-grow" onClick={() => !isDraft && onViewSummary(quote)}>
                 <div className="mb-6">
                   <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-1">
@@ -88,10 +95,9 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
                 </div>
 
                 <div className="flex gap-2">
-                   <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${
-                    quote.status === 'Draft' ? 'bg-slate-100 text-slate-500' : 
+                  <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${quote.status === 'Draft' ? 'bg-slate-100 text-slate-500' :
                     quote.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
+                    }`}>
                     {quote.status === 'Draft' ? 'Em Aberto' : 'Finalizado'}
                   </span>
                   <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter bg-slate-100 text-slate-500">
@@ -102,7 +108,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
 
               <div className="px-8 pb-8 flex gap-3">
                 {isDraft ? (
-                  <button 
+                  <button
                     onClick={() => onFinalize(quote.id)}
                     className="flex-grow bg-emerald-500 text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-50 flex items-center justify-center gap-2"
                   >
@@ -112,14 +118,14 @@ const QuoteList: React.FC<QuoteListProps> = ({ quotes, clients, onDelete, onFina
                     Finalizar
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => onViewSummary(quote)}
                     className="flex-grow bg-slate-900 text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-slate-100 active:scale-95 transition-all"
                   >
                     Resumo do Aço
                   </button>
                 )}
-                <button 
+                <button
                   onClick={() => onDelete(quote.id)}
                   className="w-12 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all rounded-2xl flex items-center justify-center"
                 >

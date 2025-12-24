@@ -2845,6 +2845,9 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
               </div>
             </div>
           )}
+          {activeTab === 'orcamento_ferragem' && (
+            <HardwareQuoteModule />
+          )}
         </main>
       </div >
 
@@ -3042,12 +3045,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, onLogout, userRole = 'u
         </div>
       )}
 
-      {/* Render Module Logic for Hardware Quote */}
-      {activeTab === 'orcamento_ferragem' && (
-        <div className="flex-1 overflow-auto p-4 md:p-8 bg-slate-50 min-h-screen">
-          <HardwareQuoteModule />
-        </div>
-      )}
+
 
     </div >
   );
