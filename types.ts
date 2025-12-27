@@ -127,6 +127,13 @@ export interface MainBarGroup {
     position?: string;       // Posição opcional (N...)
     placement?: 'top' | 'bottom' | 'distributed'; // Posição na seção (Superior/Inferior/Lateral)
     shape?: string; // Formato visual (ex: 'straight', 'u_up', 'c_up')
+
+    // New Segment Model (A-B-C-D-E)
+    segmentA?: number; // Base / Main Length
+    segmentB?: number; // Left Leg
+    segmentC?: number; // Right Leg
+    segmentD?: number; // Left Inward Hook
+    segmentE?: number; // Right Inward Hook
 }
 
 export interface SteelItem {

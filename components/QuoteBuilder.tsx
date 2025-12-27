@@ -1090,33 +1090,92 @@ const ItemDetailEditor: React.FC<{
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  {/* Hidden Placement Dropdown - Replaced by Interactive Visual Selector */}
-                  <div className="space-y-1 opacity-50 pointer-events-none hidden">
-                    <label className="text-[9px] font-black text-slate-400 uppercase">Local na Seção</label>
-                    <select value={newBar.placement || 'bottom'} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm outline-none">
-                      <option value="bottom">Inferior</option>
-                      <option value="top">Superior</option>
-                      <option value="distributed">Lateral</option>
-                    </select>
+                {/* Segment Inputs (A-B-C-D-E) - Logic based on Visual Shape */}
+                <div className="mb-4">
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimensões (cm)</label>
                   </div>
-                  {/* Hook Length */}
-                  {/* Hook Length Split */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {newBar.hookStartType !== 'none' && (
-                      <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
-                        <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Esq. (cm)</label>
-                        <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                      </div>
-                    )}
 
-                    {newBar.hookEndType !== 'none' && (
-                      <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
-                        <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Dir. (cm)</label>
-                        <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                      </div>
-                    )}
+                  {/* Segment A (Always Visible - Base) */}
+                  <div className="mb-2">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase flex justify-between">
+                      <span>Segmento A (Base/Comprimento)</span>
+                      <span className="text-slate-300">Principal</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={newBar.segmentA || 0}
+                      onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })}
+                      className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
+                    />
                   </div>
+
+                  {/* Segments B and C (Legs) */}
+                  {(['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape)) && (
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                      {/* Segment B (Left Leg) */}
+                      {['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape) && (
+                        <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. B (Esq.)</label>
+                          <input
+                            type="number"
+                            value={newBar.segmentB || newBar.hookStart || 0}
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              setNewBar({ ...newBar, segmentB: val, hookStart: val }); // Sync to hookStart for compatibility
+                            }}
+                            className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Segment C (Right Leg) - Only for U and C (and technically L-Right but logic differs) */}
+                      {['u_up', 'u_down', 'c_up', 'c_down', 'l_right_up', 'l_right_down'].includes(visualShape) && (
+                        <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. C (Dir.)</label>
+                          <input
+                            type="number"
+                            value={newBar.segmentC || newBar.hookEnd || 0}
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              setNewBar({ ...newBar, segmentC: val, hookEnd: val }); // Sync to hookEnd for compatibility
+                            }}
+                            className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Special case for L-Right only (it occupies slot 2 but is "C"?) 
+                            Actually L-Right implies A + right leg. So it maps to "C".
+                            Above condition handles it.
+                        */}
+                    </div>
+                  )}
+
+                  {/* Segments D and E (Inward Hooks - C shape only) */}
+                  {['c_up', 'c_down'].includes(visualShape) && (
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                      <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. D (Dobra Esq.)</label>
+                        <input
+                          type="number"
+                          value={newBar.segmentD || 0}
+                          onChange={e => setNewBar({ ...newBar, segmentD: Number(e.target.value) })}
+                          className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500 dashed-border"
+                        />
+                      </div>
+                      <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. E (Dobra Dir.)</label>
+                        <input
+                          type="number"
+                          value={newBar.segmentE || 0}
+                          onChange={e => setNewBar({ ...newBar, segmentE: Number(e.target.value) })}
+                          className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500 dashed-border"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                 </div>
 
                 <div className="mb-6">
