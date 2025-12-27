@@ -1123,7 +1123,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 });
                         setVisualShape('straight');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'straight' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'straight' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="Reta (I)"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
@@ -1137,7 +1137,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
                         setVisualShape('l_left_up');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="L Esquerda (Cima)"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
@@ -1151,7 +1151,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
                         setVisualShape('l_right_up');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="L Direita (Cima)"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
@@ -1165,7 +1165,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
                         setVisualShape('u_up');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="U / Ganchos (Cima)"
                     >
                       <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
@@ -1179,10 +1179,10 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
                         setVisualShape('c_up');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'} group`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
                       title="C / Estribo Aberto (Cima)"
                     >
-                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
                         <path d="M8,8 L4,8 L4,16 L28,16 L28,8 L24,8" />
                       </svg>
                     </button>
@@ -1193,7 +1193,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
                         setVisualShape('l_left_down');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="L Esquerda (Baixo)"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
@@ -1207,7 +1207,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
                         setVisualShape('l_right_down');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="L Direita (Baixo)"
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
@@ -1221,7 +1221,7 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
                         setVisualShape('u_down');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
                       title="U / Ganchos (Baixo)"
                     >
                       <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
@@ -1235,10 +1235,10 @@ const ItemDetailEditor: React.FC<{
                         setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
                         setVisualShape('c_down');
                       }}
-                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'} group`}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
                       title="C / Estribo Aberto (Baixo)"
                     >
-                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
                         <path d="M8,16 L4,16 L4,8 L28,8 L28,16 L24,16" />
                       </svg>
                     </button>
