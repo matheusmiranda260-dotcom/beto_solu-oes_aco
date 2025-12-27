@@ -157,17 +157,17 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
 
 // Nova Visualização Longitudinal (Elevação)
 const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
-  const viewW = 300;
-  const viewH = 80;
-  const pad = 10;
-  const beamY1 = pad + 15; // Top chord Y
-  const beamY2 = viewH - pad - 15; // Bottom chord Y
+  const viewW = 340;
+  const viewH = 140; // Increased height for multiple layers
+  const pad = 30; // More padding for hooks
+  const beamY1 = pad + 10;
+  const beamY2 = viewH - pad - 10;
+  const midY = (beamY1 + beamY2) / 2;
+  const layer2Y = beamY2 - 15;
 
-  // Stirrups
   const spacing = item.stirrupSpacing || 20;
-  // Limit shown stirrups for visual clarity if too dense
   const totalStirrups = Math.floor(item.length * 100 / spacing);
-  const visualStirrups = Math.min(totalStirrups, 30); // Max 30 lines drawn
+  const visualStirrups = Math.min(totalStirrups, 25);
 
   const stirrupLines = [];
   for (let i = 0; i <= visualStirrups; i++) {
@@ -175,43 +175,91 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     stirrupLines.push(x);
   }
 
-  // Label Logic
-  const mainBars = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
-  const totalMainBars = mainBars.reduce((acc, b) => acc + b.count, 0);
-  const gauge = mainBars.length > 0 ? mainBars[0].gauge : '10.0';
-  const label = totalMainBars > 0 ? `${Math.ceil(totalMainBars / 2)} ferros ${gauge}mm` : ""; // Assuming split top/bottom
+  // Helper to draw a bar with optional hooks
+  const renderBarLine = (y: number, group: MainBarGroup, isTop: boolean = false) => {
+    const lenLabel = Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
+    const hookStart = group.hookStartType !== 'none' ? group.hookStart : 0;
+    const hookEnd = group.hookEndType !== 'none' ? group.hookEnd : 0;
+
+    const totalLenLabel = `${group.count}x Ø${group.gauge} c/${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
+
+    // Hook visual size (simplified)
+    const hSize = 10;
+    const xStart = pad;
+    const xEnd = viewW - pad;
+
+    let path = "";
+    // Start Hook
+    if (group.hookStartType === 'up') path += `M ${xStart},${y - hSize} L ${xStart},${y} `;
+    else if (group.hookStartType === 'down') path += `M ${xStart},${y + hSize} L ${xStart},${y} `;
+    else path += `M ${xStart},${y} `;
+
+    // Main Span
+    path += `L ${xEnd},${y} `;
+
+    // End Hook
+    if (group.hookEndType === 'up') path += `L ${xEnd},${y - hSize}`;
+    else if (group.hookEndType === 'down') path += `L ${xEnd},${y + hSize}`;
+
+    return (
+      <g key={group.gauge + y + group.usage + isTop}>
+        <path d={path} fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Label Bubble - Using div to handle text background nicely */}
+        <foreignObject x={pad} y={y - (isTop ? 28 : -8)} width={viewW - 2 * pad} height={24}>
+          <div className="w-full text-center flex justify-center">
+            <span className="bg-white border border-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm text-slate-700 whitespace-nowrap">
+              {totalLenLabel}
+            </span>
+          </div>
+        </foreignObject>
+      </g>
+    );
+  };
+
+  // Organize groups for visualization position
+  // We want to avoid overlapping lines if multiple groups map to same Y.
+  // Simple heuristic: 
+  // - Principals: Toggle Bottom / Top.
+  // - Costela: Middle.
+
+  const principals = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
+  const costelas = item.mainBars.filter(b => b.usage === BarUsage.COSTELA);
+  const camada2 = item.mainBars.filter(b => b.usage === BarUsage.CAMADA_2);
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center relative mt-4 mb-4" style={{ minWidth: '320px' }}>
-      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-6">Elevação (Esquema)</span>
-
-      {/* Top Label */}
-      {label && <div className="absolute top-8 bg-white border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 -translate-y-1/2">{label}</div>}
-
+    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center relative mt-4 mb-4" style={{ minWidth: '360px' }}>
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Elevação (Esquema)</span>
       <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
-        {/* Stirrups (Lines) */}
+        {/* Stirrups Lines (Background) */}
         {item.hasStirrups && stirrupLines.map((x, i) => (
-          <line key={i} x1={x} y1={beamY1} x2={x} y2={beamY2} stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
+          <line key={i} x1={x} y1={beamY1} x2={x} y2={beamY2} stroke="#f97316" strokeWidth="2" strokeLinecap="butt" />
         ))}
 
-        {/* Main Bars (Horizontal Lines) */}
-        {totalMainBars > 0 && (
-          <>
-            <line x1={pad} y1={beamY1} x2={viewW - pad} y2={beamY1} stroke="#000" strokeWidth="3" strokeLinecap="round" />
-            <line x1={pad} y1={beamY2} x2={viewW - pad} y2={beamY2} stroke="#000" strokeWidth="3" strokeLinecap="round" />
-          </>
-        )}
+        {/* Render Bars */}
+        {principals.map((group, idx) => {
+          // Alternate Top/Bottom if multiple. Default Top if 2nd? 
+          // Usually Main is Bottom. Top is secondary.
+          // If only 1 group, put it Bottom (Reinforcement).
+          // If 2 groups, 1 Bottom, 1 Top.
+          const isTop = (principals.length > 1 && idx > 0);
+          return renderBarLine(isTop ? beamY1 : beamY2, group, isTop);
+        })}
 
-        {/* Stirrup Label (centered) */}
+        {costelas.map((group, idx) => (
+          renderBarLine(midY, group, false)
+        ))}
+
+        {camada2.map((group, idx) => (
+          renderBarLine(layer2Y, group, false)
+        ))}
+
+        {/* Stirrup Label (centered in unused space if possible, or just huge overlay) */}
         {item.hasStirrups && (
-          <text x={viewW / 2} y={viewH / 2 + 3} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#f97316" filter="url(#solid)">
+          <text x={viewW / 2} y={viewH / 2 + 3} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#f97316" filter="url(#solid)" opacity="0.8">
             Ø{item.stirrupGauge} c/{item.stirrupSpacing}
           </text>
         )}
       </svg>
-
-      {/* Bottom Label */}
-      {label && <div className="absolute bottom-4 bg-white border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 translate-y-1/2">{label}</div>}
     </div>
   );
 };
