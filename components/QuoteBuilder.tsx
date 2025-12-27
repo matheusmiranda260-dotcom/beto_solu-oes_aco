@@ -1023,7 +1023,6 @@ const ItemDetailEditor: React.FC<{
   }, [editingIndex, localItem.mainBars, defaultHook, initialUsage, isSapata]);
 
 
-
   const handleAddOrUpdateBar = () => {
     const bars = [...localItem.mainBars];
     if (editingIndex !== undefined) {
@@ -1057,6 +1056,26 @@ const ItemDetailEditor: React.FC<{
     onUpdateItem(localItem);
   };
 
+  // Keyboard shortcuts for better UX
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Enter to add/update bar (only if not in an input)
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        handleAddOrUpdateBar();
+      }
+      // Escape to close editor
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleAddOrUpdateBar, onCancel]);
+
+
   // Helper for Hook Selector
   const HookSelector: React.FC<{ label: string, current: HookType, onChange: (t: HookType) => void }> = ({ label, current, onChange }) => (
     <div className="space-y-1">
@@ -1072,17 +1091,58 @@ const ItemDetailEditor: React.FC<{
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
 
         {/* Left Column: Visualization & Stirrups */}
-        <div className="w-1/2 flex flex-col border-r border-slate-100 bg-slate-50/30">
-          <div className="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-slate-900 text-amber-500 rounded-xl flex items-center justify-center font-black">{localItem.type.charAt(0)}</div>
-              <div>
-                <h3 className="font-black text-slate-800 text-lg leading-tight">Editor de Armação</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">{localItem.observation || localItem.type}</p>
+        <div className="w-1/2 flex flex-col border-r border-slate-100 bg-gradient-to-br from-slate-50/50 to-white">
+          {/* Enhanced Header with Stats */}
+          <div className="p-6 border-b border-slate-100 bg-white">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-700 text-amber-500 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
+                  {localItem.type.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-800 text-xl leading-tight">Editor de Armação</h3>
+                  <p className="text-xs text-slate-500 font-bold">{localItem.observation || localItem.type}</p>
+                </div>
+              </div>
+              <button
+                onClick={onCancel}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                title="Fechar (Esc)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Real-time Statistics */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-3 rounded-2xl border border-indigo-200/50">
+                <p className="text-[9px] font-black text-indigo-600 uppercase tracking-wider">Barras</p>
+                <p className="text-2xl font-black text-indigo-700">{localItem.mainBars.length}</p>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-3 rounded-2xl border border-emerald-200/50">
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">Peso Total</p>
+                <p className="text-2xl font-black text-emerald-700">
+                  {localItem.mainBars.reduce((acc, bar) => {
+                    const weightPerMeter = STEEL_WEIGHTS[bar.gauge] || 0;
+                    const baseLenM = (bar.segmentA || 0) / 100;
+                    const extraM = ((bar.segmentB || 0) + (bar.segmentC || 0) + (bar.segmentD || 0) + (bar.segmentE || 0)) / 100;
+                    return acc + (bar.count * (baseLenM + extraM) * weightPerMeter);
+                  }, 0).toFixed(1)}
+                  <span className="text-sm ml-1">kg</span>
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-2xl border border-amber-200/50">
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Comprimento</p>
+                <p className="text-2xl font-black text-amber-700">
+                  {Math.max(...localItem.mainBars.map(b => b.segmentA || 0), 0)}
+                  <span className="text-sm ml-1">cm</span>
+                </p>
               </div>
             </div>
           </div>
@@ -1206,7 +1266,21 @@ const ItemDetailEditor: React.FC<{
                 </div>
               </div>
 
-              <div className="mb-4">
+              {/* Enhanced Bar Preview */}
+              <div className="mb-6 bg-gradient-to-br from-slate-50 to-white p-6 rounded-3xl border-2 border-slate-200 shadow-inner">
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="text-xs font-black text-slate-600 uppercase tracking-wider">Preview em Tempo Real</h5>
+                  <div className="flex gap-2">
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black">
+                      {newBar.count}x ø{newBar.gauge}mm
+                    </span>
+                    {newBar.segmentA && (
+                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black">
+                        {((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0) + (newBar.segmentD || 0) + (newBar.segmentE || 0))}cm total
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <BarDrawing
                   length={(newBar.segmentA || 0) / 100}
                   hookStart={newBar.segmentB || newBar.hookStart || 0}
@@ -1561,9 +1635,35 @@ const ItemDetailEditor: React.FC<{
                 </div>
               </div>
 
-              <button onClick={handleAddOrUpdateBar} className={`w-full py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all ${editingIndex !== undefined ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-                {editingIndex !== undefined ? 'Atualizar Ferro' : 'Adicionar Ferro à Lista'}
-              </button>
+              {/* Enhanced Add/Update Button */}
+              <div className="space-y-2">
+                <button
+                  onClick={handleAddOrUpdateBar}
+                  className={`w-full py-4 rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 ${editingIndex !== undefined
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'
+                      : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800'
+                    }`}
+                >
+                  {editingIndex !== undefined ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                      Atualizar Ferro
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
+                      Adicionar Ferro à Lista
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-[10px] text-slate-400 font-bold">
+                  💡 Dica: Pressione <kbd className="px-2 py-0.5 bg-slate-100 rounded border border-slate-300 font-mono">Ctrl+Enter</kbd> para adicionar
+                </p>
+              </div>
             </div>
 
             {/* List of Bars */}
