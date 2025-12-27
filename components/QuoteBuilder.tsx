@@ -153,10 +153,11 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
   );
 };
 
-item: SteelItem;
-onEditBar: (idx: number) => void;
-onRemoveBar: (idx: number) => void;
-onEditStirrups: () => void;
+const ItemReinforcementPreview: React.FC<{
+  item: SteelItem;
+  onEditBar: (idx: number) => void;
+  onRemoveBar: (idx: number) => void;
+  onEditStirrups: () => void;
 }> = ({ item, onEditBar, onRemoveBar, onEditStirrups }) => {
   const isSapata = item.type === ElementType.SAPATA;
   if (item.mainBars.length === 0 && !item.hasStirrups) return null;
