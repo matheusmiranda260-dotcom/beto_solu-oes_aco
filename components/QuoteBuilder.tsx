@@ -384,23 +384,20 @@ const BeamElevationView: React.FC<{
     const hookEnd = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);
 
     const hookH = 15;
+    const inwardH = 12; // Fixed size for inward bends to maintain visual clarity
     const isCShape = group.shape?.startsWith('c_');
-
-    // Scale inward segments D and E by scaleX (convert cm to pixels)
-    const inwardDPx = isCShape && group.segmentD ? group.segmentD * scaleX : 0;
-    const inwardEPx = isCShape && group.segmentE ? group.segmentE * scaleX : 0;
 
     let d = "";
     // Start Hook
     if (group.hookStartType === 'up') {
       if (isCShape && group.segmentD) {
-        d = `M ${padX + inwardDPx},${yBase - hookH} L ${padX},${yBase - hookH} L ${padX},${yBase} `;
+        d = `M ${padX + inwardH},${yBase - hookH} L ${padX},${yBase - hookH} L ${padX},${yBase} `;
       } else {
         d = `M ${padX},${yBase - hookH} L ${padX},${yBase} `;
       }
     } else if (group.hookStartType === 'down') {
       if (isCShape && group.segmentD) {
-        d = `M ${padX + inwardDPx},${yBase + hookH} L ${padX},${yBase + hookH} L ${padX},${yBase} `;
+        d = `M ${padX + inwardH},${yBase + hookH} L ${padX},${yBase + hookH} L ${padX},${yBase} `;
       } else {
         d = `M ${padX},${yBase + hookH} L ${padX},${yBase} `;
       }
@@ -414,10 +411,10 @@ const BeamElevationView: React.FC<{
     // End Hook
     if (group.hookEndType === 'up') {
       d += `L ${padX + pxLen},${yBase - hookH}`;
-      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardEPx},${yBase - hookH}`;
+      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardH},${yBase - hookH}`;
     } else if (group.hookEndType === 'down') {
       d += `L ${padX + pxLen},${yBase + hookH}`;
-      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardEPx},${yBase + hookH}`;
+      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardH},${yBase + hookH}`;
     }
 
     const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
