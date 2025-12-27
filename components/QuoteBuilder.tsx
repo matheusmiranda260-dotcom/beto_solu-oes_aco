@@ -97,17 +97,16 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
 };
 
 // Visualização da Seção Transversal Composta (Todas as barras)
+// Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
 const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[] }> = ({ stirrupW, stirrupH, bars }) => {
   const width = stirrupW || 15;
   const height = stirrupH || 20;
-
-  // Scale calculations
   const maxDim = Math.max(width, height, 15);
-  const scale = 100 / maxDim; // Smaller scale for list view (100px box)
+  const scale = 120 / maxDim;
   const w = width * scale;
   const h = height * scale;
-  const padding = 15;
-  const r = 3;
+  const padding = 20;
+  const r = 4; // Larger dots
 
   const allPoints: { x: number, y: number, color: string }[] = [];
 
@@ -116,39 +115,103 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
     const count = group.count;
 
     if (usage === BarUsage.PRINCIPAL) {
-      allPoints.push({ x: 0, y: 0, color: '#ef4444' });
-      allPoints.push({ x: w, y: 0, color: '#ef4444' });
-      allPoints.push({ x: 0, y: h, color: '#ef4444' });
-      allPoints.push({ x: w, y: h, color: '#ef4444' });
+      allPoints.push({ x: 0, y: 0, color: '#000000' });
+      allPoints.push({ x: w, y: 0, color: '#000000' });
+      allPoints.push({ x: 0, y: h, color: '#000000' });
+      allPoints.push({ x: w, y: h, color: '#000000' });
       if (count > 4) {
         const extras = count - 4;
         const perSide = Math.ceil(extras / 2);
-        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color: '#ef4444' });
-        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color: '#ef4444' });
+        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color: '#000000' });
+        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color: '#000000' });
       }
     } else if (usage === BarUsage.COSTELA) {
       for (let i = 0; i < count; i++) {
         const side = i % 2 === 0 ? 0 : w;
         const row = Math.floor(i / 2) + 1;
         const totalRows = Math.ceil(count / 2) + 1;
-        allPoints.push({ x: side, y: (h * row) / totalRows, color: '#f59e0b' });
+        allPoints.push({ x: side, y: (h * row) / totalRows, color: '#000000' }); // Black for all bars in section? Usually yes.
       }
     } else if (usage === BarUsage.CAMADA_2) {
-      const offset = 15; // Visual offset
+      const offset = 15;
       for (let i = 0; i < count; i++) {
-        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color: '#3b82f6' });
+        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color: '#000000' });
       }
     }
   });
 
   return (
-    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center" style={{ minWidth: '130px', height: '130px' }}>
+    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center" style={{ minWidth: '140px', height: '140px' }}>
       <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
-        <rect x="0" y="0" width={w} height={h} fill="none" stroke="#e2e8f0" strokeWidth="3" rx="4" />
+        {/* Stirrup - Orange */}
+        <rect x="0" y="0" width={w} height={h} fill="none" stroke="#f97316" strokeWidth="2.5" rx="2" />
+
+        {/* Bars - Black Dots */}
         {allPoints.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} stroke="white" strokeWidth="1" />
+          <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} />
         ))}
       </svg>
+    </div>
+  );
+};
+
+// Nova Visualização Longitudinal (Elevação)
+const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
+  const viewW = 300;
+  const viewH = 80;
+  const pad = 10;
+  const beamY1 = pad + 15; // Top chord Y
+  const beamY2 = viewH - pad - 15; // Bottom chord Y
+
+  // Stirrups
+  const spacing = item.stirrupSpacing || 20;
+  // Limit shown stirrups for visual clarity if too dense
+  const totalStirrups = Math.floor(item.length * 100 / spacing);
+  const visualStirrups = Math.min(totalStirrups, 30); // Max 30 lines drawn
+
+  const stirrupLines = [];
+  for (let i = 0; i <= visualStirrups; i++) {
+    const x = pad + (i * ((viewW - 2 * pad) / visualStirrups));
+    stirrupLines.push(x);
+  }
+
+  // Label Logic
+  const mainBars = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
+  const totalMainBars = mainBars.reduce((acc, b) => acc + b.count, 0);
+  const gauge = mainBars.length > 0 ? mainBars[0].gauge : '10.0';
+  const label = totalMainBars > 0 ? `${Math.ceil(totalMainBars / 2)} ferros ${gauge}mm` : ""; // Assuming split top/bottom
+
+  return (
+    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center relative mt-4 mb-4" style={{ minWidth: '320px' }}>
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-6">Elevação (Esquema)</span>
+
+      {/* Top Label */}
+      {label && <div className="absolute top-8 bg-white border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 -translate-y-1/2">{label}</div>}
+
+      <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
+        {/* Stirrups (Lines) */}
+        {item.hasStirrups && stirrupLines.map((x, i) => (
+          <line key={i} x1={x} y1={beamY1} x2={x} y2={beamY2} stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
+        ))}
+
+        {/* Main Bars (Horizontal Lines) */}
+        {totalMainBars > 0 && (
+          <>
+            <line x1={pad} y1={beamY1} x2={viewW - pad} y2={beamY1} stroke="#000" strokeWidth="3" strokeLinecap="round" />
+            <line x1={pad} y1={beamY2} x2={viewW - pad} y2={beamY2} stroke="#000" strokeWidth="3" strokeLinecap="round" />
+          </>
+        )}
+
+        {/* Stirrup Label (centered) */}
+        {item.hasStirrups && (
+          <text x={viewW / 2} y={viewH / 2 + 3} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#f97316" filter="url(#solid)">
+            Ø{item.stirrupGauge} c/{item.stirrupSpacing}
+          </text>
+        )}
+      </svg>
+
+      {/* Bottom Label */}
+      {label && <div className="absolute bottom-4 bg-white border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 translate-y-1/2">{label}</div>}
     </div>
   );
 };
@@ -195,17 +258,23 @@ const ItemReinforcementPreview: React.FC<{
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {(item.hasStirrups || (!isSapata && item.mainBars.length > 0)) && (
-        <div className="flex flex-col md:flex-row gap-4 items-stretch">
-          {/* Cross Section Box - Visualização Acumulada */}
+        <div className="flex flex-col gap-4 items-stretch">
+          {/* Technical Project View - Elevation + Section */}
           {!isSapata && (
-            <div className="relative group">
-              <div className="absolute -top-2 -left-2 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md z-10 opacity-0 group-hover:opacity-100 transition-opacity">SEÇÃO</div>
-              <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
+            <div className="flex flex-wrap gap-6 items-center justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+              {/* Elevation */}
+              <BeamElevationView item={item} />
+
+              {/* Section */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
+                <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
+              </div>
             </div>
           )}
 
           {item.hasStirrups && (
-            <div className={`flex-1 flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
+            <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
               <div className="flex items-center gap-6">
                 {isSapata ? (
                   <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
