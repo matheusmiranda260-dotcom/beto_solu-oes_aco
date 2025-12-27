@@ -554,78 +554,7 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
   const isEditingBar = barIdx !== undefined;
   const isSapata = item.type === ElementType.SAPATA;
 
-  /* New CrossSectionPreview Component */
-  const CrossSectionPreview: React.FC<{ width: number; height: number; usage: BarUsage; count: number }> = ({ width, height, usage, count }) => {
-    // Scale factor for visualization (fit in ~200px box)
-    const maxDim = Math.max(width, height, 15); // min 15 to avoid div/0
-    const scale = 140 / maxDim;
-    const w = width * scale;
-    const h = height * scale;
-    const padding = 40;
 
-    // Bar radius
-    const r = 4;
-
-    // Generate bar positions
-    const bars: { x: number, y: number }[] = [];
-
-    if (usage === BarUsage.PRINCIPAL) {
-      // Corners
-      bars.push({ x: 0, y: 0 }); // Top-Left
-      bars.push({ x: w, y: 0 }); // Top-Right
-      bars.push({ x: 0, y: h }); // Bot-Left
-      bars.push({ x: w, y: h }); // Bot-Right
-      // If more than 4, distribute? For now, stick to user request of corners/basic.
-      // If count > 4, maybe add intermediates? 
-      if (count > 4) {
-        // simple distribution for extra bars on top/bottom
-        const extras = count - 4;
-        const perSide = Math.ceil(extras / 2);
-        // Top
-        for (let i = 1; i <= perSide; i++) bars.push({ x: (w * i) / (perSide + 1), y: 0 });
-        // Bottom
-        for (let i = 1; i <= extras - perSide; i++) bars.push({ x: (w * i) / (extras - perSide + 1), y: h });
-      }
-    } else if (usage === BarUsage.COSTELA) {
-      // Sides
-      for (let i = 0; i < count; i++) {
-        // Distribute vertically on both sides? Or just left/right pairs?
-        // Assuming pairs for costela mostly
-        const side = i % 2 === 0 ? 0 : w; // Left or Right
-        const row = Math.floor(i / 2) + 1;
-        const totalRows = Math.ceil(count / 2) + 1;
-        bars.push({ x: side, y: (h * row) / totalRows });
-      }
-    } else if (usage === BarUsage.CAMADA_2) { // 2nd Layer
-      // Bottom, offset up by ~5cm (scaled). 5cm is roughly 1/4 of a 20cm beam.
-      // Let's use a fixed offset of ~15px visual or proportional.
-      const offset = 20; // visual representation of "5cm"
-      for (let i = 0; i < count; i++) {
-        // Distribute horizontally at bottom - offset
-        bars.push({ x: (w * (i + 1)) / (count + 1), y: h - offset });
-      }
-    } else {
-      // Default / Arrranque - just center for now or standard
-      bars.push({ x: w / 2, y: h / 2 });
-    }
-
-    return (
-      <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-3xl border border-slate-100 mt-4">
-        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Simulação de Corte (Seção)</span>
-        <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
-          {/* Stirrup Shape */}
-          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#94a3b8" strokeWidth="3" rx="4" />
-          <text x={w / 2} y={-10} textAnchor="middle" fill="#64748b" fontSize="10" fontWeight="bold">{width}cm</text>
-          <text x={w + 10} y={h / 2} textAnchor="start" fill="#64748b" fontSize="10" fontWeight="bold">{height}cm</text>
-
-          {/* Bars */}
-          {bars.map((pos, i) => (
-            <circle key={i} cx={pos.x} cy={pos.y} r={r} fill="#ef4444" stroke="#7f1d1d" strokeWidth="1" />
-          ))}
-        </svg>
-      </div>
-    );
-  };
 
   const [activeTab, setActiveTab] = useState<'ferros' | 'estribos'>(initialTab);
   const defaultHook = isSapata ? (item.height || 20) - 5 : 15;
@@ -649,6 +578,23 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
   );
 
   const [stirrupData, setStirrupData] = useState<SteelItem>({ ...item });
+
+  /* Live Preview of All Bars */
+  const previewBars = React.useMemo(() => {
+    // Clone existing bars to avoid mutation
+    let bars = [...item.mainBars];
+
+    if (activeTab === 'ferros') {
+      if (isEditingBar && barIdx !== undefined) {
+        // If editing, replace the current one
+        bars[barIdx] = barData;
+      } else {
+        // If adding new, append the current editor state
+        bars.push(barData);
+      }
+    }
+    return bars;
+  }, [item.mainBars, barData, isEditingBar, barIdx, activeTab]);
 
   const HookSelector: React.FC<{ label: string, current: HookType, onChange: (t: HookType) => void }> = ({ label, current, onChange }) => (
     <div className="space-y-3">
@@ -702,12 +648,14 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
 
                 {/* Cross Section View */}
                 {!item.type.includes('Sapata') && (
-                  <CrossSectionPreview
-                    width={item.stirrupWidth || 15}
-                    height={item.stirrupHeight || 20}
-                    usage={barData.usage}
-                    count={barData.count}
-                  />
+                  <div className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Seção Transversal (Acumulada)</p>
+                    <CompositeCrossSection
+                      stirrupW={item.stirrupWidth || 15}
+                      stirrupH={item.stirrupHeight || 20}
+                      bars={previewBars}
+                    />
+                  </div>
                 )}
               </div>
 
