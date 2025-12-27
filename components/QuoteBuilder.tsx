@@ -1088,7 +1088,7 @@ const ItemDetailEditor: React.FC<{
                 <div className="flex justify-between items-end mb-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biblioteca de Formatos</label>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {/* 1. Straight */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 })}
@@ -1133,7 +1133,18 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 5. L Left Down */}
+                  {/* 5. C Shape (Official Open Stirrup) */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all border-slate-100 hover:border-indigo-300 group`}
+                    title="C / Estribo Aberto (Cima)"
+                  >
+                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                      <path d="M8,8 L4,8 L4,16 L28,16 L28,8 L24,8" />
+                    </svg>
+                  </button>
+
+                  {/* 6. L Left Down */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
@@ -1144,7 +1155,7 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 6. L Right Down */}
+                  {/* 7. L Right Down */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
@@ -1155,7 +1166,7 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 7. U / Hooks Down */}
+                  {/* 8. U / Hooks Down */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
@@ -1166,9 +1177,16 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 8. Spacer */}
-                  <div className="h-12 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-10">
-                  </div>
+                  {/* 9. C Shape Down */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all border-slate-100 hover:border-indigo-300 group`}
+                    title="C / Estribo Aberto (Baixo)"
+                  >
+                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                      <path d="M8,16 L4,16 L4,8 L28,8 L28,16 L24,16" />
+                    </svg>
+                  </button>
 
                 </div>
               </div>
