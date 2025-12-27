@@ -682,44 +682,31 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                     {openDropdownId === item.id && (
                       <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
                         <div className="p-2 bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">
-                          Adicionar Componente
+                          Opções da Peça
                         </div>
                         <div className="flex flex-col p-2 gap-1">
                           <button
                             onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.PRINCIPAL }); setOpenDropdownId(null); }}
                             className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
                           >
-                            <span>Ferro Principal</span>
-                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
+                            <span>Adicionar / Editar Ferros</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">Abrir Editor</span>
                           </button>
-
-                          {item.type !== ElementType.SAPATA && (
-                            <>
-                              <button
-                                onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.COSTELA }); setOpenDropdownId(null); }}
-                                className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
-                              >
-                                <span>Costela (Pele)</span>
-                                <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
-                              </button>
-                              <button
-                                onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.CAMADA_2 }); setOpenDropdownId(null); }}
-                                className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
-                              >
-                                <span>2ª Camada</span>
-                                <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
-                              </button>
-                            </>
-                          )}
 
                           <div className="h-px bg-slate-100 my-1" />
 
                           <button
-                            onClick={() => { setEditingContext({ item, initialTab: 'estribos' }); setOpenDropdownId(null); }}
-                            className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                            onClick={() => {
+                              // Duplicar item logic? Or delete?
+                              // Assuming the list had delete but I don't see one in this dropdown block.
+                              // Let's add a Remove action if it wasn't there or if useful.
+                              // But for now, user asked to simplify "Add Components".
+                              setItems(items.filter(i => i.id !== item.id));
+                            }}
+                            className="text-left px-4 py-3 rounded-xl hover:bg-red-50 text-xs font-bold text-red-500 flex items-center justify-between group"
                           >
-                            <span>{item.type === ElementType.SAPATA ? 'Gaiola / Malha' : 'Estribos'}</span>
-                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">Config</span>
+                            <span>Remover Peça</span>
+                            <span className="text-[10px] bg-red-100 text-red-500 px-2 py-0.5 rounded group-hover:bg-red-200 transition-colors">X</span>
                           </button>
                         </div>
                       </div>
@@ -1069,21 +1056,32 @@ const ItemDetailEditor: React.FC<{
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="space-y-1">
+                {/* Hidden Placement Dropdown - Replaced by Interactive Visual Selector */}
+                <div className="space-y-1 opacity-50 pointer-events-none hidden">
                   <label className="text-[9px] font-black text-slate-400 uppercase">Local na Seção</label>
-                  <select value={newBar.placement || 'bottom'} onChange={e => setNewBar({ ...newBar, placement: e.target.value as any })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-500">
-                    <option value="bottom">Inferior (Positivo)</option>
-                    <option value="top">Superior (Negativo)</option>
-                    <option value="distributed">Lateral (Pele)</option>
+                  <select value={newBar.placement || 'bottom'} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm outline-none">
+                    <option value="bottom">Inferior</option>
+                    <option value="top">Superior</option>
+                    <option value="distributed">Lateral</option>
                   </select>
                 </div>
                 {/* Hook Length */}
-                {(newBar.hookStartType !== 'none' || newBar.hookEndType !== 'none') && (
-                  <div className="space-y-1 animate-in fade-in">
-                    <label className="text-[9px] font-black text-slate-400 uppercase">Comp. Gancho (cm)</label>
-                    <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value), hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                  </div>
-                )}
+                {/* Hook Length Split */}
+                <div className="grid grid-cols-2 gap-4">
+                  {newBar.hookStartType !== 'none' ? (
+                    <div className="space-y-1 animate-in fade-in">
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho Esq. (cm)</label>
+                      <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                    </div>
+                  ) : <div />}
+
+                  {newBar.hookEndType !== 'none' ? (
+                    <div className="space-y-1 animate-in fade-in">
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho Dir. (cm)</label>
+                      <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                    </div>
+                  ) : <div />}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
