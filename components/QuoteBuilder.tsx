@@ -121,7 +121,17 @@ const TechnicalDimension: React.FC<{ x1: number; y1: number; x2: number; y2: num
 };
 
 // Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
-const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[]; stirrupPos?: string; stirrupGauge?: string; stirrupCount?: number }> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount }) => {
+// Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
+const CompositeCrossSection: React.FC<{
+  stirrupW: number;
+  stirrupH: number;
+  bars: MainBarGroup[];
+  stirrupPos?: string;
+  stirrupGauge?: string;
+  stirrupCount?: number;
+  onZoneClick?: (zone: 'top' | 'bottom' | 'distributed') => void;
+  selectedZone?: 'top' | 'bottom' | 'distributed' | null;
+}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, onZoneClick, selectedZone }) => {
   const width = stirrupW || 15;
   const height = stirrupH || 20;
   const maxDim = Math.max(width, height, 15);
@@ -149,10 +159,6 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
       if (count === 1) {
         allPoints.push({ x: w / 2, y: 0, color }); // Centered
       } else {
-        // Corners first? No, just distribute.
-        // Usually we want bars in corners.
-        // If 2 bars -> 0, w.
-        // If 3 bars -> 0, w/2, w.
         for (let i = 0; i < count; i++) {
           allPoints.push({ x: (w * i) / (count - 1), y: 0, color });
         }
@@ -169,41 +175,79 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
     } else if (placement === 'distributed') {
       // Side bars (Costela)
       for (let i = 0; i < count; i++) {
-        // If even count, 2 per row (one left, one right).
-        // If odd? odd usually not for sides (pairs).
-        // Assuming pairs for sides.
         const side = i % 2 === 0 ? 0 : w;
-        // Rows excluding top/bottom bars.
-        const rows = Math.ceil(count / 2); // e.g. 4 bars -> 2 rows.
+        const rows = Math.ceil(count / 2);
         const rowIdx = Math.floor(i / 2);
-        // Distribute vertically between 0 and h? No, typically "skin" is middle.
-        // Let's use spacing.
         const yPos = (h * (rowIdx + 1)) / (rows + 1);
         allPoints.push({ x: side, y: yPos, color });
       }
     }
   });
 
+  // Calculate Zones for Interaction
+  const topZoneHeight = h * 0.35;
+  const bottomZoneHeight = h * 0.35;
+  // Side zone is the middle part
+  const sideZoneY = topZoneHeight;
+  const sideZoneH = h - topZoneHeight - bottomZoneHeight;
+
   return (
-    <div className="flex flex-col items-center">
-      <div className="bg-white p-2 flex items-center justify-center relative" style={{ minWidth: '160px', height: '160px' }}>
+    <div className="flex flex-col items-center select-none">
+      <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '160px', height: '160px' }}>
         <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
+
+          {/* Interactive Zones (Underlay) */}
+          {onZoneClick && (
+            <g className="cursor-pointer">
+              {/* Top Zone */}
+              <rect
+                x={-10} y={-10} width={w + 20} height={topZoneHeight + 10}
+                fill={selectedZone === 'top' ? '#dbeafe' : 'transparent'}
+                className="hover:fill-blue-50 transition-colors"
+                onClick={() => onZoneClick('top')}
+              />
+              {/* Bottom Zone */}
+              <rect
+                x={-10} y={h - bottomZoneHeight} width={w + 20} height={bottomZoneHeight + 10}
+                fill={selectedZone === 'bottom' ? '#dbeafe' : 'transparent'}
+                className="hover:fill-blue-50 transition-colors"
+                onClick={() => onZoneClick('bottom')}
+              />
+              {/* Side Zone (Middle) */}
+              <rect
+                x={-10} y={sideZoneY} width={w + 20} height={sideZoneH}
+                fill={selectedZone === 'distributed' ? '#dbeafe' : 'transparent'}
+                className="hover:fill-blue-50 transition-colors"
+                onClick={() => onZoneClick('distributed')}
+              />
+            </g>
+          )}
+
           {/* Section Box */}
-          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#000" strokeWidth="2" />
+          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#000" strokeWidth="2" pointerEvents="none" />
           {/* Concrete Hatch */}
-          <path d={`M0,${h} L${w},0`} stroke="#000" strokeWidth="0.5" opacity="0.1" />
+          <path d={`M0,${h} L${w},0`} stroke="#000" strokeWidth="0.5" opacity="0.1" pointerEvents="none" />
 
           {/* Inner Stirrup */}
-          <rect x="4" y="4" width={w - 8} height={h - 8} fill="none" stroke="#000" strokeWidth="1.5" rx="1" />
+          <rect x="4" y="4" width={w - 8} height={h - 8} fill="none" stroke="#000" strokeWidth="1.5" rx="1" pointerEvents="none" />
 
           {/* Bars */}
           {allPoints.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} />
+            <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} pointerEvents="none" />
           ))}
 
           {/* External Dimensions */}
           <TechnicalDimension x1={0} y1={h} x2={w} y2={h} text={`${Math.round(width)}`} offset={10} />
           <TechnicalDimension x1={0} y1={0} x2={0} y2={h} text={`${Math.round(height)}`} offset={-10} vertical />
+
+          {/* Zone Labels (Mock) */}
+          {onZoneClick && (
+            <>
+              <text x={w / 2} y={-15} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">SUPERIOR</text>
+              <text x={w / 2} y={h + 25} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">INFERIOR</text>
+            </>
+          )}
+
         </svg>
       </div>
 
@@ -918,13 +962,20 @@ const ItemDetailEditor: React.FC<{
                   onRemoveBar={handleRemoveBar}
                   readOnly={false}
                 />
-                <div className="mt-4 flex justify-center">
+                <div className="mt-4 flex flex-col items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Seletor de Posição (Clique)</span>
                   <CompositeCrossSection
                     stirrupW={localItem.stirrupWidth}
                     stirrupH={localItem.stirrupHeight}
                     bars={localItem.mainBars}
                     stirrupPos={localItem.stirrupPosition}
                     stirrupGauge={localItem.stirrupGauge}
+                    onZoneClick={(zone) => {
+                      setNewBar(prev => ({ ...prev, placement: zone }));
+                      // If we are currently editing an index, update that index too? No, usually changing placement means redefining.
+                      // Just update the form state so the user sees the dropdown change.
+                    }}
+                    selectedZone={newBar.placement}
                   />
                 </div>
               </div>
