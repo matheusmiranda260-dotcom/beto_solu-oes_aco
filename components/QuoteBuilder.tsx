@@ -113,29 +113,31 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
   bars.forEach(group => {
     const usage = group.usage;
     const count = group.count;
+    // Color logic: Principal = Black, Others (Costela/2nd) = Red
+    const color = usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
 
     if (usage === BarUsage.PRINCIPAL) {
-      allPoints.push({ x: 0, y: 0, color: '#000000' });
-      allPoints.push({ x: w, y: 0, color: '#000000' });
-      allPoints.push({ x: 0, y: h, color: '#000000' });
-      allPoints.push({ x: w, y: h, color: '#000000' });
+      allPoints.push({ x: 0, y: 0, color });
+      allPoints.push({ x: w, y: 0, color });
+      allPoints.push({ x: 0, y: h, color });
+      allPoints.push({ x: w, y: h, color });
       if (count > 4) {
         const extras = count - 4;
         const perSide = Math.ceil(extras / 2);
-        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color: '#000000' });
-        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color: '#000000' });
+        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color });
+        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color });
       }
     } else if (usage === BarUsage.COSTELA) {
       for (let i = 0; i < count; i++) {
         const side = i % 2 === 0 ? 0 : w;
         const row = Math.floor(i / 2) + 1;
         const totalRows = Math.ceil(count / 2) + 1;
-        allPoints.push({ x: side, y: (h * row) / totalRows, color: '#000000' }); // Black for all bars in section? Usually yes.
+        allPoints.push({ x: side, y: (h * row) / totalRows, color });
       }
     } else if (usage === BarUsage.CAMADA_2) {
       const offset = 15;
       for (let i = 0; i < count; i++) {
-        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color: '#000000' });
+        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color });
       }
     }
   });
@@ -145,8 +147,7 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
       <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
         {/* Stirrup - Orange */}
         <rect x="0" y="0" width={w} height={h} fill="none" stroke="#f97316" strokeWidth="2.5" rx="2" />
-
-        {/* Bars - Black Dots */}
+        {/* Bars */}
         {allPoints.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} />
         ))}
@@ -158,8 +159,8 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
 // Nova Visualização Longitudinal (Elevação)
 const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
   const viewW = 340;
-  const viewH = 140; // Increased height for multiple layers
-  const pad = 30; // More padding for hooks
+  const viewH = 140;
+  const pad = 30;
   const beamY1 = pad + 10;
   const beamY2 = viewH - pad - 10;
   const midY = (beamY1 + beamY2) / 2;
@@ -181,7 +182,12 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     const hookStart = group.hookStartType !== 'none' ? group.hookStart : 0;
     const hookEnd = group.hookEndType !== 'none' ? group.hookEnd : 0;
 
-    const totalLenLabel = `${group.count}x Ø${group.gauge} c/${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
+    // Color logic
+    const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
+    const usageLabel = group.usage === BarUsage.PRINCIPAL ? 'principal' : group.usage.toLowerCase();
+
+    // "2 ferros principal 10.0 mm c/ 300..."
+    const totalLenLabel = `${group.count} ferros ${usageLabel} ${group.gauge}mm c/ ${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
 
     // Hook visual size (simplified)
     const hSize = 10;
@@ -203,11 +209,13 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
 
     return (
       <g key={group.gauge + y + group.usage + isTop}>
-        <path d={path} fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
         {/* Label Bubble - Using div to handle text background nicely */}
         <foreignObject x={pad} y={y - (isTop ? 28 : -8)} width={viewW - 2 * pad} height={24}>
           <div className="w-full text-center flex justify-center">
-            <span className="bg-white border border-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm text-slate-700 whitespace-nowrap">
+            <span className="bg-white border border-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm text-slate-700 whitespace-nowrap flex items-center gap-1.5">
+              {/* Dot Icon */}
+              <span className="w-2 h-2 rounded-full border border-slate-200" style={{ backgroundColor: color }}></span>
               {totalLenLabel}
             </span>
           </div>
