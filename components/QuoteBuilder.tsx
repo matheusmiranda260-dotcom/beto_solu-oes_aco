@@ -193,7 +193,8 @@ const ItemReinforcementPreview: React.FC<{
       </div>
 
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
-      {item.hasStirrups && (
+      {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
+      {(item.hasStirrups || (!isSapata && item.mainBars.length > 0)) && (
         <div className="flex flex-col md:flex-row gap-4 items-stretch">
           {/* Cross Section Box - Visualização Acumulada */}
           {!isSapata && (
@@ -203,34 +204,36 @@ const ItemReinforcementPreview: React.FC<{
             </div>
           )}
 
-          <div className={`flex-1 flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
-            <div className="flex items-center gap-6">
-              {isSapata ? (
-                <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
-              ) : (
-                <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
-              )}
+          {item.hasStirrups && (
+            <div className={`flex-1 flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
+              <div className="flex items-center gap-6">
+                {isSapata ? (
+                  <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
+                ) : (
+                  <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
+                )}
 
-              <div className="flex flex-col">
-                <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
-                <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
-              </div>
-
-              {isSapata && (
-                <div className="flex gap-4">
-                  <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                    {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
-                  </div>
-                  <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                    {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
-                  </div>
+                <div className="flex flex-col">
+                  <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
+                  <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
                 </div>
-              )}
+
+                {isSapata && (
+                  <div className="flex gap-4">
+                    <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
+                      {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
+                    </div>
+                    <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
+                      {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm ${isSapata ? 'text-indigo-600 hover:text-indigo-800' : 'text-amber-600 hover:text-amber-800 opacity-0 group-hover/st:opacity-100'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+              </button>
             </div>
-            <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm ${isSapata ? 'text-indigo-600 hover:text-indigo-800' : 'text-amber-600 hover:text-amber-800 opacity-0 group-hover/st:opacity-100'}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-            </button>
-          </div>
+          )}
         </div>
       )}
     </div>
