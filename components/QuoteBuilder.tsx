@@ -883,351 +883,406 @@ const ItemDetailEditor: React.FC<{
         position: ''
       });
     }
-  }, [editingIndex, localItem.mainBars]);
+    const [visualShape, setVisualShape] = useState<string>('straight');
+
+    useEffect(() => {
+      if (editingIndex !== undefined && localItem.mainBars[editingIndex]) {
+        const bar = localItem.mainBars[editingIndex];
+        setNewBar(bar);
+        // Infer visual shape
+        if (bar.hookStartType === 'none' && bar.hookEndType === 'none') setVisualShape('straight');
+        else if (bar.hookStartType === 'up' && bar.hookEndType === 'none') setVisualShape('l_left_up');
+        else if (bar.hookStartType === 'none' && bar.hookEndType === 'up') setVisualShape('l_right_up');
+        else if (bar.hookStartType === 'up' && bar.hookEndType === 'up') setVisualShape('u_up'); // Default to U
+        else if (bar.hookStartType === 'down' && bar.hookEndType === 'none') setVisualShape('l_left_down');
+        else if (bar.hookStartType === 'none' && bar.hookEndType === 'down') setVisualShape('l_right_down');
+        else if (bar.hookStartType === 'down' && bar.hookEndType === 'down') setVisualShape('u_down');
+        else setVisualShape('custom');
+      } else {
+        setNewBar({
+          gauge: '10.0',
+          count: 1,
+          placement: 'bottom',
+          hookStartType: 'none',
+          hookEndType: 'none',
+          hookStart: defaultHook,
+          hookEnd: defaultHook,
+          position: ''
+        });
+        setVisualShape('straight');
+      }
+    }, [editingIndex, localItem.mainBars]);
 
 
-  const handleAddOrUpdateBar = () => {
-    const bars = [...localItem.mainBars];
-    if (editingIndex !== undefined) {
-      bars[editingIndex] = newBar;
-    } else {
-      bars.push(newBar);
-    }
-    const updated = { ...localItem, mainBars: bars, isConfigured: true };
-    setLocalItem(updated);
-    setEditingIndex(undefined); // Reset interaction to "Add New" mode
-  };
+    const handleAddOrUpdateBar = () => {
+      const bars = [...localItem.mainBars];
+      if (editingIndex !== undefined) {
+        bars[editingIndex] = newBar;
+      } else {
+        bars.push(newBar);
+      }
+      const updated = { ...localItem, mainBars: bars, isConfigured: true };
+      setLocalItem(updated);
+      setEditingIndex(undefined); // Reset interaction to "Add New" mode
+    };
 
-  const handleRemoveBar = (idx: number) => {
-    const bars = localItem.mainBars.filter((_, i) => i !== idx);
-    setLocalItem({ ...localItem, mainBars: bars });
-    if (editingIndex === idx) setEditingIndex(undefined);
-  };
+    const handleRemoveBar = (idx: number) => {
+      const bars = localItem.mainBars.filter((_, i) => i !== idx);
+      setLocalItem({ ...localItem, mainBars: bars });
+      if (editingIndex === idx) setEditingIndex(undefined);
+    };
 
-  const handleSaveAll = () => {
-    // Commit everything
-    onUpdateItem(localItem);
-  };
+    const handleSaveAll = () => {
+      // Commit everything
+      onUpdateItem(localItem);
+    };
 
-  // Helper for Hook Selector
-  const HookSelector: React.FC<{ label: string, current: HookType, onChange: (t: HookType) => void }> = ({ label, current, onChange }) => (
-    <div className="space-y-1">
-      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-      <div className="flex bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200">
-        {(['none', 'up', 'down'] as HookType[]).map(t => (
-          <button key={t} onClick={() => onChange(t)} className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${current === t ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}>
-            {t === 'none' ? 'Reto' : t === 'up' ? '↑' : '↓'}
-          </button>
-        ))}
+    // Helper for Hook Selector
+    const HookSelector: React.FC<{ label: string, current: HookType, onChange: (t: HookType) => void }> = ({ label, current, onChange }) => (
+      <div className="space-y-1">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+        <div className="flex bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200">
+          {(['none', 'up', 'down'] as HookType[]).map(t => (
+            <button key={t} onClick={() => onChange(t)} className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${current === t ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}>
+              {t === 'none' ? 'Reto' : t === 'up' ? '↑' : '↓'}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl">
+    return (
+      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
+        <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl">
 
-        {/* Left Column: Visualization & Stirrups */}
-        <div className="w-1/2 flex flex-col border-r border-slate-100 bg-slate-50/30">
-          <div className="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-slate-900 text-amber-500 rounded-xl flex items-center justify-center font-black">{localItem.type.charAt(0)}</div>
-              <div>
-                <h3 className="font-black text-slate-800 text-lg leading-tight">Editor de Armação</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">{localItem.observation || localItem.type}</p>
+          {/* Left Column: Visualization & Stirrups */}
+          <div className="w-1/2 flex flex-col border-r border-slate-100 bg-slate-50/30">
+            <div className="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-slate-900 text-amber-500 rounded-xl flex items-center justify-center font-black">{localItem.type.charAt(0)}</div>
+                <div>
+                  <h3 className="font-black text-slate-800 text-lg leading-tight">Editor de Armação</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">{localItem.observation || localItem.type}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              {/* Visualizer - Interactive */}
+              {!isSapata && (
+                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+                  <BeamElevationView
+                    item={localItem}
+                    onEditBar={(idx) => setEditingIndex(idx)}
+                    onRemoveBar={handleRemoveBar}
+                    readOnly={false}
+                  />
+                  <div className="mt-4 flex flex-col items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Seletor de Posição (Clique)</span>
+                    <CompositeCrossSection
+                      stirrupW={localItem.stirrupWidth}
+                      stirrupH={localItem.stirrupHeight}
+                      bars={localItem.mainBars}
+                      stirrupPos={localItem.stirrupPosition}
+                      stirrupGauge={localItem.stirrupGauge}
+                      onZoneClick={(zone) => {
+                        setNewBar(prev => ({ ...prev, placement: zone }));
+                        // If we are currently editing an index, update that index too? No, usually changing placement means redefining.
+                        // Just update the form state so the user sees the dropdown change.
+                      }}
+                      selectedZone={newBar.placement}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Stirrup Configuration (Always Visible) */}
+              <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="font-black text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Estribos {isSapata ? '(Gaiola)' : ''}
+                  </h4>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Ativo</span>
+                    <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
+                  </label>
+                </div>
+
+                {localItem.hasStirrups && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400">Bitola</label>
+                      <select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500">
+                        {GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400">Espaçamento</label>
+                      <input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400">Posição</label>
+                      <input type="text" value={localItem.stirrupPosition || ''} onChange={e => setLocalItem({ ...localItem, stirrupPosition: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" placeholder="Auto" />
+                    </div>
+                    {!isSapata && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400">Largura (cm)</label>
+                          <input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400">Altura (cm)</label>
+                          <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
-            {/* Visualizer - Interactive */}
-            {!isSapata && (
-              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-                <BeamElevationView
-                  item={localItem}
-                  onEditBar={(idx) => setEditingIndex(idx)}
-                  onRemoveBar={handleRemoveBar}
-                  readOnly={false}
-                />
-                <div className="mt-4 flex flex-col items-center">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Seletor de Posição (Clique)</span>
-                  <CompositeCrossSection
-                    stirrupW={localItem.stirrupWidth}
-                    stirrupH={localItem.stirrupHeight}
-                    bars={localItem.mainBars}
-                    stirrupPos={localItem.stirrupPosition}
-                    stirrupGauge={localItem.stirrupGauge}
-                    onZoneClick={(zone) => {
-                      setNewBar(prev => ({ ...prev, placement: zone }));
-                      // If we are currently editing an index, update that index too? No, usually changing placement means redefining.
-                      // Just update the form state so the user sees the dropdown change.
-                    }}
-                    selectedZone={newBar.placement}
-                  />
+          {/* Right Column: Longitudinal Bars Management */}
+          <div className="w-1/2 bg-slate-50 flex flex-col">
+            <div className="p-6 border-b border-slate-200 bg-white shadow-sm flex justify-between">
+              <h3 className="font-black text-slate-800 text-lg">Barras Longitudinais</h3>
+              <div className="flex gap-2">
+                <button onClick={onCancel} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                <button onClick={handleSaveAll} className="px-6 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-wide hover:bg-slate-800 shadow-lg">Salvar Tudo</button>
+              </div>
+            </div>
+
+            <div className="flex-grow p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+
+              {/* Form to Add/Edit Bar */}
+              <div className={`p-6 rounded-[2rem] border-2 transition-all ${editingIndex !== undefined ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-100' : 'bg-white border-indigo-100 shadow-md'}`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className={`font-black uppercase text-xs tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
+                    {editingIndex !== undefined ? `Editando Grupo #${editingIndex + 1}` : 'Adicionar Novo Grupo'}
+                  </h4>
+                  {editingIndex !== undefined && (
+                    <button onClick={() => setEditingIndex(undefined)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 underline">Cancelar Edição</button>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {/* Stirrup Configuration (Always Visible) */}
-            <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-black text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  Estribos {isSapata ? '(Gaiola)' : ''}
-                </h4>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Ativo</span>
-                  <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
-                </label>
-              </div>
-
-              {localItem.hasStirrups && (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-4 mb-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Bitola</label>
-                    <select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500">
-                      {GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Qtd</label>
+                    <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Bitola</label>
+                    <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500">
+                      {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Espaçamento</label>
-                    <input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Posição</label>
+                    <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="Auto" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Posição</label>
-                    <input type="text" value={localItem.stirrupPosition || ''} onChange={e => setLocalItem({ ...localItem, stirrupPosition: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" placeholder="Auto" />
-                  </div>
-                  {!isSapata && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400">Largura (cm)</label>
-                        <input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400">Altura (cm)</label>
-                        <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
-                      </div>
-                    </>
-                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Right Column: Longitudinal Bars Management */}
-        <div className="w-1/2 bg-slate-50 flex flex-col">
-          <div className="p-6 border-b border-slate-200 bg-white shadow-sm flex justify-between">
-            <h3 className="font-black text-slate-800 text-lg">Barras Longitudinais</h3>
-            <div className="flex gap-2">
-              <button onClick={onCancel} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
-              <button onClick={handleSaveAll} className="px-6 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-wide hover:bg-slate-800 shadow-lg">Salvar Tudo</button>
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {/* Hidden Placement Dropdown - Replaced by Interactive Visual Selector */}
+                  <div className="space-y-1 opacity-50 pointer-events-none hidden">
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Local na Seção</label>
+                    <select value={newBar.placement || 'bottom'} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm outline-none">
+                      <option value="bottom">Inferior</option>
+                      <option value="top">Superior</option>
+                      <option value="distributed">Lateral</option>
+                    </select>
+                  </div>
+                  {/* Hook Length */}
+                  {/* Hook Length Split */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {newBar.hookStartType !== 'none' && (
+                      <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
+                        <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Esq. (cm)</label>
+                        <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                      </div>
+                    )}
 
-          <div className="flex-grow p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                    {newBar.hookEndType !== 'none' && (
+                      <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
+                        <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Dir. (cm)</label>
+                        <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            {/* Form to Add/Edit Bar */}
-            <div className={`p-6 rounded-[2rem] border-2 transition-all ${editingIndex !== undefined ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-100' : 'bg-white border-indigo-100 shadow-md'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h4 className={`font-black uppercase text-xs tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
-                  {editingIndex !== undefined ? `Editando Grupo #${editingIndex + 1}` : 'Adicionar Novo Grupo'}
-                </h4>
-                {editingIndex !== undefined && (
-                  <button onClick={() => setEditingIndex(undefined)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 underline">Cancelar Edição</button>
+                <div className="mb-6">
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biblioteca de Formatos</label>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {/* 1. Straight */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 });
+                        setVisualShape('straight');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'straight' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="Reta (I)"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                      </svg>
+                    </button>
+
+                    {/* 2. L Left Up */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
+                        setVisualShape('l_left_up');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="L Esquerda (Cima)"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,4 L4,12 L20,12" />
+                      </svg>
+                    </button>
+
+                    {/* 3. L Right Up */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
+                        setVisualShape('l_right_up');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="L Direita (Cima)"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,12 L20,12 L20,4" />
+                      </svg>
+                    </button>
+
+                    {/* 4. U / Hooks Up */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setVisualShape('u_up');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="U / Ganchos (Cima)"
+                    >
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,4 L4,16 L28,16 L28,4" />
+                      </svg>
+                    </button>
+
+                    {/* 5. C Shape (Official Open Stirrup) */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setVisualShape('c_up');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_up' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'} group`}
+                      title="C / Estribo Aberto (Cima)"
+                    >
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                        <path d="M8,8 L4,8 L4,16 L28,16 L28,8 L24,8" />
+                      </svg>
+                    </button>
+
+                    {/* 6. L Left Down */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
+                        setVisualShape('l_left_down');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="L Esquerda (Baixo)"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,20 L4,12 L20,12" />
+                      </svg>
+                    </button>
+
+                    {/* 7. L Right Down */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
+                        setVisualShape('l_right_down');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="L Direita (Baixo)"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,12 L20,12 L20,20" />
+                      </svg>
+                    </button>
+
+                    {/* 8. U / Hooks Down */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setVisualShape('u_down');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'}`}
+                      title="U / Ganchos (Baixo)"
+                    >
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
+                        <path d="M4,20 L4,8 L28,8 L28,20" />
+                      </svg>
+                    </button>
+
+                    {/* 9. C Shape Down */}
+                    <button
+                      onClick={() => {
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setVisualShape('c_down');
+                      }}
+                      className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_down' ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-100 hover:border-slate-300'} group`}
+                      title="C / Estribo Aberto (Baixo)"
+                    >
+                      <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
+                        <path d="M8,16 L4,16 L4,8 L28,8 L28,16 L24,16" />
+                      </svg>
+                    </button>
+
+                  </div>
+                </div>
+
+                <button onClick={handleAddOrUpdateBar} className={`w-full py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all ${editingIndex !== undefined ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+                  {editingIndex !== undefined ? 'Atualizar Ferro' : 'Adicionar Ferro à Lista'}
+                </button>
+              </div>
+
+              {/* List of Bars */}
+              <div className="space-y-2">
+                <h4 className="font-black text-slate-400 uppercase text-xs tracking-widest px-2">Itens Adicionados ({localItem.mainBars.length})</h4>
+                {localItem.mainBars.length === 0 && (
+                  <div className="text-center p-8 text-slate-300 font-bold bg-white rounded-3xl border border-dashed border-slate-200">
+                    Nenhum ferro adicionado ainda.
+                  </div>
                 )}
-              </div>
-
-              <div className="grid grid-cols-4 gap-4 mb-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Qtd</label>
-                  <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Bitola</label>
-                  <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500">
-                    {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Posição</label>
-                  <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="Auto" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Hidden Placement Dropdown - Replaced by Interactive Visual Selector */}
-                <div className="space-y-1 opacity-50 pointer-events-none hidden">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Local na Seção</label>
-                  <select value={newBar.placement || 'bottom'} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm outline-none">
-                    <option value="bottom">Inferior</option>
-                    <option value="top">Superior</option>
-                    <option value="distributed">Lateral</option>
-                  </select>
-                </div>
-                {/* Hook Length */}
-                {/* Hook Length Split */}
-                <div className="grid grid-cols-2 gap-4">
-                  {newBar.hookStartType !== 'none' && (
-                    <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Esq. (cm)</label>
-                      <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                {localItem.mainBars.map((bar, idx) => (
+                  <div key={idx} className={`bg-white p-4 rounded-2xl border flex justify-between items-center group transition-all ${editingIndex === idx ? 'border-amber-400 bg-amber-50 shadow-md transform scale-[1.02]' : 'border-slate-100 hover:border-indigo-200'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${bar.placement === 'top' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                        {bar.count}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-700 text-sm">Ø {bar.gauge}mm <span className="text-slate-400 font-normal">• {bar.placement === 'top' ? 'Superior' : bar.placement === 'distributed' ? 'Lateral' : 'Inferior'}</span></p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{bar.position || `N${idx + 1}`}</p>
+                      </div>
                     </div>
-                  )}
-
-                  {newBar.hookEndType !== 'none' && (
-                    <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Dir. (cm)</label>
-                      <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biblioteca de Formatos</label>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {/* 1. Straight */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="Reta (I)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <line x1="2" y1="12" x2="22" y2="12" />
-                    </svg>
-                  </button>
-
-                  {/* 2. L Left Up */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'up' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="L Esquerda (Cima)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,4 L4,12 L20,12" />
-                    </svg>
-                  </button>
-
-                  {/* 3. L Right Up */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'up' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="L Direita (Cima)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,12 L20,12 L20,4" />
-                    </svg>
-                  </button>
-
-                  {/* 4. U / Hooks Up */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'up' && newBar.hookEndType === 'up' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="U / Ganchos (Cima)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,4 L4,16 L28,16 L28,4" />
-                    </svg>
-                  </button>
-
-                  {/* 5. C Shape (Official Open Stirrup) */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all border-slate-100 hover:border-indigo-300 group`}
-                    title="C / Estribo Aberto (Cima)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
-                      <path d="M8,8 L4,8 L4,16 L28,16 L28,8 L24,8" />
-                    </svg>
-                  </button>
-
-                  {/* 6. L Left Down */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="L Esquerda (Baixo)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,20 L4,12 L20,12" />
-                    </svg>
-                  </button>
-
-                  {/* 7. L Right Down */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="L Direita (Baixo)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,12 L20,12 L20,20" />
-                    </svg>
-                  </button>
-
-                  {/* 8. U / Hooks Down */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="U / Ganchos (Baixo)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,20 L4,8 L28,8 L28,20" />
-                    </svg>
-                  </button>
-
-                  {/* 9. C Shape Down */}
-                  <button
-                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all border-slate-100 hover:border-indigo-300 group`}
-                    title="C / Estribo Aberto (Baixo)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none text-slate-400 group-hover:text-indigo-500">
-                      <path d="M8,16 L4,16 L4,8 L28,8 L28,16 L24,16" />
-                    </svg>
-                  </button>
-
-                </div>
-              </div>
-
-              <button onClick={handleAddOrUpdateBar} className={`w-full py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all ${editingIndex !== undefined ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-                {editingIndex !== undefined ? 'Atualizar Ferro' : 'Adicionar Ferro à Lista'}
-              </button>
-            </div>
-
-            {/* List of Bars */}
-            <div className="space-y-2">
-              <h4 className="font-black text-slate-400 uppercase text-xs tracking-widest px-2">Itens Adicionados ({localItem.mainBars.length})</h4>
-              {localItem.mainBars.length === 0 && (
-                <div className="text-center p-8 text-slate-300 font-bold bg-white rounded-3xl border border-dashed border-slate-200">
-                  Nenhum ferro adicionado ainda.
-                </div>
-              )}
-              {localItem.mainBars.map((bar, idx) => (
-                <div key={idx} className={`bg-white p-4 rounded-2xl border flex justify-between items-center group transition-all ${editingIndex === idx ? 'border-amber-400 bg-amber-50 shadow-md transform scale-[1.02]' : 'border-slate-100 hover:border-indigo-200'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${bar.placement === 'top' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                      {bar.count}
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700 text-sm">Ø {bar.gauge}mm <span className="text-slate-400 font-normal">• {bar.placement === 'top' ? 'Superior' : bar.placement === 'distributed' ? 'Lateral' : 'Inferior'}</span></p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{bar.position || `N${idx + 1}`}</p>
+                    <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setEditingIndex(idx)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
+                      <button onClick={() => handleRemoveBar(idx)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
                     </div>
                   </div>
-                  <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditingIndex(idx)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
-                    <button onClick={() => handleRemoveBar(idx)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
+
         </div>
-
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-export default QuoteBuilder;
+  export default QuoteBuilder;
