@@ -355,7 +355,7 @@ const BeamElevationView: React.FC<{
   const beamWidthPx = viewW - 2 * padX;
   // Limit scale to prevent very long bars from being too large
   const rawScale = beamWidthPx / (item.length * 100);
-  const scaleX = Math.min(rawScale, 3); // Max 3px per cm to keep visualization reasonable
+  const scaleX = Math.min(rawScale, 1.5); // Max 1.5px per cm to keep visualization compact
 
   // Filter bars
   const topBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'top');
