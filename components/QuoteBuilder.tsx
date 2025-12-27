@@ -159,12 +159,12 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
 // Nova Visualização Longitudinal (Elevação)
 const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
   const viewW = 340;
-  const viewH = 140;
+  const viewH = 160;
   const pad = 30;
-  const beamY1 = pad + 10;
-  const beamY2 = viewH - pad - 10;
+  const beamY1 = pad + 15;
+  const beamY2 = viewH - pad - 15;
   const midY = (beamY1 + beamY2) / 2;
-  const layer2Y = beamY2 - 15;
+  const layer2Y = beamY2 - 18;
 
   const spacing = item.stirrupSpacing || 20;
   const totalStirrups = Math.floor(item.length * 100 / spacing);
@@ -177,17 +177,15 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
   }
 
   // Helper to draw a bar with optional hooks
-  const renderBarLine = (y: number, group: MainBarGroup, isTop: boolean = false) => {
+  const renderBarLine = (y: number, group: MainBarGroup, overrideCount: number, isTop: boolean = false) => {
     const lenLabel = Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
     const hookStart = group.hookStartType !== 'none' ? group.hookStart : 0;
     const hookEnd = group.hookEndType !== 'none' ? group.hookEnd : 0;
 
-    // Color logic
     const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
     const usageLabel = group.usage === BarUsage.PRINCIPAL ? 'principal' : group.usage.toLowerCase();
 
-    // "2 ferros principal 10.0 mm c/ 300..."
-    const totalLenLabel = `${group.count} ferros ${usageLabel} ${group.gauge}mm c/ ${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
+    const totalLenLabel = `${overrideCount} ferros ${usageLabel} ${group.gauge}mm c/ ${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
 
     // Hook visual size (simplified)
     const hSize = 10;
@@ -208,13 +206,11 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     else if (group.hookEndType === 'down') path += `L ${xEnd},${y + hSize}`;
 
     return (
-      <g key={group.gauge + y + group.usage + isTop}>
+      <g key={group.gauge + y + group.usage + isTop + overrideCount}>
         <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-        {/* Label Bubble - Using div to handle text background nicely */}
         <foreignObject x={pad} y={y - (isTop ? 28 : -8)} width={viewW - 2 * pad} height={24}>
           <div className="w-full text-center flex justify-center">
             <span className="bg-white border border-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm text-slate-700 whitespace-nowrap flex items-center gap-1.5">
-              {/* Dot Icon */}
               <span className="w-2 h-2 rounded-full border border-slate-200" style={{ backgroundColor: color }}></span>
               {totalLenLabel}
             </span>
@@ -224,12 +220,6 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     );
   };
 
-  // Organize groups for visualization position
-  // We want to avoid overlapping lines if multiple groups map to same Y.
-  // Simple heuristic: 
-  // - Principals: Toggle Bottom / Top.
-  // - Costela: Middle.
-
   const principals = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
   const costelas = item.mainBars.filter(b => b.usage === BarUsage.COSTELA);
   const camada2 = item.mainBars.filter(b => b.usage === BarUsage.CAMADA_2);
@@ -238,35 +228,31 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center relative mt-4 mb-4" style={{ minWidth: '360px' }}>
       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Elevação (Esquema)</span>
       <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
-        {/* Stirrups Lines (Background) */}
         {item.hasStirrups && stirrupLines.map((x, i) => (
           <line key={i} x1={x} y1={beamY1} x2={x} y2={beamY2} stroke="#f97316" strokeWidth="2" strokeLinecap="butt" />
         ))}
 
-        {/* Render Bars */}
+        {/* Render Principal Bars SPLIT */}
         {principals.map((group, idx) => {
-          // Alternate Top/Bottom if multiple. Default Top if 2nd? 
-          // Usually Main is Bottom. Top is secondary.
-          // If only 1 group, put it Bottom (Reinforcement).
-          // If 2 groups, 1 Bottom, 1 Top.
-          const isTop = (principals.length > 1 && idx > 0);
-          return renderBarLine(isTop ? beamY1 : beamY2, group, isTop);
+          if (group.count >= 2) {
+            // Split Top/Bottom
+            const topCount = Math.floor(group.count / 2);
+            const botCount = Math.ceil(group.count / 2);
+            const bot = renderBarLine(beamY2, group, botCount, false);
+            const top = topCount > 0 ? renderBarLine(beamY1, group, topCount, true) : null;
+            return <React.Fragment key={idx}>{bot}{top}</React.Fragment>;
+          } else {
+            return renderBarLine(beamY2, group, group.count, false);
+          }
         })}
 
         {costelas.map((group, idx) => (
-          renderBarLine(midY, group, false)
+          renderBarLine(midY, group, group.count, false)
         ))}
 
         {camada2.map((group, idx) => (
-          renderBarLine(layer2Y, group, false)
+          renderBarLine(layer2Y, group, group.count, false)
         ))}
-
-        {/* Stirrup Label (centered in unused space if possible, or just huge overlay) */}
-        {item.hasStirrups && (
-          <text x={viewW / 2} y={viewH / 2 + 3} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#f97316" filter="url(#solid)" opacity="0.8">
-            Ø{item.stirrupGauge} c/{item.stirrupSpacing}
-          </text>
-        )}
       </svg>
     </div>
   );
@@ -322,9 +308,21 @@ const ItemReinforcementPreview: React.FC<{
               <BeamElevationView item={item} />
 
               {/* Section */}
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
-                <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
+                  <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
+                </div>
+
+                {/* Stirrup Label Below Section */}
+                {item.hasStirrups && (
+                  <div className="bg-white border border-slate-300 px-2 py-1 rounded shadow-sm flex items-center gap-1.5 mt-2">
+                    <span className="w-2 h-2 rounded-full border border-slate-200 bg-orange-500"></span>
+                    <span className="text-[9px] font-bold text-slate-700 whitespace-nowrap">
+                      {Math.floor(item.length * 100 / (item.stirrupSpacing || 20))} estribos {item.stirrupGauge}mm c/{item.stirrupSpacing}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
