@@ -96,11 +96,67 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
   );
 };
 
-const ItemReinforcementPreview: React.FC<{
-  item: SteelItem;
-  onEditBar: (idx: number) => void;
-  onRemoveBar: (idx: number) => void;
-  onEditStirrups: () => void;
+// Visualização da Seção Transversal Composta (Todas as barras)
+const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[] }> = ({ stirrupW, stirrupH, bars }) => {
+  const width = stirrupW || 15;
+  const height = stirrupH || 20;
+
+  // Scale calculations
+  const maxDim = Math.max(width, height, 15);
+  const scale = 100 / maxDim; // Smaller scale for list view (100px box)
+  const w = width * scale;
+  const h = height * scale;
+  const padding = 15;
+  const r = 3;
+
+  const allPoints: { x: number, y: number, color: string }[] = [];
+
+  bars.forEach(group => {
+    const usage = group.usage;
+    const count = group.count;
+
+    if (usage === BarUsage.PRINCIPAL) {
+      allPoints.push({ x: 0, y: 0, color: '#ef4444' });
+      allPoints.push({ x: w, y: 0, color: '#ef4444' });
+      allPoints.push({ x: 0, y: h, color: '#ef4444' });
+      allPoints.push({ x: w, y: h, color: '#ef4444' });
+      if (count > 4) {
+        const extras = count - 4;
+        const perSide = Math.ceil(extras / 2);
+        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color: '#ef4444' });
+        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color: '#ef4444' });
+      }
+    } else if (usage === BarUsage.COSTELA) {
+      for (let i = 0; i < count; i++) {
+        const side = i % 2 === 0 ? 0 : w;
+        const row = Math.floor(i / 2) + 1;
+        const totalRows = Math.ceil(count / 2) + 1;
+        allPoints.push({ x: side, y: (h * row) / totalRows, color: '#f59e0b' });
+      }
+    } else if (usage === BarUsage.CAMADA_2) {
+      const offset = 15; // Visual offset
+      for (let i = 0; i < count; i++) {
+        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color: '#3b82f6' });
+      }
+    }
+  });
+
+  return (
+    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center" style={{ minWidth: '130px', height: '130px' }}>
+      <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
+        <rect x="0" y="0" width={w} height={h} fill="none" stroke="#e2e8f0" strokeWidth="3" rx="4" />
+        {allPoints.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} stroke="white" strokeWidth="1" />
+        ))}
+      </svg>
+    </div>
+  );
+};
+
+item: SteelItem;
+onEditBar: (idx: number) => void;
+onRemoveBar: (idx: number) => void;
+onEditStirrups: () => void;
 }> = ({ item, onEditBar, onRemoveBar, onEditStirrups }) => {
   const isSapata = item.type === ElementType.SAPATA;
   if (item.mainBars.length === 0 && !item.hasStirrups) return null;
@@ -135,35 +191,45 @@ const ItemReinforcementPreview: React.FC<{
         ))}
       </div>
 
-      {/* Resumo da Gaiola / Estribos Automáticos */}
+      {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {item.hasStirrups && (
-        <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
-          <div className="flex items-center gap-6">
-            {isSapata ? (
-              <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
-            ) : (
-              <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
-            )}
-
-            <div className="flex flex-col">
-              <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
-              <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
+        <div className="flex flex-col md:flex-row gap-4 items-stretch">
+          {/* Cross Section Box - Visualização Acumulada */}
+          {!isSapata && (
+            <div className="relative group">
+              <div className="absolute -top-2 -left-2 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md z-10 opacity-0 group-hover:opacity-100 transition-opacity">SEÇÃO</div>
+              <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
             </div>
+          )}
 
-            {isSapata && (
-              <div className="flex gap-4">
-                <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                  {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
-                </div>
-                <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                  {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
-                </div>
+          <div className={`flex-1 flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
+            <div className="flex items-center gap-6">
+              {isSapata ? (
+                <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
+              ) : (
+                <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
+              )}
+
+              <div className="flex flex-col">
+                <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
+                <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
               </div>
-            )}
+
+              {isSapata && (
+                <div className="flex gap-4">
+                  <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
+                    {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
+                  </div>
+                  <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
+                    {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
+                  </div>
+                </div>
+              )}
+            </div>
+            <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm ${isSapata ? 'text-indigo-600 hover:text-indigo-800' : 'text-amber-600 hover:text-amber-800 opacity-0 group-hover/st:opacity-100'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+            </button>
           </div>
-          <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm ${isSapata ? 'text-indigo-600 hover:text-indigo-800' : 'text-amber-600 hover:text-amber-800 opacity-0 group-hover/st:opacity-100'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-          </button>
         </div>
       )}
     </div>
