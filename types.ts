@@ -125,6 +125,7 @@ export interface MainBarGroup {
     hookStart: number;       // Medida em cm
     hookEnd: number;         // Medida em cm
     position?: string;       // Posição opcional (N...)
+    placement?: 'top' | 'bottom' | 'distributed'; // Posição na seção (Superior/Inferior/Lateral)
 }
 
 export interface SteelItem {

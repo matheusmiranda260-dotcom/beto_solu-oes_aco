@@ -132,34 +132,54 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
   const r = 3;
 
   const allPoints: { x: number, y: number, color: string }[] = [];
+  const getEffectivePlacement = (g: MainBarGroup) => {
+    if (g.placement) return g.placement;
+    if (g.usage === BarUsage.COSTELA) return 'distributed';
+    return 'bottom';
+  };
+
   bars.forEach(group => {
-    const usage = group.usage;
+    const placement = getEffectivePlacement(group);
     const count = group.count;
     // Color logic: Principal = Black, Others (Costela/2nd) = Red
-    const color = usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
+    const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
 
-    if (usage === BarUsage.PRINCIPAL) {
-      allPoints.push({ x: 0, y: 0, color });
-      allPoints.push({ x: w, y: 0, color });
-      allPoints.push({ x: 0, y: h, color });
-      allPoints.push({ x: w, y: h, color });
-      if (count > 4) {
-        const extras = count - 4;
-        const perSide = Math.ceil(extras / 2);
-        for (let i = 1; i <= perSide; i++) allPoints.push({ x: (w * i) / (perSide + 1), y: 0, color });
-        for (let i = 1; i <= extras - perSide; i++) allPoints.push({ x: (w * i) / (extras - perSide + 1), y: h, color });
+    if (placement === 'top') {
+      // Distribute evenly on top face
+      if (count === 1) {
+        allPoints.push({ x: w / 2, y: 0, color }); // Centered
+      } else {
+        // Corners first? No, just distribute.
+        // Usually we want bars in corners.
+        // If 2 bars -> 0, w.
+        // If 3 bars -> 0, w/2, w.
+        for (let i = 0; i < count; i++) {
+          allPoints.push({ x: (w * i) / (count - 1), y: 0, color });
+        }
       }
-    } else if (usage === BarUsage.COSTELA) {
+    } else if (placement === 'bottom') {
+      // Distribute evenly on bottom face
+      if (count === 1) {
+        allPoints.push({ x: w / 2, y: h, color });
+      } else {
+        for (let i = 0; i < count; i++) {
+          allPoints.push({ x: (w * i) / (count - 1), y: h, color });
+        }
+      }
+    } else if (placement === 'distributed') {
+      // Side bars (Costela)
       for (let i = 0; i < count; i++) {
+        // If even count, 2 per row (one left, one right).
+        // If odd? odd usually not for sides (pairs).
+        // Assuming pairs for sides.
         const side = i % 2 === 0 ? 0 : w;
-        const row = Math.floor(i / 2) + 1;
-        const totalRows = Math.ceil(count / 2) + 1;
-        allPoints.push({ x: side, y: (h * row) / totalRows, color });
-      }
-    } else if (usage === BarUsage.CAMADA_2) {
-      const offset = 15;
-      for (let i = 0; i < count; i++) {
-        allPoints.push({ x: (w * (i + 1)) / (count + 1), y: h - offset, color });
+        // Rows excluding top/bottom bars.
+        const rows = Math.ceil(count / 2); // e.g. 4 bars -> 2 rows.
+        const rowIdx = Math.floor(i / 2);
+        // Distribute vertically between 0 and h? No, typically "skin" is middle.
+        // Let's use spacing.
+        const yPos = (h * (rowIdx + 1)) / (rows + 1);
+        allPoints.push({ x: side, y: yPos, color });
       }
     }
   });
@@ -284,9 +304,9 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
       <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
 
         {/* Top Detailing */}
-        {principals.map((g, i) => {
-          if (g.count >= 2) return renderDetachedBar(g, topDetailY, true);
-          return null;
+        {item.mainBars.filter(b => b.placement === 'top' || (!b.placement && b.usage === BarUsage.PRINCIPAL && false)).map((g, i) => { // Legacy check: if strict, maybe show nothing? User will config.
+          // Actually, let's group by placement. Only 'top' goes here.
+          return renderDetachedBar(g, topDetailY, true);
         })}
 
         {/* Beam Context */}
@@ -299,10 +319,14 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
         </g>
 
         {/* Bottom Detailing */}
-        {principals.map((g, i) => {
-          // If count >= 2, we show bottom split. If 1, we show as bottom.
-          if (g.count >= 2) return renderDetachedBar(g, botDetailY, false);
-          else return renderDetachedBar(g, botDetailY, false);
+        {item.mainBars.filter(b => b.placement === 'bottom' || (!b.placement && b.usage !== BarUsage.COSTELA)).map((g, i) => {
+          return renderDetachedBar(g, botDetailY, false);
+        })}
+
+        {/* Distributed/Side Bars - Render below bottom or slightly offset? */}
+        {item.mainBars.filter(b => b.placement === 'distributed' || (!b.placement && b.usage === BarUsage.COSTELA)).map((g, i) => {
+          // Render slightly below bottom bars?
+          return renderDetachedBar(g, botDetailY + 40, false);
         })}
 
         {/* Dimension Line */}
@@ -748,6 +772,7 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
         count: isSapata ? 6 : 4,
         gauge: '10.0',
         usage: initialUsage || (isSapata ? 'Reforço Manual' as BarUsage : BarUsage.PRINCIPAL),
+        placement: (initialUsage === BarUsage.COSTELA) ? 'distributed' : 'bottom', // Default placement
         hookStartType: isSapata ? 'up' : 'none',
         hookEndType: isSapata ? 'up' : 'none',
         hookStart: defaultHook,
@@ -780,7 +805,7 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
       <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 border border-slate-200">
         {(['none', 'up', 'down'] as HookType[]).map(t => (
           <button key={t} onClick={() => onChange(t)} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-all ${current === t ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-200'}`}>
-            {t === 'none' ? 'Reto' : t === 'up' ? 'Dobrar ↑' : 'Dobrar ↓'}
+            {t === 'none' ? 'Reto' : t === 'up' ? 'Ponta ↑' : 'Ponta ↓'}
           </button>
         ))}
       </div>
@@ -869,6 +894,20 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
                     )}
                   </select>
                 </div>
+                {!isSapata && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Posição na Seção</label>
+                    <select
+                      value={barData.placement || 'bottom'}
+                      onChange={e => setBarData({ ...barData, placement: e.target.value as any })}
+                      className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-sm outline-none focus:border-indigo-500 shadow-inner"
+                    >
+                      <option value="bottom">Inferior (Positivo)</option>
+                      <option value="top">Superior (Negativo)</option>
+                      <option value="distributed">Lateral (Costela)</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
