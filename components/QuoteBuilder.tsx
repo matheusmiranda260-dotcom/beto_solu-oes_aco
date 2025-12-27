@@ -1070,14 +1070,14 @@ const ItemDetailEditor: React.FC<{
                 <div className="grid grid-cols-2 gap-4">
                   {newBar.hookStartType !== 'none' && (
                     <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Perna Esq. (cm)</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Esq. (cm)</label>
                       <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
                     </div>
                   )}
 
                   {newBar.hookEndType !== 'none' && (
                     <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Perna Dir. (cm)</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho / Perna Dir. (cm)</label>
                       <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
                     </div>
                   )}
@@ -1122,14 +1122,14 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 4. U Up */}
+                  {/* 4. U / Hooks Up */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'up' && newBar.hookEndType === 'up' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="U (Cima)"
+                    title="U / Ganchos (Cima)"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,4 L4,12 L20,12 L20,4" />
+                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,4 L4,16 L28,16 L28,4" />
                     </svg>
                   </button>
 
@@ -1155,19 +1155,18 @@ const ItemDetailEditor: React.FC<{
                     </svg>
                   </button>
 
-                  {/* 7. U Down */}
+                  {/* 7. U / Hooks Down */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="U (Baixo)"
+                    title="U / Ganchos (Baixo)"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,20 L4,12 L20,12 L20,20" />
+                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,20 L4,8 L28,8 L28,20" />
                     </svg>
                   </button>
 
-                  {/* 8. Empty/Placeholder or Z? */}
-                  {/* 8. Just a placeholder for grid alignment */}
+                  {/* 8. Spacer */}
                   <div className="h-12 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-10">
                   </div>
 
