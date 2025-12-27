@@ -100,6 +100,7 @@ export enum ElementType {
 
 export enum BarUsage {
     PRINCIPAL = 'Principal',
+    COSTELA = 'Costela',
     CAMADA_2 = '2ª Camada',
     REFORCO = 'Reforço',
     CAVALETE = 'Cavalete',

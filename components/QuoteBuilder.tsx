@@ -173,7 +173,8 @@ const ItemReinforcementPreview: React.FC<{
 const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel }) => {
   const [items, setItems] = useState<SteelItem[]>([]);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
-  const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos' } | null>(null);
+  const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos', initialUsage?: BarUsage } | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
 
   const calculateWeight = (itemsList: SteelItem[]) => {
@@ -309,14 +310,64 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                     )}
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setEditingContext({ item, initialTab: item.type === ElementType.SAPATA ? 'estribos' : 'ferros' })}
-                    className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 ${!isComplete ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
-                  >
-                    {!isComplete && <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 animate-pulse" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>}
-                    {isComplete ? 'Editar Detalhes' : 'Configurar Aço'}
-                  </button>
+                <div className="flex gap-3 relative">
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenDropdownId(openDropdownId === item.id ? null : item.id)}
+                      className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 ${!isComplete ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                    >
+                      {!isComplete && <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 animate-pulse" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>}
+                      {isComplete ? 'Editar Detalhes' : 'Configurar Aço'}
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${openDropdownId === item.id ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                    </button>
+
+                    {openDropdownId === item.id && (
+                      <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="p-2 bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">
+                          Adicionar Componente
+                        </div>
+                        <div className="flex flex-col p-2 gap-1">
+                          <button
+                            onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.PRINCIPAL }); setOpenDropdownId(null); }}
+                            className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                          >
+                            <span>Ferro Principal</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
+                          </button>
+
+                          {item.type !== ElementType.SAPATA && (
+                            <>
+                              <button
+                                onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.COSTELA }); setOpenDropdownId(null); }}
+                                className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                              >
+                                <span>Costela (Pele)</span>
+                                <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
+                              </button>
+                              <button
+                                onClick={() => { setEditingContext({ item, initialTab: 'ferros', initialUsage: BarUsage.CAMADA_2 }); setOpenDropdownId(null); }}
+                                className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                              >
+                                <span>2ª Camada</span>
+                                <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">+</span>
+                              </button>
+                            </>
+                          )}
+
+                          <div className="h-px bg-slate-100 my-1" />
+
+                          <button
+                            onClick={() => { setEditingContext({ item, initialTab: 'estribos' }); setOpenDropdownId(null); }}
+                            className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                          >
+                            <span>{item.type === ElementType.SAPATA ? 'Gaiola / Malha' : 'Estribos'}</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">Config</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 text-slate-200 hover:text-red-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                   </button>
@@ -412,6 +463,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
           item={editingContext.item}
           barIdx={editingContext.barIdx}
           initialTab={editingContext.initialTab}
+          initialUsage={editingContext.initialUsage}
           onSaveBar={(barData) => saveBarConfig(editingContext.item, barData, editingContext.barIdx)}
           onSaveStirrups={(stirrupData) => saveStirrupConfig(stirrupData)}
           onCancel={() => setEditingContext(null)}
@@ -425,12 +477,13 @@ interface EditorProps {
   item: SteelItem;
   barIdx?: number;
   initialTab?: 'ferros' | 'estribos';
+  initialUsage?: BarUsage;
   onSaveBar: (bar: MainBarGroup) => void;
   onSaveStirrups: (item: SteelItem) => void;
   onCancel: () => void;
 }
 
-const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'ferros', onSaveBar, onSaveStirrups, onCancel }) => {
+const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'ferros', initialUsage, onSaveBar, onSaveStirrups, onCancel }) => {
   const isEditingBar = barIdx !== undefined;
   const isSapata = item.type === ElementType.SAPATA;
 
@@ -443,7 +496,7 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
       : {
         count: isSapata ? 6 : 4,
         gauge: '10.0',
-        usage: isSapata ? 'Reforço Manual' as BarUsage : BarUsage.PRINCIPAL,
+        usage: initialUsage || (isSapata ? 'Reforço Manual' as BarUsage : BarUsage.PRINCIPAL),
         hookStartType: isSapata ? 'up' : 'none',
         hookEndType: isSapata ? 'up' : 'none',
         hookStart: defaultHook,
