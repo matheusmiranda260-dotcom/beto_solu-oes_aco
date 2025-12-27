@@ -353,8 +353,14 @@ const BeamElevationView: React.FC<{
   const beamTopY = 140;
   const beamBotY = 190;
   const beamWidthPx = viewW - 2 * padX;
+
+  // Calculate effective length from bars (uses max segmentA)
+  const effectiveLengthCm = item.mainBars.length > 0
+    ? Math.max(...item.mainBars.map(bar => bar.segmentA || 0), item.length * 100)
+    : item.length * 100;
+
   // Limit scale to prevent very long bars from being too large
-  const rawScale = beamWidthPx / (item.length * 100);
+  const rawScale = beamWidthPx / effectiveLengthCm;
   const scaleX = Math.min(rawScale, 1.5); // Max 1.5px per cm to keep visualization compact
 
   // Filter bars
@@ -364,7 +370,7 @@ const BeamElevationView: React.FC<{
 
   // Stirrups
   const spacing = item.stirrupSpacing || 20;
-  const numStirrups = Math.floor((item.length * 100) / spacing);
+  const numStirrups = Math.floor(effectiveLengthCm / spacing);
   const visualStep = numStirrups > 30 ? Math.ceil(numStirrups / 30) : 1;
   const stirrupX = [];
   for (let i = 0; i <= numStirrups; i += visualStep) {
@@ -617,6 +623,15 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
 
+  // Helper function to get effective length from bars (uses max segmentA)
+  const getEffectiveLength = (item: SteelItem): number => {
+    if (item.mainBars.length === 0) {
+      return item.length; // Fallback to default if no bars yet
+    }
+    const maxSegmentA = Math.max(...item.mainBars.map(bar => bar.segmentA || 0));
+    return maxSegmentA > 0 ? maxSegmentA / 100 : item.length; // Convert cm to m
+  };
+
   const calculateWeight = (itemsList: SteelItem[]) => {
     return itemsList.reduce((acc, item) => {
       const mainWeight = item.mainBars.reduce((total, group) => {
@@ -641,17 +656,18 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
 
       let totalStirrupWeight = 0;
       if (item.hasStirrups) {
+        const effectiveLength = getEffectiveLength(item);
         if (item.type === ElementType.SAPATA) {
           const weightPerMeter = STEEL_WEIGHTS[item.stirrupGauge] || 0;
           const hookCm = (item.height || 20) - 5;
           const hooksM = (hookCm * 2) / 100;
           const countL = Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing);
-          const weightL = item.quantity * countL * (item.length + hooksM) * weightPerMeter;
-          const countW = Math.ceil(item.length * 100 / item.stirrupSpacing);
+          const weightL = item.quantity * countL * (effectiveLength + hooksM) * weightPerMeter;
+          const countW = Math.ceil(effectiveLength * 100 / item.stirrupSpacing);
           const weightW = item.quantity * countW * ((item.width || 0.8) + hooksM) * weightPerMeter;
           totalStirrupWeight = weightL + weightW;
         } else {
-          const stirrupCount = Math.ceil((item.length * 100) / item.stirrupSpacing);
+          const stirrupCount = Math.ceil((effectiveLength * 100) / item.stirrupSpacing);
           const stirrupPerimeter = (item.stirrupWidth * 2 + item.stirrupHeight * 2 + 10) / 100;
           totalStirrupWeight = item.quantity * stirrupCount * stirrupPerimeter * (STEEL_WEIGHTS[item.stirrupGauge] || 0);
         }
@@ -750,8 +766,8 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                     <div className="flex gap-3 items-center mt-1">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">
                         {item.type === ElementType.SAPATA
-                          ? `${Math.round(item.length * 100)}cm x ${Math.round(item.width! * 100)}cm x ${item.height}cm`
-                          : `${Math.round(item.length * 100)}cm de comprimento`}
+                          ? `${Math.round(getEffectiveLength(item) * 100)}cm x ${Math.round(item.width! * 100)}cm x ${item.height}cm`
+                          : `${Math.round(getEffectiveLength(item) * 100)}cm de comprimento`}
                       </span>
                     </div>
                     {/* Validation Feedback */}
