@@ -977,6 +977,7 @@ const ItemDetailEditor: React.FC<{
 
   const [editingIndex, setEditingIndex] = useState<number | undefined>(barIdx);
   const [visualShape, setVisualShape] = useState<string>('straight');
+  const [lastUsedSegmentA, setLastUsedSegmentA] = useState<number>(localItem.length);
 
   // Sync edits if editingIndex changes
   useEffect(() => {
@@ -1022,6 +1023,7 @@ const ItemDetailEditor: React.FC<{
   }, [editingIndex, localItem.mainBars, defaultHook, initialUsage, isSapata]);
 
 
+
   const handleAddOrUpdateBar = () => {
     const bars = [...localItem.mainBars];
     if (editingIndex !== undefined) {
@@ -1031,6 +1033,10 @@ const ItemDetailEditor: React.FC<{
     }
     const updated = { ...localItem, mainBars: bars, isConfigured: true };
     setLocalItem(updated);
+    // Save last used segmentA for quick reuse
+    if (newBar.segmentA && newBar.segmentA > 0) {
+      setLastUsedSegmentA(newBar.segmentA);
+    }
     setEditingIndex(undefined); // Reset interaction to "Add New" mode
   };
 
@@ -1038,6 +1044,12 @@ const ItemDetailEditor: React.FC<{
     const bars = localItem.mainBars.filter((_, i) => i !== idx);
     setLocalItem({ ...localItem, mainBars: bars });
     if (editingIndex === idx) setEditingIndex(undefined);
+  };
+
+  const handleDuplicateBar = (idx: number) => {
+    const barToDuplicate = localItem.mainBars[idx];
+    const bars = [...localItem.mainBars, { ...barToDuplicate }];
+    setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
   };
 
   const handleSaveAll = () => {
@@ -1076,33 +1088,36 @@ const ItemDetailEditor: React.FC<{
           </div>
 
           <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
-            {/* Visualizer - Interactive */}
+            {/* Visualizer - Interactive - MAIOR PARA MELHOR VISUALIZAÇÃO */}
             {!isSapata && (
-              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-                <BeamElevationView
-                  item={localItem}
-                  onEditBar={(idx) => setEditingIndex(idx)}
-                  onRemoveBar={handleRemoveBar}
-                  readOnly={false}
-                />
-                <div className="mt-4 flex flex-col items-center">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Seletor de Posição (Clique)</span>
-                  <CompositeCrossSection
-                    stirrupW={localItem.stirrupWidth}
-                    stirrupH={localItem.stirrupHeight}
-                    bars={localItem.mainBars}
-                    stirrupPos={localItem.stirrupPosition}
-                    stirrupGauge={localItem.stirrupGauge}
-                    onZoneClick={(zone) => {
-                      setNewBar(prev => ({ ...prev, placement: zone }));
-                      // If we are currently editing an index, update that index too? No, usually changing placement means redefining.
-                      // Just update the form state so the user sees the dropdown change.
-                    }}
-                    selectedZone={newBar.placement}
+              <div className="bg-white p-6 rounded-3xl border-2 border-slate-200 shadow-lg">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Detalhamento Longitudinal</h4>
+                <div className="transform scale-110 origin-top">
+                  <BeamElevationView
+                    item={localItem}
+                    onEditBar={(idx) => setEditingIndex(idx)}
+                    onRemoveBar={handleRemoveBar}
+                    readOnly={false}
                   />
                 </div>
               </div>
             )}
+
+            {/* Cross-Section Visualizer (Always Visible) */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Seção Transversal (Clique para posicionar)</h4>
+              <CompositeCrossSection
+                stirrupW={localItem.stirrupWidth}
+                stirrupH={localItem.stirrupHeight}
+                bars={localItem.mainBars}
+                stirrupPos={localItem.stirrupPosition}
+                stirrupGauge={localItem.stirrupGauge}
+                onZoneClick={(zone) => {
+                  setNewBar(prev => ({ ...prev, placement: zone }));
+                }}
+                selectedZone={newBar.placement}
+              />
+            </div>
 
             {/* Stirrup Configuration (Always Visible) */}
             <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm">
@@ -1222,6 +1237,15 @@ const ItemDetailEditor: React.FC<{
                     onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })}
                     className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
                   />
+                  {lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (
+                    <button
+                      onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })}
+                      className="mt-2 w-full px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" /></svg>
+                      Usar último: {lastUsedSegmentA}cm
+                    </button>
+                  )}
                 </div>
 
                 {/* Segments B and C (Legs) */}
@@ -1562,8 +1586,9 @@ const ItemDetailEditor: React.FC<{
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditingIndex(idx)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
-                    <button onClick={() => handleRemoveBar(idx)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
+                    <button onClick={() => setEditingIndex(idx)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
+                    <button onClick={() => handleDuplicateBar(idx)} className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-lg" title="Duplicar"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" /></svg></button>
+                    <button onClick={() => handleRemoveBar(idx)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg" title="Remover"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
                   </div>
                 </div>
               ))}
