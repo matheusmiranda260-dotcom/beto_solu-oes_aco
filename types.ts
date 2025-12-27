@@ -124,6 +124,7 @@ export interface MainBarGroup {
     hookEndType: HookType;   // Tipo da dobra final
     hookStart: number;       // Medida em cm
     hookEnd: number;         // Medida em cm
+    position?: string;       // Posição opcional (N...)
 }
 
 export interface SteelItem {
@@ -140,6 +141,7 @@ export interface SteelItem {
     stirrupSpacing: number;
     stirrupWidth: number;
     stirrupHeight: number;
+    stirrupPosition?: string; // Posição opcional do estribo (N...)
     isConfigured: boolean;
 }
 

@@ -121,7 +121,7 @@ const TechnicalDimension: React.FC<{ x1: number; y1: number; x2: number; y2: num
 };
 
 // Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
-const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[] }> = ({ stirrupW, stirrupH, bars }) => {
+const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[]; stirrupPos?: string; stirrupGauge?: string; stirrupCount?: number }> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount }) => {
   const width = stirrupW || 15;
   const height = stirrupH || 20;
   const maxDim = Math.max(width, height, 15);
@@ -195,7 +195,9 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
           <text x="60" y="40" fontSize="8" fontFamily="Arial">{Math.round(height - 6)}</text>
           <text x="30" y="80" fontSize="8" fontFamily="Arial" textAnchor="middle">{Math.round(width - 6)}</text>
         </svg>
-        <span className="text-[9px] font-bold text-slate-600 mt-1">15 N1 ø5.0 C={Math.round((width + height) * 2)}</span>
+        <span className="text-[9px] font-bold text-slate-600 mt-1">
+          {stirrupCount || 'N'} {stirrupPos || ''} ø{stirrupGauge || '5.0'} C={Math.round((width + height) * 2 - 24)}
+        </span>
       </div>
     </div>
   );
@@ -258,7 +260,7 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     const count = group.count >= 2 ? (isTop ? Math.floor(group.count / 2) : Math.ceil(group.count / 2)) : group.count;
     if (count === 0) return null;
 
-    const label = `${count} N? ø${group.gauge} C=${C}`;
+    const label = `${count} ${group.position || ''} ø${group.gauge} C=${C}`;
 
     return (
       <g key={yBase + group.gauge + isTop}>
@@ -304,7 +306,7 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
         })}
 
         {/* Dimension Line */}
-        <TechnicalDimension x1={padX} y1={dimY} x2={padX + beamW} y2={dimY} text={`${Math.floor(numStirrups)} N1 c/${spacing}`} offset={0} />
+        <TechnicalDimension x1={padX} y1={dimY} x2={padX + beamW} y2={dimY} text={`${Math.floor(numStirrups)} ${item.stirrupPosition || ''} c/${spacing}`} offset={0} />
 
       </svg>
     </div>
@@ -364,18 +366,15 @@ const ItemReinforcementPreview: React.FC<{
               <div className="flex flex-col items-center gap-1">
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
-                  <CompositeCrossSection stirrupW={item.stirrupWidth} stirrupH={item.stirrupHeight} bars={item.mainBars} />
+                  <CompositeCrossSection
+                    stirrupW={item.stirrupWidth}
+                    stirrupH={item.stirrupHeight}
+                    bars={item.mainBars}
+                    stirrupPos={item.stirrupPosition}
+                    stirrupGauge={item.stirrupGauge}
+                    stirrupCount={Math.floor(item.length * 100 / (item.stirrupSpacing || 20))}
+                  />
                 </div>
-
-                {/* Stirrup Label Below Section */}
-                {item.hasStirrups && (
-                  <div className="bg-white border border-slate-300 px-2 py-1 rounded shadow-sm flex items-center gap-1.5 mt-2">
-                    <span className="w-2 h-2 rounded-full border border-slate-200 bg-orange-500"></span>
-                    <span className="text-[9px] font-bold text-slate-700 whitespace-nowrap">
-                      {Math.floor(item.length * 100 / (item.stirrupSpacing || 20))} estribos {item.stirrupGauge}mm c/{item.stirrupSpacing}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -833,6 +832,9 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
                       stirrupW={item.stirrupWidth || 15}
                       stirrupH={item.stirrupHeight || 20}
                       bars={previewBars}
+                      stirrupPos={stirrupData.stirrupPosition}
+                      stirrupGauge={stirrupData.stirrupGauge}
+                      stirrupCount={Math.floor(item.length * 100 / (stirrupData.stirrupSpacing || 20))}
                     />
                   </div>
                 )}
@@ -849,7 +851,11 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
                     {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
                   </select>
                 </div>
-                <div className="col-span-2 space-y-2">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Posição (N...)</label>
+                  <input type="text" value={barData.position || ''} onChange={e => setBarData({ ...barData, position: e.target.value })} placeholder="Ex: N1" className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-lg focus:border-indigo-500 outline-none transition-all shadow-inner" />
+                </div>
+                <div className="space-y-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Uso/Sentido</label>
                   <select value={barData.usage} onChange={e => setBarData({ ...barData, usage: e.target.value as BarUsage })} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-sm outline-none focus:border-indigo-500 shadow-inner">
                     {isSapata ? (
@@ -898,7 +904,8 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
                 </button>
 
                 {stirrupData.hasStirrups && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-white rounded-3xl border border-indigo-200 mt-8 w-full shadow-md animate-in slide-in-from-top-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 bg-white rounded-3xl border border-indigo-200 mt-8 w-full shadow-md animate-in slide-in-from-top-4">
+                    <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Posição</span><input type="text" placeholder="N.." value={stirrupData.stirrupPosition || ''} onChange={e => setStirrupData({ ...stirrupData, stirrupPosition: e.target.value })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
                     <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Bitola Ø</span><select value={stirrupData.stirrupGauge} onChange={e => setStirrupData({ ...stirrupData, stirrupGauge: e.target.value })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base">{GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}</select></div>
                     <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Esp. (cm)</span><input type="number" value={stirrupData.stirrupSpacing} onChange={e => setStirrupData({ ...stirrupData, stirrupSpacing: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
                     {!isSapata && (
