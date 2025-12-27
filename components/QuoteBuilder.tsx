@@ -1068,25 +1068,74 @@ const ItemDetailEditor: React.FC<{
                 {/* Hook Length */}
                 {/* Hook Length Split */}
                 <div className="grid grid-cols-2 gap-4">
-                  {newBar.hookStartType !== 'none' ? (
-                    <div className="space-y-1 animate-in fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho Esq. (cm)</label>
+                  {newBar.hookStartType !== 'none' && (
+                    <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Perna Esq. (cm)</label>
                       <input type="number" value={newBar.hookStart} onChange={e => setNewBar({ ...newBar, hookStart: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
                     </div>
-                  ) : <div />}
+                  )}
 
-                  {newBar.hookEndType !== 'none' ? (
-                    <div className="space-y-1 animate-in fade-in">
-                      <label className="text-[9px] font-black text-slate-400 uppercase">Gancho Dir. (cm)</label>
+                  {newBar.hookEndType !== 'none' && (
+                    <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
+                      <label className="text-[9px] font-black text-slate-400 uppercase">Perna Dir. (cm)</label>
                       <input type="number" value={newBar.hookEnd} onChange={e => setNewBar({ ...newBar, hookEnd: Number(e.target.value) })} className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
                     </div>
-                  ) : <div />}
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <HookSelector label="Gancho Esq." current={newBar.hookStartType} onChange={t => setNewBar({ ...newBar, hookStartType: t })} />
-                <HookSelector label="Gancho Dir." current={newBar.hookEndType} onChange={t => setNewBar({ ...newBar, hookEndType: t })} />
+              {/* Shape Selection Library - Replaces Individual Hook Selectors */}
+              <div className="mb-6">
+                <div className="flex justify-between items-end mb-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Formato da Barra</label>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Shape: Straight */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="Reta"
+                  >
+                    <div className="w-8 h-0.5 bg-current"></div>
+                  </button>
+
+                  {/* Shape: L Left */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType !== 'none' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="Dobra Esq (L)"
+                  >
+                    <div className="flex items-end -ml-2">
+                      <div className="w-0.5 h-3 bg-current"></div>
+                      <div className="w-6 h-0.5 bg-current"></div>
+                    </div>
+                  </button>
+
+                  {/* Shape: L Right */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType !== 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="Dobra Dir (L)"
+                  >
+                    <div className="flex items-end -mr-2">
+                      <div className="w-6 h-0.5 bg-current"></div>
+                      <div className="w-0.5 h-3 bg-current"></div>
+                    </div>
+                  </button>
+
+                  {/* Shape: U (Grampo) */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType !== 'none' && newBar.hookEndType !== 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="Grampo (U)"
+                  >
+                    <div className="flex items-end">
+                      <div className="w-0.5 h-3 bg-current"></div>
+                      <div className="w-6 h-0.5 bg-current"></div>
+                      <div className="w-0.5 h-3 bg-current"></div>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <button onClick={handleAddOrUpdateBar} className={`w-full py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all ${editingIndex !== undefined ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
