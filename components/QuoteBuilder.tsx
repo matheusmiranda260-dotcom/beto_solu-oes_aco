@@ -1084,57 +1084,93 @@ const ItemDetailEditor: React.FC<{
                 </div>
               </div>
 
-              {/* Shape Selection Library - Replaces Individual Hook Selectors */}
               <div className="mb-6">
                 <div className="flex justify-between items-end mb-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Formato da Barra</label>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biblioteca de Formatos</label>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  {/* Shape: Straight */}
+                  {/* 1. Straight */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 })}
                     className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="Reta"
+                    title="Reta (I)"
                   >
-                    <div className="w-8 h-0.5 bg-current"></div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                    </svg>
                   </button>
 
-                  {/* Shape: L Left */}
+                  {/* 2. L Left Up */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType !== 'none' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="Dobra Esq (L)"
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'up' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="L Esquerda (Cima)"
                   >
-                    <div className="flex items-end -ml-2">
-                      <div className="w-0.5 h-3 bg-current"></div>
-                      <div className="w-6 h-0.5 bg-current"></div>
-                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,4 L4,12 L20,12" />
+                    </svg>
                   </button>
 
-                  {/* Shape: L Right */}
+                  {/* 3. L Right Up */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType !== 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="Dobra Dir (L)"
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'up' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="L Direita (Cima)"
                   >
-                    <div className="flex items-end -mr-2">
-                      <div className="w-6 h-0.5 bg-current"></div>
-                      <div className="w-0.5 h-3 bg-current"></div>
-                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,12 L20,12 L20,4" />
+                    </svg>
                   </button>
 
-                  {/* Shape: U (Grampo) */}
+                  {/* 4. U Up */}
                   <button
                     onClick={() => setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType !== 'none' && newBar.hookEndType !== 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
-                    title="Grampo (U)"
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'up' && newBar.hookEndType === 'up' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="U (Cima)"
                   >
-                    <div className="flex items-end">
-                      <div className="w-0.5 h-3 bg-current"></div>
-                      <div className="w-6 h-0.5 bg-current"></div>
-                      <div className="w-0.5 h-3 bg-current"></div>
-                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,4 L4,12 L20,12 L20,4" />
+                    </svg>
                   </button>
+
+                  {/* 5. L Left Down */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'none' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="L Esquerda (Baixo)"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,20 L4,12 L20,12" />
+                    </svg>
+                  </button>
+
+                  {/* 6. L Right Down */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'none' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="L Direita (Baixo)"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,12 L20,12 L20,20" />
+                    </svg>
+                  </button>
+
+                  {/* 7. U Down */}
+                  <button
+                    onClick={() => setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 })}
+                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${newBar.hookStartType === 'down' && newBar.hookEndType === 'down' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-300'}`}
+                    title="U (Baixo)"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
+                      <path d="M4,20 L4,12 L20,12 L20,20" />
+                    </svg>
+                  </button>
+
+                  {/* 8. Empty/Placeholder or Z? */}
+                  {/* 8. Just a placeholder for grid alignment */}
+                  <div className="h-12 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-10">
+                  </div>
+
                 </div>
               </div>
 
