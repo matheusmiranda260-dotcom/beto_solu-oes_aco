@@ -97,19 +97,41 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
 };
 
 // Visualização da Seção Transversal Composta (Todas as barras)
+// Helper Component for Dimension Lines
+const TechnicalDimension: React.FC<{ x1: number; y1: number; x2: number; y2: number; text: string; offset?: number; vertical?: boolean }> = ({ x1, y1, x2, y2, text, offset = 0, vertical = false }) => {
+  const tickSize = 4;
+  const ox = vertical ? offset : 0;
+  const oy = vertical ? 0 : offset;
+  const tx1 = x1 + ox; const ty1 = y1 + oy;
+  const tx2 = x2 + ox; const ty2 = y2 + oy;
+
+  const midX = (tx1 + tx2) / 2;
+  const midY = (ty1 + ty2) / 2;
+
+  return (
+    <g>
+      <line x1={tx1} y1={ty1} x2={tx2} y2={ty2} stroke="#000" strokeWidth="0.8" />
+      <line x1={tx1 - (vertical ? tickSize : 0)} y1={ty1 - (vertical ? 0 : tickSize)} x2={tx1 + (vertical ? tickSize : 0)} y2={ty1 + (vertical ? 0 : tickSize)} stroke="#000" strokeWidth="0.8" />
+      <line x1={tx2 - (vertical ? tickSize : 0)} y1={ty2 - (vertical ? 0 : tickSize)} x2={tx2 + (vertical ? tickSize : 0)} y2={ty2 + (vertical ? 0 : tickSize)} stroke="#000" strokeWidth="0.8" />
+      <text x={midX} y={midY + (vertical ? 0 : -3)} textAnchor="middle" fontSize="8" fontFamily="Arial" fill="#000" dominantBaseline={vertical ? "middle" : "auto"} transform={vertical ? `rotate(-90 ${midX} ${midY}) translate(0, -3)` : ""}>
+        {text}
+      </text>
+    </g>
+  );
+};
+
 // Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
 const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars: MainBarGroup[] }> = ({ stirrupW, stirrupH, bars }) => {
   const width = stirrupW || 15;
   const height = stirrupH || 20;
   const maxDim = Math.max(width, height, 15);
-  const scale = 120 / maxDim;
+  const scale = 100 / maxDim;
   const w = width * scale;
   const h = height * scale;
-  const padding = 20;
-  const r = 4; // Larger dots
+  const padding = 40;
+  const r = 3;
 
   const allPoints: { x: number, y: number, color: string }[] = [];
-
   bars.forEach(group => {
     const usage = group.usage;
     const count = group.count;
@@ -143,116 +165,147 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
   });
 
   return (
-    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-center" style={{ minWidth: '140px', height: '140px' }}>
-      <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
-        {/* Stirrup - Orange */}
-        <rect x="0" y="0" width={w} height={h} fill="none" stroke="#f97316" strokeWidth="2.5" rx="2" />
-        {/* Bars */}
-        {allPoints.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} />
-        ))}
-      </svg>
+    <div className="flex flex-col items-center">
+      <div className="bg-white p-2 flex items-center justify-center relative" style={{ minWidth: '160px', height: '160px' }}>
+        <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
+          {/* Section Box */}
+          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#000" strokeWidth="2" />
+          {/* Concrete Hatch */}
+          <path d={`M0,${h} L${w},0`} stroke="#000" strokeWidth="0.5" opacity="0.1" />
+
+          {/* Inner Stirrup */}
+          <rect x="4" y="4" width={w - 8} height={h - 8} fill="none" stroke="#000" strokeWidth="1.5" rx="1" />
+
+          {/* Bars */}
+          {allPoints.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} />
+          ))}
+
+          {/* External Dimensions */}
+          <TechnicalDimension x1={0} y1={h} x2={w} y2={h} text={`${Math.round(width)}`} offset={10} />
+          <TechnicalDimension x1={0} y1={0} x2={0} y2={h} text={`${Math.round(height)}`} offset={-10} vertical />
+        </svg>
+      </div>
+
+      <div className="mt-2 flex flex-col items-center">
+        <svg width="60" height="80" viewBox="0 0 60 80" className="overflow-visible">
+          <rect x="10" y="10" width="40" height="60" fill="none" stroke="#000" strokeWidth="1.5" rx="2" />
+          <path d="M45,15 L50,10" stroke="#000" strokeWidth="1.5" />
+          <path d="M15,15 L10,10" stroke="#000" strokeWidth="1.5" />
+          <text x="60" y="40" fontSize="8" fontFamily="Arial">{Math.round(height - 6)}</text>
+          <text x="30" y="80" fontSize="8" fontFamily="Arial" textAnchor="middle">{Math.round(width - 6)}</text>
+        </svg>
+        <span className="text-[9px] font-bold text-slate-600 mt-1">15 N1 ø5.0 C={Math.round((width + height) * 2)}</span>
+      </div>
     </div>
   );
 };
 
-// Nova Visualização Longitudinal (Elevação)
+// Nova Visualização Longitudinal (Elevação Detalhada)
 const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
-  const viewW = 340;
-  const viewH = 160;
-  const pad = 30;
-  const beamY1 = pad + 15;
-  const beamY2 = viewH - pad - 15;
-  const midY = (beamY1 + beamY2) / 2;
-  const layer2Y = beamY2 - 18;
+  const viewW = 400;
+  const viewH = 260;
+  const padX = 40;
 
+  // Vertical Layout Zones
+  const topDetailY = 40;
+  const beamTopY = 100;
+  const beamBotY = 150;
+  const botDetailY = 210;
+  const dimY = 180;
+
+  const beamW = viewW - 2 * padX;
+  const beamH = beamBotY - beamTopY; // 50px symbolic height
+
+  // Scale: length -> pixels
+  const scaleX = beamW / (item.length * 100);
+
+  // Stirrups
   const spacing = item.stirrupSpacing || 20;
-  const totalStirrups = Math.floor(item.length * 100 / spacing);
-  const visualStirrups = Math.min(totalStirrups, 25);
-
-  const stirrupLines = [];
-  for (let i = 0; i <= visualStirrups; i++) {
-    const x = pad + (i * ((viewW - 2 * pad) / visualStirrups));
-    stirrupLines.push(x);
+  const numStirrups = Math.floor((item.length * 100) / spacing);
+  const visualStep = numStirrups > 25 ? Math.ceil(numStirrups / 25) : 1;
+  const stirrupX = [];
+  for (let i = 0; i <= numStirrups; i += visualStep) {
+    stirrupX.push(padX + (i * spacing * scaleX));
   }
 
-  // Helper to draw a bar with optional hooks
-  const renderBarLine = (y: number, group: MainBarGroup, overrideCount: number, isTop: boolean = false) => {
-    const lenLabel = Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
+  // Helper to draw detached bar
+  const renderDetachedBar = (group: MainBarGroup, yBase: number, isTop: boolean) => {
+    const lenCm = Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
+    const pxLen = lenCm * scaleX;
+
     const hookStart = group.hookStartType !== 'none' ? group.hookStart : 0;
     const hookEnd = group.hookEndType !== 'none' ? group.hookEnd : 0;
 
-    const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
-    const usageLabel = group.usage === BarUsage.PRINCIPAL ? 'principal' : group.usage.toLowerCase();
+    const hookH = 15;
 
-    const totalLenLabel = `${overrideCount} ferros ${usageLabel} ${group.gauge}mm c/ ${lenLabel}${hookStart ? `+${hookStart}` : ''}${hookEnd ? `+${hookEnd}` : ''}`;
+    const C = lenCm + hookStart + hookEnd;
 
-    // Hook visual size (simplified)
-    const hSize = 10;
-    const xStart = pad;
-    const xEnd = viewW - pad;
-
-    let path = "";
+    let shape = "";
     // Start Hook
-    if (group.hookStartType === 'up') path += `M ${xStart},${y - hSize} L ${xStart},${y} `;
-    else if (group.hookStartType === 'down') path += `M ${xStart},${y + hSize} L ${xStart},${y} `;
-    else path += `M ${xStart},${y} `;
+    if (group.hookStartType === 'up') shape += `M ${padX},${yBase - hookH} L ${padX},${yBase} `;
+    else if (group.hookStartType === 'down') shape += `M ${padX},${yBase + hookH} L ${padX},${yBase} `;
+    else shape += `M ${padX},${yBase} `;
 
-    // Main Span
-    path += `L ${xEnd},${y} `;
+    // Span
+    shape += `L ${padX + pxLen},${yBase} `;
 
     // End Hook
-    if (group.hookEndType === 'up') path += `L ${xEnd},${y - hSize}`;
-    else if (group.hookEndType === 'down') path += `L ${xEnd},${y + hSize}`;
+    if (group.hookEndType === 'up') shape += `L ${padX + pxLen},${yBase - hookH}`;
+    else if (group.hookEndType === 'down') shape += `L ${padX + pxLen},${yBase + hookH}`;
+
+    // Logic for split label
+    const count = group.count >= 2 ? (isTop ? Math.floor(group.count / 2) : Math.ceil(group.count / 2)) : group.count;
+    if (count === 0) return null;
+
+    const label = `${count} N? ø${group.gauge} C=${C}`;
 
     return (
-      <g key={group.gauge + y + group.usage + isTop + overrideCount}>
-        <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-        <foreignObject x={pad} y={y - (isTop ? 28 : -8)} width={viewW - 2 * pad} height={24}>
-          <div className="w-full text-center flex justify-center">
-            <span className="bg-white border border-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm text-slate-700 whitespace-nowrap flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full border border-slate-200" style={{ backgroundColor: color }}></span>
-              {totalLenLabel}
-            </span>
-          </div>
-        </foreignObject>
+      <g key={yBase + group.gauge + isTop}>
+        <path d={shape} fill="none" stroke="#000" strokeWidth="2" />
+        <circle cx={padX + pxLen / 2} cy={yBase} r={2} fill="#000" />
+        {/* Main Label */}
+        <text x={padX + pxLen / 2} y={yBase - (isTop ? 8 : -15)} textAnchor="middle" fontSize="10" fontWeight="bold" fontFamily="Arial">{label}</text>
+        {/* Segment Labels */}
+        <text x={padX + pxLen / 2} y={yBase + (isTop ? 10 : -5)} textAnchor="middle" fontSize="9" fontFamily="Arial">{Math.round(lenCm)}</text>
+        {hookStart > 0 && <text x={padX - 5} y={yBase} textAnchor="end" fontSize="9" fontFamily="Arial">{hookStart}</text>}
+        {hookEnd > 0 && <text x={padX + pxLen + 5} y={yBase} textAnchor="start" fontSize="9" fontFamily="Arial">{hookEnd}</text>}
       </g>
-    );
+    )
   };
 
   const principals = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
-  const costelas = item.mainBars.filter(b => b.usage === BarUsage.COSTELA);
-  const camada2 = item.mainBars.filter(b => b.usage === BarUsage.CAMADA_2);
 
   return (
-    <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center relative mt-4 mb-4" style={{ minWidth: '360px' }}>
-      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Elevação (Esquema)</span>
+    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center mt-4 mb-4">
+      <span className="text-[12px] font-black text-slate-800 uppercase mb-4">V?? ESC 1:50</span>
       <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
-        {item.hasStirrups && stirrupLines.map((x, i) => (
-          <line key={i} x1={x} y1={beamY1} x2={x} y2={beamY2} stroke="#f97316" strokeWidth="2" strokeLinecap="butt" />
-        ))}
 
-        {/* Render Principal Bars SPLIT */}
-        {principals.map((group, idx) => {
-          if (group.count >= 2) {
-            // Split Top/Bottom
-            const topCount = Math.floor(group.count / 2);
-            const botCount = Math.ceil(group.count / 2);
-            const bot = renderBarLine(beamY2, group, botCount, false);
-            const top = topCount > 0 ? renderBarLine(beamY1, group, topCount, true) : null;
-            return <React.Fragment key={idx}>{bot}{top}</React.Fragment>;
-          } else {
-            return renderBarLine(beamY2, group, group.count, false);
-          }
+        {/* Top Detailing */}
+        {principals.map((g, i) => {
+          if (g.count >= 2) return renderDetachedBar(g, topDetailY, true);
+          return null;
         })}
 
-        {costelas.map((group, idx) => (
-          renderBarLine(midY, group, group.count, false)
-        ))}
+        {/* Beam Context */}
+        <rect x={padX} y={beamTopY} width={beamW} height={beamH} fill="none" stroke="#000" strokeWidth="2" />
+        <g>
+          {stirrupX.map((x, i) => (
+            <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamBotY} stroke="#000" strokeWidth="1" />
+          ))}
+          <line x1={padX} y1={(beamTopY + beamBotY) / 2} x2={padX + beamW} y2={(beamTopY + beamBotY) / 2} stroke="blue" strokeWidth="0.5" />
+        </g>
 
-        {camada2.map((group, idx) => (
-          renderBarLine(layer2Y, group, group.count, false)
-        ))}
+        {/* Bottom Detailing */}
+        {principals.map((g, i) => {
+          // If count >= 2, we show bottom split. If 1, we show as bottom.
+          if (g.count >= 2) return renderDetachedBar(g, botDetailY, false);
+          else return renderDetachedBar(g, botDetailY, false);
+        })}
+
+        {/* Dimension Line */}
+        <TechnicalDimension x1={padX} y1={dimY} x2={padX + beamW} y2={dimY} text={`${Math.floor(numStirrups)} N1 c/${spacing}`} offset={0} />
+
       </svg>
     </div>
   );
