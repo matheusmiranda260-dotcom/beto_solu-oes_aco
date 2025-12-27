@@ -487,8 +487,85 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
   const isEditingBar = barIdx !== undefined;
   const isSapata = item.type === ElementType.SAPATA;
 
+  /* New CrossSectionPreview Component */
+  const CrossSectionPreview: React.FC<{ width: number; height: number; usage: BarUsage; count: number }> = ({ width, height, usage, count }) => {
+    // Scale factor for visualization (fit in ~200px box)
+    const maxDim = Math.max(width, height, 15); // min 15 to avoid div/0
+    const scale = 140 / maxDim;
+    const w = width * scale;
+    const h = height * scale;
+    const padding = 40;
+
+    // Bar radius
+    const r = 4;
+
+    // Generate bar positions
+    const bars: { x: number, y: number }[] = [];
+
+    if (usage === BarUsage.PRINCIPAL) {
+      // Corners
+      bars.push({ x: 0, y: 0 }); // Top-Left
+      bars.push({ x: w, y: 0 }); // Top-Right
+      bars.push({ x: 0, y: h }); // Bot-Left
+      bars.push({ x: w, y: h }); // Bot-Right
+      // If more than 4, distribute? For now, stick to user request of corners/basic.
+      // If count > 4, maybe add intermediates? 
+      if (count > 4) {
+        // simple distribution for extra bars on top/bottom
+        const extras = count - 4;
+        const perSide = Math.ceil(extras / 2);
+        // Top
+        for (let i = 1; i <= perSide; i++) bars.push({ x: (w * i) / (perSide + 1), y: 0 });
+        // Bottom
+        for (let i = 1; i <= extras - perSide; i++) bars.push({ x: (w * i) / (extras - perSide + 1), y: h });
+      }
+    } else if (usage === BarUsage.COSTELA) {
+      // Sides
+      for (let i = 0; i < count; i++) {
+        // Distribute vertically on both sides? Or just left/right pairs?
+        // Assuming pairs for costela mostly
+        const side = i % 2 === 0 ? 0 : w; // Left or Right
+        const row = Math.floor(i / 2) + 1;
+        const totalRows = Math.ceil(count / 2) + 1;
+        bars.push({ x: side, y: (h * row) / totalRows });
+      }
+    } else if (usage === BarUsage.CAMADA_2) { // 2nd Layer
+      // Bottom, offset up by ~5cm (scaled). 5cm is roughly 1/4 of a 20cm beam.
+      // Let's use a fixed offset of ~15px visual or proportional.
+      const offset = 20; // visual representation of "5cm"
+      for (let i = 0; i < count; i++) {
+        // Distribute horizontally at bottom - offset
+        bars.push({ x: (w * (i + 1)) / (count + 1), y: h - offset });
+      }
+    } else {
+      // Default / Arrranque - just center for now or standard
+      bars.push({ x: w / 2, y: h / 2 });
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-3xl border border-slate-100 mt-4">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Simulação de Corte (Seção)</span>
+        <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
+          {/* Stirrup Shape */}
+          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#94a3b8" strokeWidth="3" rx="4" />
+          <text x={w / 2} y={-10} textAnchor="middle" fill="#64748b" fontSize="10" fontWeight="bold">{width}cm</text>
+          <text x={w + 10} y={h / 2} textAnchor="start" fill="#64748b" fontSize="10" fontWeight="bold">{height}cm</text>
+
+          {/* Bars */}
+          {bars.map((pos, i) => (
+            <circle key={i} cx={pos.x} cy={pos.y} r={r} fill="#ef4444" stroke="#7f1d1d" strokeWidth="1" />
+          ))}
+        </svg>
+      </div>
+    );
+  };
+
   const [activeTab, setActiveTab] = useState<'ferros' | 'estribos'>(initialTab);
   const defaultHook = isSapata ? (item.height || 20) - 5 : 15;
+
+  // Logic to hide tabs if we are in a "specific" mode (initialTab passed via dropdown context and isEditingBar is false [newItem] or true [editing])
+  // Actually, we moved logic to single editor. The tabs (lines 541-548) should be removed or hidden.
+  // We'll replace the return JSX to NOT render the tab bar.
 
   const [barData, setBarData] = useState<MainBarGroup>(
     isEditingBar
@@ -538,27 +615,33 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
           <button onClick={onCancel} className="text-slate-300 hover:text-slate-900 transition-colors p-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
 
-        <div className="flex px-10 pt-6 bg-white border-b border-slate-50 gap-4">
-          <button onClick={() => setActiveTab('estribos')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest border-b-4 transition-all ${activeTab === 'estribos' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-800'}`}>
-            {isSapata ? 'Gaiola (Sentido X e Y)' : 'Configurar Estribos'}
-          </button>
-          <button onClick={() => setActiveTab('ferros')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest border-b-4 transition-all ${activeTab === 'ferros' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-400 hover:text-slate-800'}`}>
-            {isSapata ? 'Ferros Individuais (Aberto)' : 'Ferros Longitudinais'}
-          </button>
-        </div>
+        {/* Tabs Hidden - Locked to Initial Tab Mode */}
+        <div className="h-4 bg-slate-50/50 border-b border-slate-50"></div>
 
         <div className="flex-grow overflow-y-auto p-10 custom-scrollbar bg-slate-50/20">
           {activeTab === 'ferros' ? (
             <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Desenho do Ferro Selecionado</p>
-                <BarDrawing
-                  length={barData.usage.includes('Largura') ? (item.width || 1) : item.length}
-                  hookStart={barData.hookStart}
-                  hookEnd={barData.hookEnd}
-                  startType={barData.hookStartType}
-                  endType={barData.hookEndType}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Vista Longitudinal</p>
+                  <BarDrawing
+                    length={barData.usage.includes('Largura') ? (item.width || 1) : item.length}
+                    hookStart={barData.hookStart}
+                    hookEnd={barData.hookEnd}
+                    startType={barData.hookStartType}
+                    endType={barData.hookEndType}
+                  />
+                </div>
+
+                {/* Cross Section View */}
+                {!item.type.includes('Sapata') && (
+                  <CrossSectionPreview
+                    width={item.stirrupWidth || 15}
+                    height={item.stirrupHeight || 20}
+                    usage={barData.usage}
+                    count={barData.count}
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-6">
