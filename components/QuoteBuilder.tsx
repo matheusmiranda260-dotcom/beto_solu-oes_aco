@@ -223,44 +223,61 @@ const CompositeCrossSection: React.FC<{ stirrupW: number; stirrupH: number; bars
   );
 };
 
-// Nova Visualização Longitudinal (Elevação Detalhada)
-const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
-  const viewW = 400;
-  const viewH = 260;
-  const padX = 40;
+// Nova Visualização Longitudinal Interativa (Elevação Detalhada)
+const BeamElevationView: React.FC<{
+  item: SteelItem;
+  onEditBar: (idx: number) => void;
+  onRemoveBar: (idx: number) => void;
+  readOnly?: boolean;
+}> = ({ item, onEditBar, onRemoveBar, readOnly }) => {
+  const viewW = 600; // Increased width for better clarity
+  const viewH = 400; // Increased height for multiple layers
+  const padX = 60;
 
-  // Vertical Layout Zones
-  const topDetailY = 40;
-  const beamTopY = 100;
-  const beamBotY = 150;
-  const botDetailY = 210;
-  const dimY = 180;
+  // Vertical Layout Zones with Stacking
+  const topZoneStart = 30; // Start flowing down from here
+  const bottomZoneStart = 280; // Start flowing up from here? Or down? Typically bottom bars flow UP or are just listed.
+  // Reference image shows Bottom bars (N3) at bottom, then N5 (Skin) in middle, N2/N1 at top.
+  // Let's define:
+  // - Top Bars: Start at Y=50 and stack DOWNWARDS.
+  // - Beam Top Face: Y=150
+  // - Beam Bottom Face: Y=200
+  // - Bottom Bars: Start at Y=230 and stack DOWNWARDS.
+  // - Side/Distributed Bars: Start at Y=300?
 
-  const beamW = viewW - 2 * padX;
-  const beamH = beamBotY - beamTopY; // 50px symbolic height
+  // Revised Stacking Strategy to match typical detailing:
+  // Top Bars (Negative): List them ABOVE the beam.
+  // Bottom Bars (Positive): List them BELOW the beam.
+  // Side Bars (Skin): List them BELOW bottom bars or IN BETWEEN?
+  // Let's put Top Bars starting at Y=20, stacking down.
+  // Beam Drawing at Y=140 to Y=190 (50px height).
+  // Bottom Bars starting at Y=220, stacking down.
 
-  // Scale: length -> pixels
-  const scaleX = beamW / (item.length * 100);
+  const beamTopY = 140;
+  const beamBotY = 190;
+  const beamWidthPx = viewW - 2 * padX;
+  const scaleX = beamWidthPx / (item.length * 100);
+
+  // Filter bars
+  const topBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'top');
+  const bottomBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'bottom' || !b.placement);
+  const sideBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'distributed');
 
   // Stirrups
   const spacing = item.stirrupSpacing || 20;
   const numStirrups = Math.floor((item.length * 100) / spacing);
-  const visualStep = numStirrups > 25 ? Math.ceil(numStirrups / 25) : 1;
+  const visualStep = numStirrups > 30 ? Math.ceil(numStirrups / 30) : 1;
   const stirrupX = [];
   for (let i = 0; i <= numStirrups; i += visualStep) {
     stirrupX.push(padX + (i * spacing * scaleX));
   }
 
-  // Helper to draw detached bar
-  const renderDetachedBar = (group: MainBarGroup, yBase: number, isTop: boolean) => {
+  const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
     const lenCm = Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
     const pxLen = lenCm * scaleX;
-
     const hookStart = group.hookStartType !== 'none' ? group.hookStart : 0;
     const hookEnd = group.hookEndType !== 'none' ? group.hookEnd : 0;
-
     const hookH = 15;
-
     const C = lenCm + hookStart + hookEnd;
 
     let shape = "";
@@ -276,63 +293,107 @@ const BeamElevationView: React.FC<{ item: SteelItem }> = ({ item }) => {
     if (group.hookEndType === 'up') shape += `L ${padX + pxLen},${yBase - hookH}`;
     else if (group.hookEndType === 'down') shape += `L ${padX + pxLen},${yBase + hookH}`;
 
-    // Logic for split label
-    const count = group.count >= 2 ? (isTop ? Math.floor(group.count / 2) : Math.ceil(group.count / 2)) : group.count;
-    if (count === 0) return null;
-
-    const label = `${count} ${group.position || ''} ø${group.gauge} C=${C}`;
+    const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
+    const subLabel = isTop ? 'Superior' : group.placement === 'distributed' ? 'Lateral' : 'Inferior';
 
     return (
-      <g key={yBase + group.gauge + isTop}>
-        <path d={shape} fill="none" stroke="#000" strokeWidth="2" />
-        <circle cx={padX + pxLen / 2} cy={yBase} r={2} fill="#000" />
-        {/* Main Label */}
-        <text x={padX + pxLen / 2} y={yBase - (isTop ? 8 : -15)} textAnchor="middle" fontSize="10" fontWeight="bold" fontFamily="Arial">{label}</text>
-        {/* Segment Labels */}
-        <text x={padX + pxLen / 2} y={yBase + (isTop ? 10 : -5)} textAnchor="middle" fontSize="9" fontFamily="Arial">{Math.round(lenCm)}</text>
-        {hookStart > 0 && <text x={padX - 5} y={yBase} textAnchor="end" fontSize="9" fontFamily="Arial">{hookStart}</text>}
-        {hookEnd > 0 && <text x={padX + pxLen + 5} y={yBase} textAnchor="start" fontSize="9" fontFamily="Arial">{hookEnd}</text>}
+      <g
+        key={group.originalIdx}
+        className={readOnly ? "" : "cursor-pointer group hover:opacity-80"}
+        onClick={() => !readOnly && onEditBar(group.originalIdx)}
+      >
+        {/* Invisible Hit Area for easier clicking */}
+        <rect x={padX - 20} y={yBase - 20} width={pxLen + 40} height={40} fill="transparent" />
+
+        {/* The Bar Line */}
+        <path d={shape} fill="none" stroke={isTop ? "#ef4444" : "#0f172a"} strokeWidth="4" className="transition-all group-hover:stroke-amber-500 shadow-sm" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Info Box / Label */}
+        <foreignObject x={padX + pxLen / 2 - 60} y={yBase - (isTop ? 28 : -10)} width="120" height="40" style={{ overflow: 'visible' }}>
+          <div className="flex flex-col items-center">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight shadow-sm border ${readOnly ? 'bg-white border-slate-100 text-slate-800' : 'bg-white border-indigo-100 text-indigo-700 group-hover:bg-amber-100 group-hover:text-amber-700 group-hover:border-amber-200 transition-colors'}`}>
+              {label}
+            </span>
+          </div>
+        </foreignObject>
+
+        {/* Dimension Labels (Hooks) */}
+        {hookStart > 0 && <text x={padX - 8} y={yBase} textAnchor="end" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookStart}</text>}
+        {hookEnd > 0 && <text x={padX + pxLen + 8} y={yBase} textAnchor="start" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookEnd}</text>}
+
+        {/* Length Label (Middle) */}
+        <text x={padX + pxLen / 2} y={yBase + (isTop ? 14 : -14)} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#94a3b8" className="select-none">{Math.round(lenCm)}</text>
+
+        {!readOnly && (
+          <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
+            <circle cx={padX + pxLen + 30} cy={yBase} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+            <path d={`M${padX + pxLen + 27},${yBase - 3} L${padX + pxLen + 33},${yBase + 3} M${padX + pxLen + 33},${yBase - 3} L${padX + pxLen + 27},${yBase + 3}`} stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+        )}
       </g>
-    )
+    );
   };
 
-  const principals = item.mainBars.filter(b => b.usage === BarUsage.PRINCIPAL);
-
   return (
-    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center mt-4 mb-4">
-      <span className="text-[12px] font-black text-slate-800 uppercase mb-4">V?? ESC 1:50</span>
-      <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
+    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center w-full max-w-3xl mx-auto overflow-hidden relative">
+      <div className="flex justify-between w-full mb-4 px-4">
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalhamento Long.</span>
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Escala s/z</span>
+      </div>
 
-        {/* Top Detailing */}
-        {item.mainBars.filter(b => b.placement === 'top' || (!b.placement && b.usage === BarUsage.PRINCIPAL && false)).map((g, i) => { // Legacy check: if strict, maybe show nothing? User will config.
-          // Actually, let's group by placement. Only 'top' goes here.
-          return renderDetachedBar(g, topDetailY, true);
+      <svg width="100%" height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible select-none">
+
+        <defs>
+          <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: 'black', strokeWidth: 0.5 }} opacity="0.1" />
+          </pattern>
+        </defs>
+
+        {/* Top (Negative) Reinforcement Stack */}
+        {topBars.map((b, i) => {
+          // Stack upwards from beam top? Or just list from Y=30 down.
+          // Let's list from Y=30 down to beam.
+          // If many bars, we might need more space.
+          // Let's assume max 3-4 layers.
+          const y = 30 + (i * 35);
+          return renderInteractableBar(b, y, true);
         })}
 
-        {/* Beam Context */}
-        <rect x={padX} y={beamTopY} width={beamW} height={beamH} fill="none" stroke="#000" strokeWidth="2" />
+        {/* Beam Body / Stirrups */}
         <g>
+          <rect x={padX} y={beamTopY} width={beamWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
+          {/* Stirrup Lines */}
           {stirrupX.map((x, i) => (
-            <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamBotY} stroke="#000" strokeWidth="1" />
+            <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
           ))}
-          <line x1={padX} y1={(beamTopY + beamBotY) / 2} x2={padX + beamW} y2={(beamTopY + beamBotY) / 2} stroke="blue" strokeWidth="0.5" />
+          {/* Axis Line */}
+          <line x1={padX - 10} y1={beamTopY + 25} x2={padX + beamWidthPx + 10} y2={beamTopY + 25} stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" opacity="0.5" />
         </g>
 
-        {/* Bottom Detailing */}
-        {item.mainBars.filter(b => b.placement === 'bottom' || (!b.placement && b.usage !== BarUsage.COSTELA)).map((g, i) => {
-          return renderDetachedBar(g, botDetailY, false);
+        {/* Bottom (Positive) Reinforcement Stack */}
+        {bottomBars.map((b, i) => {
+          const y = 230 + (i * 35);
+          return renderInteractableBar(b, y, false);
         })}
 
-        {/* Distributed/Side Bars - Render below bottom or slightly offset? */}
-        {item.mainBars.filter(b => b.placement === 'distributed' || (!b.placement && b.usage === BarUsage.COSTELA)).map((g, i) => {
-          // Render slightly below bottom bars?
-          return renderDetachedBar(g, botDetailY + 40, false);
+        {/* Side (Distributed) Reinforcement Stack */}
+        {sideBars.map((b, i) => {
+          const y = 230 + (bottomBars.length * 35) + 20 + (i * 35);
+          return renderInteractableBar(b, y, false);
         })}
 
-        {/* Dimension Line */}
-        <TechnicalDimension x1={padX} y1={dimY} x2={padX + beamW} y2={dimY} text={`${Math.floor(numStirrups)} ${item.stirrupPosition || ''} c/${spacing}`} offset={0} />
+        {/* Stirrup Callout */}
+        <TechnicalDimension
+          x1={padX} y1={beamBotY + 15}
+          x2={padX + beamWidthPx} y2={beamBotY + 15}
+          text={`${Math.floor(numStirrups)} ${item.stirrupPosition || 'EST'} c/${spacing}`}
+          offset={0}
+        />
 
       </svg>
+      <div className="absolute top-4 right-4 bg-slate-100 rounded-full px-3 py-1 text-[10px] font-bold text-slate-500">
+        Clique nas barras para editar
+      </div>
     </div>
   );
 };
@@ -349,32 +410,11 @@ const ItemReinforcementPreview: React.FC<{
   return (
     <div className="mt-4 p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100/50 space-y-4">
       {/* Listagem de ferros Individuais */}
-      <div className="flex flex-wrap gap-3">
-        {item.mainBars.map((group, idx) => (
-          <div key={idx} className="bg-white pl-4 pr-2 py-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 group/bar hover:border-indigo-200 transition-all">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">{group.count}x Ø{group.gauge}</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">{group.usage}</span>
-            </div>
-            <BarDrawing
-              length={group.usage.includes('Largura') ? (item.width || item.length) : item.length}
-              hookStart={group.hookStart}
-              hookEnd={group.hookEnd}
-              startType={group.hookStartType}
-              endType={group.hookEndType}
-              compact
-            />
-            <div className="flex flex-col gap-1 border-l border-slate-50 pl-2">
-              <button onClick={() => onEditBar(idx)} className="p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-              </button>
-              <button onClick={() => onRemoveBar(idx)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Listagem de ferros Individuais REMOVIDA - Agora Integrada no Desenho */}
+      {/* 
+        The user explicitly requested to remove the separate card list and merge interaction into the drawing.
+        "que tal deixar em um so.. ali conseguimos no desenho fica mais facil de visualizar editar"
+      */}
 
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
@@ -384,7 +424,12 @@ const ItemReinforcementPreview: React.FC<{
           {!isSapata && (
             <div className="flex flex-wrap gap-6 items-center justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
               {/* Elevation */}
-              <BeamElevationView item={item} />
+              {/* Elevation - Now Interactive */}
+              <BeamElevationView
+                item={item}
+                onEditBar={onEditBar}
+                onRemoveBar={onRemoveBar}
+              />
 
               {/* Section */}
               <div className="flex flex-col items-center gap-1">
