@@ -19,7 +19,7 @@ const BarDrawing: React.FC<{ length: number; hookStart: number; hookEnd: number;
   const centerY = viewH / 2;
   const hookSize = compact ? 10 : 25;
   const fontSize = compact ? '7px' : '12px';
-  
+
   let startPath = `M ${padding},${centerY}`;
   if (startType === 'up') startPath = `M ${padding},${centerY - hookSize} L ${padding},${centerY}`;
   if (startType === 'down') startPath = `M ${padding},${centerY + hookSize} L ${padding},${centerY}`;
@@ -53,9 +53,9 @@ const StirrupDrawing: React.FC<{ width: number; height: number; compact?: boolea
     <div className={`flex items-center justify-center rounded-xl transition-all ${compact ? 'bg-transparent' : 'p-6 bg-white border border-slate-100 shadow-inner'}`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <rect x={pad} y={pad} width={drawW} height={drawH} fill="none" stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} rx={compact ? "2" : "4"} />
-        <path d={`M ${pad},${pad} L ${pad-hook},${pad-hook} M ${pad},${pad} L ${pad+hook},${pad-hook}`} fill="none" stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} strokeLinecap="round" />
-        <text x={pad + drawW/2} y={pad - (compact ? 2 : 6)} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize }}>{width}</text>
-        <text x={pad - (compact ? 2 : 6)} y={pad + drawH/2} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize, transform: 'rotate(-90deg)', transformOrigin: `${pad - (compact ? 2 : 6)}px ${pad + drawH/2}px` }}>{height}</text>
+        <path d={`M ${pad},${pad} L ${pad - hook},${pad - hook} M ${pad},${pad} L ${pad + hook},${pad - hook}`} fill="none" stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} strokeLinecap="round" />
+        <text x={pad + drawW / 2} y={pad - (compact ? 2 : 6)} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize }}>{width}</text>
+        <text x={pad - (compact ? 2 : 6)} y={pad + drawH / 2} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize, transform: 'rotate(-90deg)', transformOrigin: `${pad - (compact ? 2 : 6)}px ${pad + drawH / 2}px` }}>{height}</text>
       </svg>
     </div>
   );
@@ -67,7 +67,7 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
   const pad = compact ? 5 : 20;
   const drawW = size - (pad * 2);
   const drawH = size - (pad * 2);
-  
+
   // Calculamos quantas linhas desenhar para representar o espaçamento
   const linesX = Math.min(6, Math.max(2, Math.ceil(lengthCm / spacing)));
   const linesY = Math.min(6, Math.max(2, Math.ceil(widthCm / spacing)));
@@ -87,8 +87,8 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
         {/* Dimensões */}
         {!compact && (
           <>
-            <text x={pad + drawW/2} y={pad - 5} textAnchor="middle" className="font-black fill-indigo-600 text-[9px] uppercase tracking-tighter">{lengthCm}cm</text>
-            <text x={pad - 5} y={pad + drawH/2} textAnchor="middle" className="font-black fill-indigo-600 text-[9px] uppercase tracking-tighter" style={{ transform: 'rotate(-90deg)', transformOrigin: `${pad - 5}px ${pad + drawH/2}px` }}>{widthCm}cm</text>
+            <text x={pad + drawW / 2} y={pad - 5} textAnchor="middle" className="font-black fill-indigo-600 text-[9px] uppercase tracking-tighter">{lengthCm}cm</text>
+            <text x={pad - 5} y={pad + drawH / 2} textAnchor="middle" className="font-black fill-indigo-600 text-[9px] uppercase tracking-tighter" style={{ transform: 'rotate(-90deg)', transformOrigin: `${pad - 5}px ${pad + drawH / 2}px` }}>{widthCm}cm</text>
           </>
         )}
       </svg>
@@ -96,8 +96,8 @@ const CageDrawing: React.FC<{ lengthCm: number; widthCm: number; spacing: number
   );
 };
 
-const ItemReinforcementPreview: React.FC<{ 
-  item: SteelItem; 
+const ItemReinforcementPreview: React.FC<{
+  item: SteelItem;
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
   onEditStirrups: () => void;
@@ -115,13 +115,13 @@ const ItemReinforcementPreview: React.FC<{
               <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">{group.count}x Ø{group.gauge}</span>
               <span className="text-[8px] font-bold text-slate-400 uppercase">{group.usage}</span>
             </div>
-            <BarDrawing 
-              length={group.usage.includes('Largura') ? (item.width || item.length) : item.length} 
-              hookStart={group.hookStart} 
-              hookEnd={group.hookEnd} 
-              startType={group.hookStartType} 
-              endType={group.hookEndType} 
-              compact 
+            <BarDrawing
+              length={group.usage.includes('Largura') ? (item.width || item.length) : item.length}
+              hookStart={group.hookStart}
+              hookEnd={group.hookEnd}
+              startType={group.hookStartType}
+              endType={group.hookEndType}
+              compact
             />
             <div className="flex flex-col gap-1 border-l border-slate-50 pl-2">
               <button onClick={() => onEditBar(idx)} className="p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
@@ -134,7 +134,7 @@ const ItemReinforcementPreview: React.FC<{
           </div>
         ))}
       </div>
-      
+
       {/* Resumo da Gaiola / Estribos Automáticos */}
       {item.hasStirrups && (
         <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
@@ -144,19 +144,19 @@ const ItemReinforcementPreview: React.FC<{
             ) : (
               <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
             )}
-            
+
             <div className="flex flex-col">
               <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
               <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
             </div>
-            
+
             {isSapata && (
               <div className="flex gap-4">
                 <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                   {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
+                  {Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing)} un. no Comprimento
                 </div>
                 <div className="text-[10px] font-bold text-indigo-700 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
-                   {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
+                  {Math.ceil(item.length * 100 / item.stirrupSpacing)} un. na Largura
                 </div>
               </div>
             )}
@@ -174,7 +174,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   const [items, setItems] = useState<SteelItem[]>([]);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos' } | null>(null);
-  const [newItemBase, setNewItemBase] = useState<{type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string} | null>(null);
+  const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
 
   const calculateWeight = (itemsList: SteelItem[]) => {
     return itemsList.reduce((acc, item) => {
@@ -189,7 +189,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
       if (item.hasStirrups) {
         if (item.type === ElementType.SAPATA) {
           const weightPerMeter = STEEL_WEIGHTS[item.stirrupGauge] || 0;
-          const hookCm = (item.height || 20) - 5; 
+          const hookCm = (item.height || 20) - 5;
           const hooksM = (hookCm * 2) / 100;
           const countL = Math.ceil((item.width || 0.8) * 100 / item.stirrupSpacing);
           const weightL = item.quantity * countL * (item.length + hooksM) * weightPerMeter;
@@ -220,7 +220,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
       height: newItemBase.heightCm,
       mainBars: [],
       hasStirrups: newItemBase.type === ElementType.SAPATA,
-      stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0', 
+      stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0',
       stirrupSpacing: 15,
       stirrupWidth: newItemBase.type === ElementType.SAPATA ? (newItemBase.widthCm - 6) : 15,
       stirrupHeight: newItemBase.type === ElementType.SAPATA ? (newItemBase.heightCm - 6) : 20,
@@ -229,7 +229,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
     setItems([...items, newItem]);
     setNewItemBase(null);
     setShowTypeSelector(false);
-    setEditingContext({ item: newItem, initialTab: newItem.type === ElementType.SAPATA ? 'estribos' : 'ferros' });
+    // Don't open editor automatically. User selects from the list.
   };
 
   const saveBarConfig = (updatedItem: SteelItem, barData: MainBarGroup, barIdx?: number) => {
@@ -261,12 +261,12 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
         </div>
         <div className="flex gap-6 items-center">
           <div className="text-right">
-             <span className="text-[10px] font-black text-slate-400 uppercase block tracking-wider">Carga Total</span>
-             <span className="text-3xl font-black text-slate-900 tracking-tighter">{calculateWeight(items).toFixed(1)} <small className="text-sm font-medium">kg</small></span>
+            <span className="text-[10px] font-black text-slate-400 uppercase block tracking-wider">Carga Total</span>
+            <span className="text-3xl font-black text-slate-900 tracking-tighter">{calculateWeight(items).toFixed(1)} <small className="text-sm font-medium">kg</small></span>
           </div>
-          <button 
-            disabled={items.length === 0}
-            onClick={() => onSave({ id: crypto.randomUUID(), clientId: client.id, date: new Date().toISOString(), items: items.filter(i => i.isConfigured), totalWeight: calculateWeight(items), totalPrice: calculateWeight(items) * DEFAULT_KG_PRICE, status: 'Draft' })} 
+          <button
+            disabled={items.length === 0 || !items.every(i => i.mainBars.length > 0 && i.hasStirrups)}
+            onClick={() => onSave({ id: crypto.randomUUID(), clientId: client.id, date: new Date().toISOString(), items: items, totalWeight: calculateWeight(items), totalPrice: calculateWeight(items) * DEFAULT_KG_PRICE, status: 'Draft' })}
             className="bg-emerald-500 text-white px-10 py-4 rounded-3xl font-black hover:bg-emerald-600 transition-all shadow-xl disabled:opacity-40 active:scale-95"
           >
             Finalizar Orçamento
@@ -275,50 +275,65 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
       </div>
 
       <div className="space-y-4">
-        {items.map(item => (
-          <div key={item.id} className={`bg-white p-8 rounded-[2.5rem] border shadow-sm transition-all flex flex-col group hover:shadow-lg ${!item.isConfigured ? 'border-amber-200 bg-amber-50/10' : 'border-slate-100'}`}>
-            <div className="flex justify-between items-start w-full">
-              <div className="flex items-center gap-8">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center font-black text-lg shadow-sm ${!item.isConfigured ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-800'}`}>
-                  {item.quantity}x
-                </div>
-                <div>
-                  <h4 className="font-black text-slate-900 text-xl uppercase tracking-tight">
-                    {item.type} {item.observation && <span className="text-slate-400 font-medium lowercase"> - {item.observation}</span>}
-                  </h4>
-                  <div className="flex gap-3 items-center mt-1">
-                    <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">
-                      {item.type === ElementType.SAPATA 
-                        ? `${Math.round(item.length*100)}cm x ${Math.round(item.width!*100)}cm x ${item.height}cm` 
-                        : `${item.length}m de comprimento`}
-                    </span>
+        {items.map(item => {
+          const hasMainBars = item.mainBars.length > 0;
+          const hasStirrups = item.hasStirrups;
+          const isComplete = hasMainBars && hasStirrups;
+
+          return (
+            <div key={item.id} className={`bg-white p-8 rounded-[2.5rem] border-2 shadow-sm transition-all flex flex-col group hover:shadow-lg ${!isComplete ? 'border-amber-300 bg-amber-50/10' : 'border-slate-100 bg-white'}`}>
+              <div className="flex justify-between items-start w-full">
+                <div className="flex items-center gap-8">
+                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center font-black text-lg shadow-sm border ${!isComplete ? 'bg-amber-100 text-amber-600 border-amber-200' : 'bg-slate-100 text-slate-800 border-slate-200'}`}>
+                    {item.quantity}x
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xl uppercase tracking-tight flex items-center gap-3">
+                      {item.type}
+                      {!isComplete && <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-md uppercase tracking-wider">Incompleto</span>}
+                      {item.observation && <span className="text-slate-400 font-medium lowercase text-base"> - {item.observation}</span>}
+                    </h4>
+                    <div className="flex gap-3 items-center mt-1">
+                      <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                        {item.type === ElementType.SAPATA
+                          ? `${Math.round(item.length * 100)}cm x ${Math.round(item.width! * 100)}cm x ${item.height}cm`
+                          : `${Math.round(item.length * 100)}cm de comprimento`}
+                      </span>
+                    </div>
+                    {/* Validation Feedback */}
+                    {!isComplete && (
+                      <div className="flex gap-2 mt-3">
+                        {!hasMainBars && <span className="text-[9px] font-black text-red-400 uppercase bg-red-50 px-2 py-1 rounded-lg border border-red-100">Falta Ferro Principal</span>}
+                        {!hasStirrups && <span className="text-[9px] font-black text-red-400 uppercase bg-red-50 px-2 py-1 rounded-lg border border-red-100">Falta Estribo</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditingContext({ item, initialTab: item.type === ElementType.SAPATA ? 'estribos' : 'ferros' })}
+                    className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 ${!isComplete ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                  >
+                    {!isComplete && <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 animate-pulse" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>}
+                    {isComplete ? 'Editar Detalhes' : 'Configurar Aço'}
+                  </button>
+                  <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 text-slate-200 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setEditingContext({ item, initialTab: item.type === ElementType.SAPATA ? 'estribos' : 'ferros' })} 
-                  className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${!item.isConfigured ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
-                >
-                  {item.isConfigured ? 'Ajustar Detalhes' : 'Configurar Aço'}
-                </button>
-                <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-3 text-slate-200 hover:text-red-500 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                </button>
-              </div>
+              <ItemReinforcementPreview
+                item={item}
+                onEditBar={(idx) => setEditingContext({ item, barIdx: idx, initialTab: 'ferros' })}
+                onRemoveBar={(idx) => {
+                  const newBars = item.mainBars.filter((_, i) => i !== idx);
+                  setItems(items.map(it => it.id === item.id ? { ...it, mainBars: newBars, isConfigured: newBars.length > 0 || it.hasStirrups } : it));
+                }}
+                onEditStirrups={() => setEditingContext({ item, initialTab: 'estribos' })}
+              />
             </div>
-            
-            <ItemReinforcementPreview 
-              item={item} 
-              onEditBar={(idx) => setEditingContext({ item, barIdx: idx, initialTab: 'ferros' })}
-              onRemoveBar={(idx) => {
-                const newBars = item.mainBars.filter((_, i) => i !== idx);
-                setItems(items.map(it => it.id === item.id ? { ...it, mainBars: newBars, isConfigured: newBars.length > 0 || it.hasStirrups } : it));
-              }}
-              onEditStirrups={() => setEditingContext({ item, initialTab: 'estribos' })}
-            />
-          </div>
-        ))}
+          );
+        })}
 
         <button onClick={() => setShowTypeSelector(true)} className="w-full py-10 bg-white border-4 border-dashed border-slate-100 rounded-[3rem] text-slate-400 font-black uppercase tracking-widest hover:border-amber-300 hover:text-amber-500 transition-all active:scale-[0.99] flex items-center justify-center gap-4 group">
           <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-amber-50 transition-colors">
@@ -336,7 +351,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-8 text-center">Qual o elemento?</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   {Object.values(ElementType).map(t => (
-                    <button key={t} onClick={() => setNewItemBase({type: t, qty: 1, lengthCm: 100, widthCm: 80, heightCm: 20, obs: ''})} className="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-amber-500 p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all group shadow-sm hover:shadow-xl">
+                    <button key={t} onClick={() => setNewItemBase({ type: t, qty: 1, lengthCm: 100, widthCm: 80, heightCm: 20, obs: '' })} className="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-amber-500 p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all group shadow-sm hover:shadow-xl">
                       <div className="w-14 h-14 bg-slate-900 text-amber-500 rounded-2xl flex items-center justify-center font-black text-xl group-hover:scale-110 transition-transform">{t.charAt(0)}</div>
                       <span className="font-black text-slate-700 text-xs uppercase tracking-widest text-center">{t}</span>
                     </button>
@@ -349,40 +364,40 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                   <button onClick={() => setNewItemBase(null)} className="text-slate-400 hover:text-slate-900 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Cadastro da {newItemBase.type}</h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Identificação</label>
-                    <input autoFocus type="text" value={newItemBase.obs} onChange={e => setNewItemBase({...newItemBase, obs: e.target.value})} placeholder="Ex: Sapata Sala, Viga Fundo..." className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-bold outline-none focus:border-amber-500 transition-all shadow-inner" />
+                    <input autoFocus type="text" value={newItemBase.obs} onChange={e => setNewItemBase({ ...newItemBase, obs: e.target.value })} placeholder="Ex: Sapata Sala, Viga Fundo..." className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-bold outline-none focus:border-amber-500 transition-all shadow-inner" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Quantidade</label>
-                    <input type="number" value={newItemBase.qty} onChange={e => setNewItemBase({...newItemBase, qty: Number(e.target.value)})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-inner" />
+                    <input type="number" value={newItemBase.qty} onChange={e => setNewItemBase({ ...newItemBase, qty: Number(e.target.value) })} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-inner" />
                   </div>
 
                   {newItemBase.type === ElementType.SAPATA ? (
                     <div className="col-span-full grid grid-cols-3 gap-4 p-8 bg-amber-50 rounded-[2.5rem] border border-amber-100">
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest block">Comprimento (cm)</label>
-                        <input type="number" value={newItemBase.lengthCm} onChange={e => setNewItemBase({...newItemBase, lengthCm: Number(e.target.value)})} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
+                        <input type="number" value={newItemBase.lengthCm} onChange={e => setNewItemBase({ ...newItemBase, lengthCm: Number(e.target.value) })} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
                       </div>
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest block">Largura (cm)</label>
-                        <input type="number" value={newItemBase.widthCm} onChange={e => setNewItemBase({...newItemBase, widthCm: Number(e.target.value)})} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
+                        <input type="number" value={newItemBase.widthCm} onChange={e => setNewItemBase({ ...newItemBase, widthCm: Number(e.target.value) })} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
                       </div>
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest block">Altura (cm)</label>
-                        <input type="number" value={newItemBase.heightCm} onChange={e => setNewItemBase({...newItemBase, heightCm: Number(e.target.value)})} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
+                        <input type="number" value={newItemBase.heightCm} onChange={e => setNewItemBase({ ...newItemBase, heightCm: Number(e.target.value) })} className="w-full bg-white border-2 border-amber-200 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-sm" />
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Comprimento (m)</label>
-                      <input type="number" step="0.1" value={newItemBase.lengthCm / 100} onChange={e => setNewItemBase({...newItemBase, lengthCm: Number(e.target.value) * 100})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-inner" />
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Comprimento (cm)</label>
+                      <input type="number" step="1" value={newItemBase.lengthCm} onChange={e => setNewItemBase({ ...newItemBase, lengthCm: Number(e.target.value) })} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-lg font-black outline-none focus:border-amber-500 transition-all shadow-inner" />
                     </div>
                   )}
                 </div>
-                
+
                 <button onClick={confirmNewItem} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">
                   Confirmar e Ir para Aço
                 </button>
@@ -393,13 +408,13 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
       )}
 
       {editingContext && (
-        <ItemDetailEditor 
-          item={editingContext.item} 
+        <ItemDetailEditor
+          item={editingContext.item}
           barIdx={editingContext.barIdx}
           initialTab={editingContext.initialTab}
           onSaveBar={(barData) => saveBarConfig(editingContext.item, barData, editingContext.barIdx)}
           onSaveStirrups={(stirrupData) => saveStirrupConfig(stirrupData)}
-          onCancel={() => setEditingContext(null)} 
+          onCancel={() => setEditingContext(null)}
         />
       )}
     </div>
@@ -418,22 +433,22 @@ interface EditorProps {
 const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'ferros', onSaveBar, onSaveStirrups, onCancel }) => {
   const isEditingBar = barIdx !== undefined;
   const isSapata = item.type === ElementType.SAPATA;
-  
+
   const [activeTab, setActiveTab] = useState<'ferros' | 'estribos'>(initialTab);
   const defaultHook = isSapata ? (item.height || 20) - 5 : 15;
 
   const [barData, setBarData] = useState<MainBarGroup>(
-    isEditingBar 
-      ? { ...item.mainBars[barIdx] } 
-      : { 
-          count: isSapata ? 6 : 4, 
-          gauge: '10.0', 
-          usage: isSapata ? 'Reforço Manual' as BarUsage : BarUsage.PRINCIPAL, 
-          hookStartType: isSapata ? 'up' : 'none', 
-          hookEndType: isSapata ? 'up' : 'none', 
-          hookStart: defaultHook, 
-          hookEnd: defaultHook 
-        }
+    isEditingBar
+      ? { ...item.mainBars[barIdx] }
+      : {
+        count: isSapata ? 6 : 4,
+        gauge: '10.0',
+        usage: isSapata ? 'Reforço Manual' as BarUsage : BarUsage.PRINCIPAL,
+        hookStartType: isSapata ? 'up' : 'none',
+        hookEndType: isSapata ? 'up' : 'none',
+        hookStart: defaultHook,
+        hookEnd: defaultHook
+      }
   );
 
   const [stirrupData, setStirrupData] = useState<SteelItem>({ ...item });
@@ -454,16 +469,16 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
   return (
     <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
       <div className="bg-white rounded-[3.5rem] w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom-8">
-        
+
         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-6">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black ${isSapata ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-amber-500'}`}>
-               {item.type.charAt(0)}
+              {item.type.charAt(0)}
             </div>
             <div>
               <h3 className="text-2xl font-black text-slate-800 tracking-tight">{isEditingBar ? 'Editar Ferro Individual' : isSapata ? 'Desenho da Gaiola' : 'Configurar Estribos'}</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                {item.type} • {item.quantity}x • {isSapata ? `${Math.round(item.length*100)}x${Math.round(item.width!*100)}x${item.height}cm` : `${item.length}m`}
+                {item.type} • {item.quantity}x • {isSapata ? `${Math.round(item.length * 100)}x${Math.round(item.width! * 100)}x${item.height}cm` : `${item.length}m`}
               </p>
             </div>
           </div>
@@ -483,30 +498,30 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
           {activeTab === 'ferros' ? (
             <div className="space-y-8 animate-in fade-in duration-300">
               <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Desenho do Ferro Selecionado</p>
-                 <BarDrawing 
-                  length={barData.usage.includes('Largura') ? (item.width || 1) : item.length} 
-                  hookStart={barData.hookStart} 
-                  hookEnd={barData.hookEnd} 
-                  startType={barData.hookStartType} 
-                  endType={barData.hookEndType} 
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Desenho do Ferro Selecionado</p>
+                <BarDrawing
+                  length={barData.usage.includes('Largura') ? (item.width || 1) : item.length}
+                  hookStart={barData.hookStart}
+                  hookEnd={barData.hookEnd}
+                  startType={barData.hookStartType}
+                  endType={barData.hookEndType}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Qtd. de Barras</label>
-                  <input type="number" value={barData.count} onChange={e => setBarData({...barData, count: Number(e.target.value)})} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-lg focus:border-indigo-500 outline-none transition-all shadow-inner" />
+                  <input type="number" value={barData.count} onChange={e => setBarData({ ...barData, count: Number(e.target.value) })} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-lg focus:border-indigo-500 outline-none transition-all shadow-inner" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Bitola Ø (mm)</label>
-                  <select value={barData.gauge} onChange={e => setBarData({...barData, gauge: e.target.value})} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-lg focus:border-indigo-500 outline-none shadow-inner">
+                  <select value={barData.gauge} onChange={e => setBarData({ ...barData, gauge: e.target.value })} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-lg focus:border-indigo-500 outline-none shadow-inner">
                     {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
                   </select>
                 </div>
                 <div className="col-span-2 space-y-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Uso/Sentido</label>
-                  <select value={barData.usage} onChange={e => setBarData({...barData, usage: e.target.value as BarUsage})} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-sm outline-none focus:border-indigo-500 shadow-inner">
+                  <select value={barData.usage} onChange={e => setBarData({ ...barData, usage: e.target.value as BarUsage })} className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 font-black text-sm outline-none focus:border-indigo-500 shadow-inner">
                     {isSapata ? (
                       <>
                         <option value="Reforço Longitudinal">Reforço Sentido X</option>
@@ -521,13 +536,13 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                <HookSelector label="Gancho Lado A" current={barData.hookStartType} onChange={(t) => setBarData({...barData, hookStartType: t})} />
-                <HookSelector label="Gancho Lado B" current={barData.hookEndType} onChange={(t) => setBarData({...barData, hookEndType: t})} />
-                
+                <HookSelector label="Gancho Lado A" current={barData.hookStartType} onChange={(t) => setBarData({ ...barData, hookStartType: t })} />
+                <HookSelector label="Gancho Lado B" current={barData.hookEndType} onChange={(t) => setBarData({ ...barData, hookEndType: t })} />
+
                 {(barData.hookStartType !== 'none' || barData.hookEndType !== 'none') && (
                   <div className="col-span-full flex items-center justify-center gap-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-in zoom-in-95">
                     <span className="text-[10px] font-black text-indigo-700 uppercase">Medida do Gancho (cm):</span>
-                    <input type="number" value={barData.hookStart} onChange={e => setBarData({...barData, hookStart: Number(e.target.value), hookEnd: Number(e.target.value)})} className="w-24 bg-white border-2 border-indigo-200 rounded-xl p-3 font-black text-indigo-700 outline-none text-center" />
+                    <input type="number" value={barData.hookStart} onChange={e => setBarData({ ...barData, hookStart: Number(e.target.value), hookEnd: Number(e.target.value) })} className="w-24 bg-white border-2 border-indigo-200 rounded-xl p-3 font-black text-indigo-700 outline-none text-center" />
                   </div>
                 )}
               </div>
@@ -536,30 +551,30 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
             <div className="space-y-8 animate-in fade-in duration-300">
               <div className={`p-10 rounded-[3rem] border-2 transition-all flex flex-col items-center shadow-lg ${stirrupData.hasStirrups ? 'bg-indigo-100 border-indigo-300' : 'bg-slate-50 border-slate-200 border-dashed'}`}>
                 {isSapata ? (
-                   <div className="text-center">
-                      <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round(item.width! * 100)} spacing={stirrupData.stirrupSpacing} />
-                      <h4 className="font-black text-indigo-900 uppercase text-xl mt-6 mb-2">Gaiola Automática</h4>
-                      <p className="text-indigo-700 text-xs font-bold uppercase tracking-tight max-w-xs mx-auto mb-8">Gera as barras nos dois sentidos com dobras proporcionais à altura.</p>
-                   </div>
+                  <div className="text-center">
+                    <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round(item.width! * 100)} spacing={stirrupData.stirrupSpacing} />
+                    <h4 className="font-black text-indigo-900 uppercase text-xl mt-6 mb-2">Gaiola Automática</h4>
+                    <p className="text-indigo-700 text-xs font-bold uppercase tracking-tight max-w-xs mx-auto mb-8">Gera as barras nos dois sentidos com dobras proporcionais à altura.</p>
+                  </div>
                 ) : (
-                   <div className="text-center">
-                      <StirrupDrawing width={stirrupData.stirrupWidth} height={stirrupData.stirrupHeight} />
-                      <h4 className="font-black text-slate-800 uppercase text-xl mt-6 mb-6">Configuração de Estribo</h4>
-                   </div>
+                  <div className="text-center">
+                    <StirrupDrawing width={stirrupData.stirrupWidth} height={stirrupData.stirrupHeight} />
+                    <h4 className="font-black text-slate-800 uppercase text-xl mt-6 mb-6">Configuração de Estribo</h4>
+                  </div>
                 )}
-                
-                <button onClick={() => setStirrupData({...stirrupData, hasStirrups: !stirrupData.hasStirrups})} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${stirrupData.hasStirrups ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+
+                <button onClick={() => setStirrupData({ ...stirrupData, hasStirrups: !stirrupData.hasStirrups })} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${stirrupData.hasStirrups ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
                   {stirrupData.hasStirrups ? (isSapata ? 'Desativar Gaiola' : 'Remover Estribos') : (isSapata ? 'Ativar Gaiola Armada' : 'Ativar Estribos')}
                 </button>
 
                 {stirrupData.hasStirrups && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-white rounded-3xl border border-indigo-200 mt-8 w-full shadow-md animate-in slide-in-from-top-4">
-                    <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Bitola Ø</span><select value={stirrupData.stirrupGauge} onChange={e => setStirrupData({...stirrupData, stirrupGauge: e.target.value})} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base">{GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}</select></div>
-                    <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Esp. (cm)</span><input type="number" value={stirrupData.stirrupSpacing} onChange={e => setStirrupData({...stirrupData, stirrupSpacing: Number(e.target.value)})} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
+                    <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Bitola Ø</span><select value={stirrupData.stirrupGauge} onChange={e => setStirrupData({ ...stirrupData, stirrupGauge: e.target.value })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base">{GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}</select></div>
+                    <div className="space-y-1"><span className="text-[9px] font-black text-indigo-600 uppercase">Esp. (cm)</span><input type="number" value={stirrupData.stirrupSpacing} onChange={e => setStirrupData({ ...stirrupData, stirrupSpacing: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
                     {!isSapata && (
                       <>
-                        <div className="space-y-1"><span className="text-[9px] font-black text-amber-600 uppercase">Larg. (cm)</span><input type="number" value={stirrupData.stirrupWidth} onChange={e => setStirrupData({...stirrupData, stirrupWidth: Number(e.target.value)})} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
-                        <div className="space-y-1"><span className="text-[9px] font-black text-amber-600 uppercase">Alt. (cm)</span><input type="number" value={stirrupData.stirrupHeight} onChange={e => setStirrupData({...stirrupData, stirrupHeight: Number(e.target.value)})} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
+                        <div className="space-y-1"><span className="text-[9px] font-black text-amber-600 uppercase">Larg. (cm)</span><input type="number" value={stirrupData.stirrupWidth} onChange={e => setStirrupData({ ...stirrupData, stirrupWidth: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
+                        <div className="space-y-1"><span className="text-[9px] font-black text-amber-600 uppercase">Alt. (cm)</span><input type="number" value={stirrupData.stirrupHeight} onChange={e => setStirrupData({ ...stirrupData, stirrupHeight: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-slate-100 rounded-xl font-black text-base" /></div>
                       </>
                     )}
                     {isSapata && (
@@ -570,19 +585,19 @@ const ItemDetailEditor: React.FC<EditorProps> = ({ item, barIdx, initialTab = 'f
                   </div>
                 )}
               </div>
-              
+
               {stirrupData.hasStirrups && isSapata && (
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center gap-4 animate-in fade-in">
                   <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Resumo Calculado</span>
                   <div className="flex gap-8">
-                     <div className="text-center">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase">Barras no X</span>
-                        <span className="text-xl font-black text-slate-900">{Math.ceil((item.width || 0.8) * 100 / stirrupData.stirrupSpacing)} un.</span>
-                     </div>
-                     <div className="text-center border-l border-slate-100 pl-8">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase">Barras no Y</span>
-                        <span className="text-xl font-black text-slate-900">{Math.ceil(item.length * 100 / stirrupData.stirrupSpacing)} un.</span>
-                     </div>
+                    <div className="text-center">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase">Barras no X</span>
+                      <span className="text-xl font-black text-slate-900">{Math.ceil((item.width || 0.8) * 100 / stirrupData.stirrupSpacing)} un.</span>
+                    </div>
+                    <div className="text-center border-l border-slate-100 pl-8">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase">Barras no Y</span>
+                      <span className="text-xl font-black text-slate-900">{Math.ceil(item.length * 100 / stirrupData.stirrupSpacing)} un.</span>
+                    </div>
                   </div>
                 </div>
               )}
