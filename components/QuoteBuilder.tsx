@@ -889,15 +889,21 @@ const ItemDetailEditor: React.FC<{
       if (editingIndex !== undefined && localItem.mainBars[editingIndex]) {
         const bar = localItem.mainBars[editingIndex];
         setNewBar(bar);
+
         // Infer visual shape
-        if (bar.hookStartType === 'none' && bar.hookEndType === 'none') setVisualShape('straight');
-        else if (bar.hookStartType === 'up' && bar.hookEndType === 'none') setVisualShape('l_left_up');
-        else if (bar.hookStartType === 'none' && bar.hookEndType === 'up') setVisualShape('l_right_up');
-        else if (bar.hookStartType === 'up' && bar.hookEndType === 'up') setVisualShape('u_up'); // Default to U
-        else if (bar.hookStartType === 'down' && bar.hookEndType === 'none') setVisualShape('l_left_down');
-        else if (bar.hookStartType === 'none' && bar.hookEndType === 'down') setVisualShape('l_right_down');
-        else if (bar.hookStartType === 'down' && bar.hookEndType === 'down') setVisualShape('u_down');
-        else setVisualShape('custom');
+        if (bar.shape) {
+          setVisualShape(bar.shape);
+        } else {
+          // Fallback inference for old bars
+          if (bar.hookStartType === 'none' && bar.hookEndType === 'none') setVisualShape('straight');
+          else if (bar.hookStartType === 'up' && bar.hookEndType === 'none') setVisualShape('l_left_up');
+          else if (bar.hookStartType === 'none' && bar.hookEndType === 'up') setVisualShape('l_right_up');
+          else if (bar.hookStartType === 'up' && bar.hookEndType === 'up') setVisualShape('u_up');
+          else if (bar.hookStartType === 'down' && bar.hookEndType === 'none') setVisualShape('l_left_down');
+          else if (bar.hookStartType === 'none' && bar.hookEndType === 'down') setVisualShape('l_right_down');
+          else if (bar.hookStartType === 'down' && bar.hookEndType === 'down') setVisualShape('u_down');
+          else setVisualShape('custom');
+        }
       } else {
         setNewBar({
           gauge: '10.0',
@@ -907,7 +913,8 @@ const ItemDetailEditor: React.FC<{
           hookEndType: 'none',
           hookStart: defaultHook,
           hookEnd: defaultHook,
-          position: ''
+          position: '',
+          shape: 'straight'
         });
         setVisualShape('straight');
       }
@@ -1120,7 +1127,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 1. Straight */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0 });
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'none', hookStart: 0, hookEnd: 0, shape: 'straight' });
                         setVisualShape('straight');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'straight' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1134,7 +1141,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 2. L Left Up */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0, shape: 'l_left_up' });
                         setVisualShape('l_left_up');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1148,7 +1155,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 3. L Right Up */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'up', hookStart: 0, hookEnd: newBar.hookEnd || 30, shape: 'l_right_up' });
                         setVisualShape('l_right_up');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1162,7 +1169,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 4. U / Hooks Up */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20, shape: 'u_up' });
                         setVisualShape('u_up');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1176,7 +1183,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 5. C Shape (Official Open Stirrup) */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setNewBar({ ...newBar, hookStartType: 'up', hookEndType: 'up', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20, shape: 'c_up' });
                         setVisualShape('c_up');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
@@ -1190,7 +1197,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 6. L Left Down */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0 });
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'none', hookStart: newBar.hookStart || 30, hookEnd: 0, shape: 'l_left_down' });
                         setVisualShape('l_left_down');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1204,7 +1211,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 7. L Right Down */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30 });
+                        setNewBar({ ...newBar, hookStartType: 'none', hookEndType: 'down', hookStart: 0, hookEnd: newBar.hookEnd || 30, shape: 'l_right_down' });
                         setVisualShape('l_right_down');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1218,7 +1225,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 8. U / Hooks Down */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20, shape: 'u_down' });
                         setVisualShape('u_down');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
@@ -1232,7 +1239,7 @@ const ItemDetailEditor: React.FC<{
                     {/* 9. C Shape Down */}
                     <button
                       onClick={() => {
-                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20 });
+                        setNewBar({ ...newBar, hookStartType: 'down', hookEndType: 'down', hookStart: newBar.hookStart || 20, hookEnd: newBar.hookEnd || 20, shape: 'c_down' });
                         setVisualShape('c_down');
                       }}
                       className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
