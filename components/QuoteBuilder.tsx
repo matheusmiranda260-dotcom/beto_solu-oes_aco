@@ -754,11 +754,7 @@ const BeamElevationView: React.FC<{
                     <text x={0} y={pH / 2} textAnchor="end" dominantBaseline="middle" fontSize="12" fontWeight="bold" transform={`rotate(-90, 0, ${pH / 2})`}>{Math.round(sH)}</text>
                   </g>
 
-                  {/* Background with Hatch (Concrete) */}
-                  <rect x={0} y={0} width={pW} height={pH} fill="url(#diagonalHatch)" stroke="none" />
 
-                  {/* Outer Border (Blue - Formwork/Concrete limit) */}
-                  <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#2563eb" strokeWidth="1.5" />
 
                   {/* Inner Stirrup (Black) */}
                   <rect x={4} y={4} width={pW - 8} height={pH - 8} fill="none" stroke="#000" strokeWidth="2" />
