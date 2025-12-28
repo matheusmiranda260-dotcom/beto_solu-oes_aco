@@ -160,69 +160,72 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
     const base64Image = await fileToBase64(file);
 
     const prompt = `
-  Analyze this structural engineering drawing (beam/column reinforcement detail) and extract technical specifications.
-  IGNORE COLORS. Focus on lines and text labels.
+  You are an expert Structural Engineer assistant. Analyze this reinforcement drawing following this STRICT SEQUENCE.
+  IGNORE COLORS. READ TEXT LABELS.
   
   ${learningContext}
 
-  CRITICAL INSTRUCTIONS:
+  --- EXECUTION SEQUENCE ---
 
-  1. SPANS (VÃOS) & LENGTH:
-     - Total Beam Length (L) is often different from Span (Vão).
-     - ONLY detect a span if there is an explicit HORIZONTAL dimension line between supports (P1, P2, etc).
-     - If the "Center Concrete" drawing looks LONGER than the bars, double-check if you read the length correctly.
-     - Bars usually go from end-to-end of the concrete.
+  ### STEP 1: READ MAIN LONGITUDINAL BARS (Ferros Longitudinais)
+  - Look for long horizontal lines representing the beam bars.
+  - Find their labels, usually format: "2 N1 ø 8.0 c=237" or similar.
+    - "2" = Quantity (Count).
+    - "N1" = Position.
+    - "ø 8.0" or "f 8mm" = Gauge.
+    - "c=237" = Total Cut Length (Comprimento Total).
+  - **Top vs Bottom**: If the bar is drawn at the top of the beam, it is Top. If at bottom, it is Bottom.
+  - **Hooks (Dobras)**: Check the ends of these lines for vertical segments limits (e.g. "15").
 
-  2. REBAR IDENTIFICATION (FERROS):
-     - Look for labels starting with "N" (e.g., "N1", "N3"). 
-     - "C=" or "Comp=" means TOTAL CUT LENGTH of the bar.
-     - IF "C=500" is seen and hooks are "15" on each side, then segmentA (straight part) must be 500 - 15 - 15 = 470.
-     - Always ensure: hookStart + segmentA + hookEnd = Total Cut Length (C).
+  ### STEP 2: READ STIRRUPS (Estribos) - LOOK AT THE RIGHT SIDE OR SECTION A-A
+  - Locate the Cross-Section (rectangle with dots) or the callout typically on the RIGHT SIDE of the drawing.
+  - **READ THE LABEL EXACTLY** (e.g., "13 N3 ø 5.0 c/81" or "13 N3 c/15").
+    - **QUANTITY IS LAW**: If it says "13 N3", then quantity is 13. DO NOT CALCULATE using spans.
+    - "c=81" means Total Length of the stirrup wire.
+    - "c/15" means Spacing.
+  - **DIMENSIONS**: Look at the small rectangle (Section A-A). The numbers on its sides are Width and Height.
+    - Example: "15" and "35". Width=15, Height=35.
 
-  3. STIRRUPS (ESTRIBOS) - **PRIMARY SOURCE: CROSS-SECTIONS**:
-     - LOOK FOR SECTIONS labeled "CORTE A-A", "SECÇÃO", etc.
-     - **SPECS PATTERN:** "13 N3 ø 5.0 c/15" or "13 n3 f 5mm c=81".
-       - "c/15" or "c/0.15" = SPACING (Espaçamento) between stirrups.
-       - "c=81" or "C=81" = CUT LENGTH of one stirrup (length of the cut wire). 
-       - DISTINGUISH THESE! If you see "c/15", spacing is 15. If you see "C=81", it's the wire length.
-       - "f 5mm" or "ø 5.0" = GAUGE.
-     - **QUANTITY:** If "13 N3" is written, quantity is 13.
+  ### STEP 3: SPANS (Vãos) - SYMBOLIC ONLY
+  - Spans are secondary information.
+  - Only record a span if you see explicit horizontal dimension lines between supports (P1, P2..).
+  - DO NOT override the Stirrup Quantity found in Step 2 based on span calculations.
 
-  4. HEURISTICS FOR DIMENSIONS:
-     - Concrete width/height are usually around 15-20cm (width) and 30-60cm (height) for beams.
-     - Stirrup dimensions are usually the concrete dimensions minus 5-6cm (cover).
+  ========================================
+  OUTPUT JSON FORMAT:
+  For each structural element found:
+  {
+    "type": "Viga",
+    "observation": "Label (e.g. V1)",
+    "quantity": 1,
+    "length": Total concrete length (m),
+    "width": Concrete Section Width (m),
+    "height": Concrete Section Height (m),
 
-  For each structural element found, create an object in the JSON array:
-  - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
-  - observation: Label (e.g., "V130")
-  - quantity: Number (1)
-  - length: Total length in meters
-  - width: Section width (m)
-  - height: Section height (m)
-  
-  - hasStirrups: boolean
-  - stirrupGauge: mm (string e.g. "5.0")
-  - stirrupSpacing: cm (number e.g. 15)
-  - stirrupWidth: cm (number)
-  - stirrupHeight: cm (number)
-  - stirrupPosition: Label (N3)
-  
-  - mainBars: Array of bars
-    - count: number
-    - gauge: mm (string)
-    - placement: "top" or "bottom"
-    - shape: "u_up", "u_down", "straight"
-    - segmentA: Straight length (cm)
-    - hookStart: Hook length (cm)
-    - hookEnd: Hook length (cm)
-    - position: Label (N1)
+    "hasStirrups": true,
+    "stirrupGauge": "5.0",
+    "stirrupSpacing": 15,
+    "stirrupWidth": 15,    // FROM SECTION A-A
+    "stirrupHeight": 35,   // FROM SECTION A-A
+    "stirrupPosition": "N3", // FROM LABEL
 
-  - supports: Array of supports (P1, P2...)
-    - label: Name
-    - position: Center distance from start (cm).
-    - width: column width (cm)
-    - leftGap: clear zone left of support (cm)
-    - rightGap: clear zone right of support (cm)
+    "mainBars": [
+      {
+        "count": 2,
+        "position": "N1",
+        "gauge": "10.0",
+        "placement": "top" or "bottom",
+        "shape": "u_up" | "u_down" | "straight",
+        "segmentA": 237, // Straight part
+        "hookStart": 0,
+        "hookEnd": 0
+      }
+    ],
+
+    "supports": [
+       { "label": "P1", "position": 0, "width": 20 }
+    ]
+  }
 
   Return ONLY valid JSON.
   `;
