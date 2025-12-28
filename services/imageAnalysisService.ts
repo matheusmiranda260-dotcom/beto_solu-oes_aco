@@ -25,27 +25,17 @@ const fileToBase64 = (file: File): Promise<string> => {
 const parseGeminiResponse = (responseText: string): SteelItem[] => {
     console.log(">>> RESPOSTA BRUTA DA IA:", responseText);
     try {
-        // Clean up markdown code blocks if present
-        // Clean up markdown code blocks if present
-        const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        // 1. Agressive Cleanup: Extract ONLY the JSON part using Regex
+        // Looks for [ ... ] OR { ... } ignoring surrounding text
+        const jsonMatch = responseText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
 
-        // Try to find Array [...] OR Object {...}
-        let firstBracket = cleanText.indexOf('[');
-        let lastBracket = cleanText.lastIndexOf(']');
-
-        // If no array found, try finding a single object
-        if (firstBracket === -1 || lastBracket === -1) {
-            firstBracket = cleanText.indexOf('{');
-            lastBracket = cleanText.lastIndexOf('}');
-        }
-
-        if (firstBracket === -1 || lastBracket === -1) {
-            console.error("AI Response not a valid JSON structure:", cleanText);
+        if (!jsonMatch) {
+            console.error("AI Response not a valid JSON structure:", responseText);
             throw new Error("Formato inválido recebido da IA (esperado JSON)");
         }
 
-        const jsonString = cleanText.substring(firstBracket, lastBracket + 1);
-        const data = JSON.parse(jsonString);
+        const cleanJsonString = jsonMatch[0];
+        const data = JSON.parse(cleanJsonString);
 
         // Ensure data is an array
         const items = Array.isArray(data) ? data : [data];
