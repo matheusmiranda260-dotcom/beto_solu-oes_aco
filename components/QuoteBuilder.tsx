@@ -1427,7 +1427,7 @@ const ItemDetailEditor: React.FC<{
             {!isSapata && (
               <div className="bg-white p-6 rounded-3xl border-2 border-slate-200 shadow-lg">
                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Detalhamento Longitudinal</h4>
-                <div className="transform scale-110 origin-top">
+                <div className="transform scale-150 origin-top">\r
                   <BeamElevationView
                     item={localItem}
                     newBar={editingIndex === undefined ? newBar : undefined}
