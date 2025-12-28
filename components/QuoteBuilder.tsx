@@ -1298,11 +1298,19 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // Tenta pegar do .env OU do localStorage
+    let apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
 
+    // Se não encontrou, pede para o usuário
     if (!apiKey) {
-      alert("Recurso indisponível: Configure a chave de API do Gemini (VITE_GEMINI_API_KEY) no arquivo .env e REINICIE o servidor.");
-      return;
+      const userKey = window.prompt("Para usar este recurso sem reiniciar o servidor, cole sua chave API aqui:");
+      if (userKey && userKey.trim().length > 10) {
+        apiKey = userKey.trim();
+        localStorage.setItem('gemini_api_key', apiKey); // Salva para a próxima vez
+      } else {
+        alert("Chave API necessária para importar imagens.");
+        return;
+      }
     }
 
     setIsAnalyzing(true);
