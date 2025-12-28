@@ -134,6 +134,8 @@ export interface MainBarGroup {
     segmentC?: number; // Right Leg
     segmentD?: number; // Left Inward Hook
     segmentE?: number; // Right Inward Hook
+
+    offset?: number; // Deslocamento Longitudinal (cm) a partir da esquerda
 }
 
 export interface SteelItem {

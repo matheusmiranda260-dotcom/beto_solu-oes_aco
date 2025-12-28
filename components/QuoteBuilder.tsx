@@ -398,6 +398,13 @@ const BeamElevationView: React.FC<{
 
   const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
     const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
+    const scaleX = Math.min(600 / (Math.max(item.length * 100, baseLenCm) || 1), 1.5); // Re-calc customized scale for safety if global logic differs, though global `scaleX` is available in scope. 
+    // Actually safe to use scope `scaleX` but we need to ensure offset is handled.
+
+    // Calculate start X based on offset
+    const offsetCm = group.offset || 0;
+    const startX = padX + (offsetCm * scaleX);
+
     const pxLen = baseLenCm * scaleX;
 
     // Total Length Calculation (C)
@@ -418,30 +425,30 @@ const BeamElevationView: React.FC<{
     // Start Hook
     if (group.hookStartType === 'up') {
       if (isCShape && group.segmentD) {
-        d = `M ${padX + inwardH},${yBase - hookH} L ${padX},${yBase - hookH} L ${padX},${yBase} `;
+        d = `M ${startX + inwardH},${yBase - hookH} L ${startX},${yBase - hookH} L ${startX},${yBase} `;
       } else {
-        d = `M ${padX},${yBase - hookH} L ${padX},${yBase} `;
+        d = `M ${startX},${yBase - hookH} L ${startX},${yBase} `;
       }
     } else if (group.hookStartType === 'down') {
       if (isCShape && group.segmentD) {
-        d = `M ${padX + inwardH},${yBase + hookH} L ${padX},${yBase + hookH} L ${padX},${yBase} `;
+        d = `M ${startX + inwardH},${yBase + hookH} L ${startX},${yBase + hookH} L ${startX},${yBase} `;
       } else {
-        d = `M ${padX},${yBase + hookH} L ${padX},${yBase} `;
+        d = `M ${startX},${yBase + hookH} L ${startX},${yBase} `;
       }
     } else {
-      d = `M ${padX},${yBase} `;
+      d = `M ${startX},${yBase} `;
     }
 
     // Span
-    d += `L ${padX + pxLen},${yBase} `;
+    d += `L ${startX + pxLen},${yBase} `;
 
     // End Hook
     if (group.hookEndType === 'up') {
-      d += `L ${padX + pxLen},${yBase - hookH}`;
-      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardH},${yBase - hookH}`;
+      d += `L ${startX + pxLen},${yBase - hookH}`;
+      if (isCShape && group.segmentE) d += ` L ${startX + pxLen - inwardH},${yBase - hookH}`;
     } else if (group.hookEndType === 'down') {
-      d += `L ${padX + pxLen},${yBase + hookH}`;
-      if (isCShape && group.segmentE) d += ` L ${padX + pxLen - inwardH},${yBase + hookH}`;
+      d += `L ${startX + pxLen},${yBase + hookH}`;
+      if (isCShape && group.segmentE) d += ` L ${startX + pxLen - inwardH},${yBase + hookH}`;
     }
 
     const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
@@ -454,13 +461,13 @@ const BeamElevationView: React.FC<{
         onClick={() => !readOnly && onEditBar(group.originalIdx)}
       >
         {/* Invisible Hit Area for easier clicking */}
-        <rect x={padX - 20} y={yBase - 20} width={pxLen + 40} height={40} fill="transparent" />
+        <rect x={startX - 20} y={yBase - 20} width={pxLen + 40} height={40} fill="transparent" />
 
         {/* The Bar Line */}
         <path d={d} fill="none" stroke={isTop ? "#ef4444" : "#0f172a"} strokeWidth="4" className="transition-all group-hover:stroke-amber-500 shadow-sm" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Info Box / Label */}
-        <foreignObject x={padX + pxLen / 2 - 60} y={yBase - (isTop ? 28 : -10)} width="120" height="40" style={{ overflow: 'visible' }}>
+        <foreignObject x={startX + pxLen / 2 - 60} y={yBase - (isTop ? 28 : -10)} width="120" height="40" style={{ overflow: 'visible' }}>
           <div className="flex flex-col items-center">
             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight shadow-sm border ${readOnly ? 'bg-white border-slate-100 text-slate-800' : 'bg-white border-indigo-100 text-indigo-700 group-hover:bg-amber-100 group-hover:text-amber-700 group-hover:border-amber-200 transition-colors'}`}>
               {label}
@@ -469,16 +476,16 @@ const BeamElevationView: React.FC<{
         </foreignObject>
 
         {/* Dimension Labels (Hooks) */}
-        {hookStart > 0 && <text x={padX - 8} y={yBase} textAnchor="end" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookStart}</text>}
-        {hookEnd > 0 && <text x={padX + pxLen + 8} y={yBase} textAnchor="start" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookEnd}</text>}
+        {hookStart > 0 && <text x={startX - 8} y={yBase} textAnchor="end" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookStart}</text>}
+        {hookEnd > 0 && <text x={startX + pxLen + 8} y={yBase} textAnchor="start" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookEnd}</text>}
 
         {/* Length Label (Middle) */}
-        <text x={padX + pxLen / 2} y={yBase + (isTop ? 14 : -14)} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#94a3b8" className="select-none">{Math.round(baseLenCm)}</text>
+        <text x={startX + pxLen / 2} y={yBase + (isTop ? 14 : -14)} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#94a3b8" className="select-none">{Math.round(baseLenCm)}</text>
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
-            <circle cx={padX + pxLen + 30} cy={yBase} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
-            <path d={`M${padX + pxLen + 27},${yBase - 3} L${padX + pxLen + 33},${yBase + 3} M${padX + pxLen + 33},${yBase - 3} L${padX + pxLen + 27},${yBase + 3}`} stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx={startX + pxLen + 30} cy={yBase} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+            <path d={`M${startX + pxLen + 27},${yBase - 3} L${startX + pxLen + 33},${yBase + 3} M${startX + pxLen + 33},${yBase - 3} L${startX + pxLen + 27},${yBase + 3}`} stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
           </g>
         )}
       </g>
@@ -1041,7 +1048,8 @@ const ItemDetailEditor: React.FC<{
         segmentB: isSapata ? defaultHook : 0,
         segmentC: isSapata ? defaultHook : 0,
         segmentD: 0,
-        segmentE: 0
+        segmentE: 0,
+        offset: 0
       });
       setVisualShape('straight');
     }
@@ -1288,6 +1296,59 @@ const ItemDetailEditor: React.FC<{
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">Posição</label>
                   <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="Auto" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+
+              {/* Alignment / Offset Controls */}
+              <div className="mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Alinhamento Longitudinal</label>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={() => setNewBar({ ...newBar, offset: 0 })}
+                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${!newBar.offset || newBar.offset === 0 ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    Esquerda (0)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const len = newBar.segmentA || 0;
+                      const totalLen = Math.round(localItem.length * 100);
+                      const mid = Math.max(0, Math.floor((totalLen - len) / 2));
+                      setNewBar({ ...newBar, offset: mid });
+                    }}
+                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${newBar.offset !== 0 && newBar.offset !== Math.round((localItem.length * 100) - (newBar.segmentA || 0)) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    Centro
+                  </button>
+                  <button
+                    onClick={() => {
+                      const len = newBar.segmentA || 0;
+                      const totalLen = Math.round(localItem.length * 100);
+                      const right = Math.max(0, totalLen - len);
+                      setNewBar({ ...newBar, offset: right });
+                    }}
+                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${newBar.offset && newBar.offset > 0 && newBar.offset === Math.round((localItem.length * 100) - (newBar.segmentA || 0)) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    Direita
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-slate-400">OFFSET (CM):</span>
+                  <input
+                    type="number"
+                    value={newBar.offset || 0}
+                    onChange={e => setNewBar({ ...newBar, offset: Number(e.target.value) })}
+                    className="w-20 p-1 bg-white border border-slate-200 rounded-lg text-xs font-black text-center outline-none focus:border-indigo-500"
+                  />
+                  <div className="h-1 flex-grow bg-slate-200 rounded-full overflow-hidden relative">
+                    <div
+                      className="absolute h-full bg-indigo-500 opacity-50 transition-all duration-300"
+                      style={{
+                        left: `${Math.min(100, ((newBar.offset || 0) / (localItem.length * 100)) * 100)}%`,
+                        width: `${Math.min(100, ((newBar.segmentA || 0) / (localItem.length * 100)) * 100)}%`
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
