@@ -667,7 +667,8 @@ const BeamElevationView: React.FC<{
 
         {/* Beam Body / Stirrups */}
         <g>
-          <rect x={actualPadX} y={beamTopY} width={totalWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
+          {/* Concrete body based on strict length (visualizes discrepancies) */}
+          <rect x={actualPadX} y={beamTopY} width={(item.length * 100) * scaleX} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
           {/* Stirrup Lines - Skip support zones */}
           {stirrupData.map((stirrup, idx) => {
             // Check if this stirrup position falls within a gap zone
@@ -956,15 +957,19 @@ const BeamElevationView: React.FC<{
           {/* Main Cross Section Drawing (Dynamic Scale) */}
           <g transform="translate(40, 60)">
             {(() => {
-              const sW = item.stirrupWidth || 20;
-              const sH = item.stirrupHeight || 40;
-              const coverCm = 6; // 3cm de cada lado
+              // Ensure we have numbers
+              const valW = Number(item.stirrupWidth);
+              const valH = Number(item.stirrupHeight);
+              const sW = (!isNaN(valW) && valW > 0) ? valW : 20;
+              const sH = (!isNaN(valH) && valH > 0) ? valH : 40;
+
+              const coverCm = 4; // Reduced cover visualization to 2cm/side for better proportion
               const concreteW = sW + coverCm;
               const concreteH = sH + coverCm;
               const scale = Math.min(100 / concreteW, 140 / concreteH);
               const pW = concreteW * scale;
               const pH = concreteH * scale;
-              const coverPx = (coverCm / 2) * scale; // 3cm em pixels
+              const coverPx = (coverCm / 2) * scale;
 
               return (
                 <g>
