@@ -344,8 +344,10 @@ const BeamElevationView: React.FC<{
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
   onBarUpdate?: (idx: number, newOffset: number) => void;
+  selectedIdx?: number;
   readOnly?: boolean;
-}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, readOnly }) => {
+}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, selectedIdx, readOnly }) => {
+  const svgRef = React.useRef<SVGSVGElement>(null);
   const viewW = 1000; // Increased width for better clarity
   const viewH = 600; // Increased height for multiple layers
   const padX = 60;
@@ -391,10 +393,16 @@ const BeamElevationView: React.FC<{
 
   const handleMouseDown = (e: React.MouseEvent, idx: number, currentOffset: number) => {
     if (readOnly) return;
+
+    if (!svgRef.current) return;
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = e.clientX;
+    const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
     e.stopPropagation();
-    e.preventDefault(); // Prevent text selection
+    e.preventDefault();
     setDraggingBarIdx(idx);
-    setDragStartX(e.clientX);
+    setDragStartX(svgPoint.x);
     setInitialOffset(currentOffset);
     setIsDragging(false);
   };
@@ -403,30 +411,29 @@ const BeamElevationView: React.FC<{
     if (draggingBarIdx === null) return;
 
     const handleWindowMouseMove = (e: MouseEvent) => {
-      if (draggingBarIdx === null || !onBarUpdate) return;
+      if (draggingBarIdx === null || !onBarUpdate || !svgRef.current) return;
 
-      const deltaPx = e.clientX - dragStartX;
-      if (Math.abs(deltaPx) > 5) setIsDragging(true); // Threshold to distinguish click vs drag
+      const pt = svgRef.current.createSVGPoint();
+      pt.x = e.clientX;
+      const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
 
-      const deltaCm = deltaPx / scaleX;
+      const deltaSVG = svgPoint.x - dragStartX;
+      if (Math.abs(deltaSVG) > 2) setIsDragging(true);
 
-      // Calculate new offset
+      const deltaCm = deltaSVG / scaleX;
+
       let newOffset = Math.round(initialOffset + deltaCm);
-
-      // Constraints: 0 <= offset <= (totalLength - barLength)
       const bar = item.mainBars[draggingBarIdx];
       const barLen = bar.segmentA || 0;
       const totalLen = Math.round(item.length * 100);
       const maxOffset = Math.max(0, totalLen - barLen);
 
       newOffset = Math.max(0, Math.min(newOffset, maxOffset));
-
       onBarUpdate(draggingBarIdx, newOffset);
     };
 
     const handleWindowMouseUp = () => {
       setDraggingBarIdx(null);
-      // Wait a tick to clear isDragging so onClick can check it
       setTimeout(() => setIsDragging(false), 50);
     };
 
@@ -460,13 +467,10 @@ const BeamElevationView: React.FC<{
 
   const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
     const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
-    const scaleX = Math.min(600 / (Math.max(item.length * 100, baseLenCm) || 1), 1.5); // Re-calc customized scale for safety if global logic differs, though global `scaleX` is available in scope. 
-    // Actually safe to use scope `scaleX` but we need to ensure offset is handled.
 
-    // Calculate start X based on offset
+    // Calculate start X based on offset - using scope scaleX
     const offsetCm = group.offset || 0;
     const startX = padX + (offsetCm * scaleX);
-
     const pxLen = baseLenCm * scaleX;
 
     // Total Length Calculation (C)
@@ -480,9 +484,10 @@ const BeamElevationView: React.FC<{
     const hookEnd = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);
 
     const hookH = 15;
-    const inwardH = 12; // Fixed size for inward bends to maintain visual clarity
+    const inwardH = 12;
     const isCShape = group.shape?.startsWith('c_');
     const isBeingDragged = draggingBarIdx === group.originalIdx;
+    const isSelected = selectedIdx === group.originalIdx;
 
     let d = "";
     // Start Hook
@@ -515,7 +520,6 @@ const BeamElevationView: React.FC<{
     }
 
     const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
-    const subLabel = isTop ? 'Superior' : group.placement === 'distributed' ? 'Lateral' : group.placement === 'center' ? 'Central' : 'Inferior';
 
     return (
       <g
@@ -530,13 +534,32 @@ const BeamElevationView: React.FC<{
         {/* Invisible Hit Area for easier clicking - Larger when dragging */}
         <rect x={startX - 20} y={yBase - 20} width={pxLen + 40} height={40} fill="transparent" />
 
-        {/* The Bar Line - Highlight if dragged */}
-        <path d={d} fill="none" stroke={isBeingDragged ? "#3b82f6" : (isTop ? "#ef4444" : "#0f172a")} strokeWidth={isBeingDragged ? 6 : 4} className="transition-all shadow-sm" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Selected Highlight Aura */}
+        {isSelected && (
+          <rect
+            x={startX - 5} y={yBase - 15}
+            width={pxLen + 10} height={30}
+            fill="none" stroke="#6366f1" strokeWidth="2"
+            rx="5" className="animate-pulse"
+            strokeDasharray="4 2"
+          />
+        )}
+
+        {/* The Bar Line - Highlight if dragged or selected */}
+        <path
+          d={d}
+          fill="none"
+          stroke={isBeingDragged || isSelected ? "#3b82f6" : (isTop ? "#ef4444" : "#0f172a")}
+          strokeWidth={isBeingDragged || isSelected ? 6 : 4}
+          className="transition-all shadow-sm"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
 
         {/* Info Box / Label */}
         <foreignObject x={startX + pxLen / 2 - 60} y={yBase - (isTop ? 28 : -10)} width="120" height="40" style={{ overflow: 'visible' }}>
           <div className="flex flex-col items-center">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight shadow-sm border ${readOnly ? 'bg-white border-slate-100 text-slate-800' : 'bg-white border-indigo-100 text-indigo-700 group-hover:bg-amber-100 group-hover:text-amber-700 group-hover:border-amber-200 transition-colors'}`}>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight shadow-sm border ${isSelected ? 'bg-indigo-600 text-white border-indigo-700' : (readOnly ? 'bg-white border-slate-100 text-slate-800' : 'bg-white border-indigo-100 text-indigo-700 group-hover:bg-amber-100 group-hover:text-amber-700 group-hover:border-amber-200 transition-colors')}`}>
               {label}
             </span>
           </div>
@@ -567,10 +590,12 @@ const BeamElevationView: React.FC<{
       </div>
 
       <svg
+        ref={svgRef}
         width="100%"
         height={viewH}
         viewBox={`0 0 ${viewW} ${viewH}`}
-        className={`overflow-visible select-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        className={`overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        tabIndex={0}
       >
 
         <defs>
@@ -1302,6 +1327,7 @@ const ItemDetailEditor: React.FC<{
                     item={localItem}
                     onEditBar={(idx) => setEditingIndex(idx)}
                     onRemoveBar={handleRemoveBar}
+                    selectedIdx={editingIndex}
                     onBarUpdate={(idx, offset) => {
                       const bars = [...localItem.mainBars];
                       if (bars[idx]) {
