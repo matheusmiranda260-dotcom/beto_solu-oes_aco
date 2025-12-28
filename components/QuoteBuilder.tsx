@@ -1448,7 +1448,7 @@ const ItemDetailEditor: React.FC<{
             <span className="text-xs font-bold text-slate-400">Clique para posicionar</span>
           </div>
           <div className="h-[calc(100%-28px)] flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
-            <div className="transform scale-[1]">
+            <div className="transform scale-[2]">
               <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
             </div>
           </div>
