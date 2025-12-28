@@ -726,7 +726,7 @@ const BeamElevationView: React.FC<{
         </defs>
 
         {/* SEÇÃO A-A - Dynamic & Positioned after content */}
-        <g transform={`translate(${Math.max(actualPadX + totalWidthPx + 60, viewW - 200)}, 20)`}>
+        <g transform={`translate(${Math.max(actualPadX + totalWidthPx + 60, viewW - 200)}, ${viewH / 2 - 190})`}>
 
 
           {/* Title Group */}
