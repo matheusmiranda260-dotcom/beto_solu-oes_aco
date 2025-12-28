@@ -321,19 +321,6 @@ const CompositeCrossSection: React.FC<{
 
         </svg>
       </div>
-
-      <div className="mt-2 flex flex-col items-center">
-        <svg width="60" height="80" viewBox="0 0 60 80" className="overflow-visible">
-          <rect x="10" y="10" width="40" height="60" fill="none" stroke="#000" strokeWidth="1.5" rx="2" />
-          <path d="M45,15 L50,10" stroke="#000" strokeWidth="1.5" />
-          <path d="M15,15 L10,10" stroke="#000" strokeWidth="1.5" />
-          <text x="60" y="40" fontSize="8" fontFamily="Arial">{Math.round(height)}</text>
-          <text x="30" y="80" fontSize="8" fontFamily="Arial" textAnchor="middle">{Math.round(width)}</text>
-        </svg>
-        <span className="text-[9px] font-bold text-slate-600 mt-1">
-          {stirrupCount || 'N'} {stirrupPos || ''} ø{stirrupGauge || '5.0'} C={Math.round((width + height) * 2 + 10)}
-        </span>
-      </div>
     </div>
   );
 };
