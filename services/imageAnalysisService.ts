@@ -292,48 +292,66 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
         console.warn("Falha silenciosa na descoberta:", e);
     }
 
-    // 2. Loop Robusto (Legacy + Modern)
+    // 2. Loop Robusto com Retries para evitar Syntax Error
     const versions = ["v1beta", "v1"];
     let lastError: any;
-    let success = false;
 
-    for (const model of candidateModels) {
-        if (success) break;
+    // Tenta até 3 vezes (para casos de JSON mal formatado aleatório)
+    for (let attempt = 0; attempt < 3; attempt++) {
+        let success = false;
 
-        for (const version of versions) {
+        for (const model of candidateModels) {
             if (success) break;
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
+            for (const version of versions) {
+                if (success) break;
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    const msg = err.error?.message || "Erro";
-                    if (msg.includes("not found") || msg.includes("not supported")) {
-                        continue;
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        const msg = err.error?.message || "Erro";
+                        if (msg.includes("not found") || msg.includes("not supported")) {
+                            continue;
+                        }
+                        throw new Error(msg);
                     }
-                    throw new Error(msg);
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (!text) continue;
+
+                    // Tenta parsear. Se falhar, vai cair no catch e tentar o próximo modelo/retry
+                    const result = parseGeminiResponse(text);
+
+                    success = true;
+                    console.log(`SUCESSO com: ${model} (${version}) - Tentativa ${attempt + 1}`);
+                    return result;
+
+                } catch (error) {
+                    // Se for erro de sintaxe JSON, queremos tentar de novo (retry loop externo)
+                    // Se for erro de rede/modelo, continuamos o loop interno
+                    console.warn(`Erro na tentativa ${attempt + 1}/${model}:`, error);
+                    lastError = error;
+
+                    // Se o erro foi no parseGeminiResponse (Sintaxe), podemos tentar o mesmo modelo de novo?
+                    // Ou melhor, continuar o loop de modelos.
+                    // Se acabarem os modelos desta tentativa, o loop externo tenta tudo de novo.
+                    continue;
                 }
-
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!text) continue;
-
-                success = true;
-                console.log(`SUCESSO com: ${model} (${version})`);
-                return parseGeminiResponse(text);
-
-            } catch (error) {
-                lastError = error;
-                continue;
             }
         }
+
+        // Se teve sucesso, já retornou. Se chegou aqui, falhou com todos modelos nesta tentativa.
+        // Espera um pouco antes de tentar de novo (exponential backoff light)
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
     }
 
-    throw lastError || new Error("Não foi possível processar a imagem com nenhum modelo disponível. Verifique se a API 'Generative AI' está habilitada no Google Cloud.");
+    throw lastError || new Error("Não foi possível processar a imagem. Erro de validação JSON persistente.");
 };
