@@ -60,18 +60,30 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
             stirrupPosition: item.stirrupPosition,
 
             // Bars
-            mainBars: (item.mainBars || []).map((bar: any, idx: number) => ({
-                id: crypto.randomUUID(),
-                count: Number(bar.count) || 2,
-                gauge: String(bar.gauge || '10.0'),
-                usage: bar.usage || BarUsage.PRINCIPAL,
-                placement: bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top'),
-                segmentA: Number(bar.segmentA) || (Number(item.length) * 100),
-                shape: bar.shape || 'straight',
-                hookStart: Number(bar.hookStart) || 0,
-                hookEnd: Number(bar.hookEnd) || 0,
-                position: bar.position
-            })),
+            mainBars: (item.mainBars || []).map((bar: any) => {
+                const hStart = Number(bar.hookStart) || 0;
+                const hEnd = Number(bar.hookEnd) || 0;
+                let shape = bar.shape || 'straight';
+
+                // AUTO-CORRECTION: If hooks exist, FORCE the shape to be valid (not straight)
+                if ((hStart > 0 || hEnd > 0) && shape === 'straight') {
+                    const placement = bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top');
+                    shape = (placement === 'top') ? 'u_down' : 'u_up';
+                }
+
+                return {
+                    id: crypto.randomUUID(),
+                    count: Number(bar.count) || 2,
+                    gauge: String(bar.gauge || '10.0'),
+                    usage: bar.usage || BarUsage.PRINCIPAL,
+                    placement: bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top'),
+                    segmentA: Number(bar.segmentA) || (Number(item.length) * 100),
+                    shape: shape,
+                    hookStart: hStart,
+                    hookEnd: hEnd,
+                    position: bar.position
+                };
+            }),
 
             // Supports
             supports: (item.supports || []).map((sup: any) => ({
@@ -98,50 +110,52 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
     const base64Image = await fileToBase64(file);
 
     const prompt = `
-  Analyze this structural engineering drawing (beam/column reinforcement detail) and extract the technical specifications into a JSON format array.
+  Analyze this structural engineering drawing (beam/column reinforcement detail) and extract technical specifications.
   
-  For each structural element found (Beam V..., Column P..., etc.), create an object with these exact fields:
-  - type: One of "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
-  - observation: The element name/label (e.g., "V130", "P1")
-  - quantity: Number of elements (1 by default)
-  - length: Total length in meters (float)
-  - width: Cross section width in meters (float)
-  - height: Cross section height in meters (float)
+  CRITICAL INSTRUCTIONS FOR "VÃOS" (SPANS) AND "DOBRAS" (BENDS/HOOKS):
   
-  - hasStirrups: boolean (true)
-  - stirrupGauge: Stirrup diameter in mm (string "5.0", "6.3", etc)
-  - stirrupSpacing: Spacing in cm (number)
-  - stirrupWidth: Stirrup width in cm (number, usually section width - cover)
-  - stirrupHeight: Stirrup height in cm (number, usually section height - cover)
-  - stirrupPosition: Stirrup position label (e.g. "N2") if visible.
-  
-  - mainBars: Array of objects for longitudinal bars:
-    - count: Number of bars
-    - gauge: Diameter in mm (string "6.3", "8.0", "10.0", "12.5", "16.0", etc)
-    - usage: "Principal" (bottom), "Porta-Estribo" (top), "Costela" (side), "Camada 2"
-    - placement: "top" (for Porta-Estribo/negative), "bottom" (for Principal/positive), "distributed" (for Costela/side), "center"
-    - position: Bar position label (e.g. "N1", "N4")
-    - shape: "straight", "u_up", "u_down", "l_left_up", "l_right_up", etc.
-    - segmentA: Length of main straight segment in cm
-    - hookStart: Length of start hook/bend (dobra) in cm. LOOK for vertical numbers at the left end.
-    - hookEnd: Length of end hook/bend (dobra) in cm. LOOK for vertical numbers at the right end.
-    
-  - supports: Array of support points (pillars/columns represented by vertical lines) if visible:
-    - label: Support label/name (e.g. P1, P2)
-    - position: Center position from start in cm
-    - width: Support width in cm
-    - leftGap: Gap without stirrups to the left of support (cm)
-    - rightGap: Gap without stirrups to the right of support (cm)
-    
-  - startGap: Gap without stirrups at start of beam (cm)
-  - endGap: Gap without stirrups at end of beam (cm)
+  1. SPANS (VÃOS):
+     - Look for HORIZONTAL dimension lines describing the clear span between supports.
+     - Example: A line labeled "300" between P1 and P2 means the span is 300cm.
+     - BEWARE: Do not confuse span with total beam length.
+     - Use these span numbers to calculate precise support positions.
 
-  IMPORTANT:
-  1. CRITICAL: Extract BENDS/HOOKS (Dobras). Look for vertical lines at bar ends and their dimensions (e.g., "15", "20", "55").
-  2. If a bar looks like a "U", it MUST have hookStart and hookEnd values.
-  3. Extract ALL bars described in the drawing.
-  4. Map "bottom" bars (Principal hooks usually pointing UP) and "top" bars (Porta-estribo hooks usually pointing DOWN).
-  5. Return ONLY valid JSON array. No text, no markdown.
+  2. BENDS/HOOKS (DOBRAS):
+     - Look for VERTICAL dimension lines at the very ends of the longitudinal bars.
+     - If you see a vertical line with "15", "20", etc., that is a HOOK.
+     - IF A HOOK IS FOUND, THE SHAPE IS NOT STRAIGHT. 
+     - Bottom bars mostly have hooks pointing UP ("u_up").
+     - Top bars mostly have hooks pointing DOWN ("u_down").
+
+  For each structural element found, create an object in the JSON array:
+  - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
+  - observation: Label (e.g., "V130")
+  - quantity: Number (1)
+  - length: Total length in meters
+  - width: Section width (m)
+  - height: Section height (m)
+  
+  - hasStirrups: boolean
+  - stirrupGauge: mm (string)
+  - stirrupSpacing: cm (number)
+  
+  - mainBars: Array of bars
+    - count: number
+    - gauge: mm (string)
+    - placement: "top" or "bottom"
+    - shape: "u_up", "u_down", "straight"
+    - segmentA: Length of straight part (cm)
+    - hookStart: Vertical hook length left (cm). REQUIRED if drawing shows a bend.
+    - hookEnd: Vertical hook length right (cm). REQUIRED if drawing shows a bend.
+
+  - supports: Array of supports (P1, P2...)
+    - label: Name
+    - position: Center distance from start (cm). CALCULATE based on spans if needed.
+    - width: column width (cm)
+    - leftGap: clear zone left of column (cm)
+    - rightGap: clear zone right of column (cm)
+
+  Return ONLY valid JSON.
   `;
 
     const body = {
