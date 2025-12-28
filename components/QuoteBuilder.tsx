@@ -1272,6 +1272,16 @@ const ItemDetailEditor: React.FC<{
                     item={localItem}
                     onEditBar={(idx) => setEditingIndex(idx)}
                     onRemoveBar={handleRemoveBar}
+                    onBarUpdate={(idx, offset) => {
+                      const bars = [...localItem.mainBars];
+                      if (bars[idx]) {
+                        bars[idx] = { ...bars[idx], offset };
+                        setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
+                        if (editingIndex === idx) {
+                          setNewBar(prev => ({ ...prev, offset }));
+                        }
+                      }
+                    }}
                     readOnly={false}
                   />
                 </div>
