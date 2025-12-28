@@ -152,57 +152,78 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
         }]
     };
 
-    const models = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-flash-001",
-        "gemini-1.5-pro",
-        "gemini-pro-vision",
-        "gemini-1.0-pro-vision-latest"
-    ];
+    // 1. Tenta descobrir qual modelo de VISÃO esta chave tem acesso
+    let selectedModel = "";
+    let selectedVersion = "v1beta";
 
+    try {
+        console.log("Consultando modelos disponíveis...");
+        const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const listData = await listReq.json();
+
+        if (listData.models) {
+            console.log("Modelos disponíveis:", listData.models.map((m: any) => m.name));
+
+            // Prioridade de escolha (do melhor para o pior)
+            const priorities = [
+                "gemini-1.5-flash",
+                "gemini-1.5-pro",
+                "gemini-pro-vision",
+                "gemini-1.0-pro-vision"
+            ];
+
+            // Tenta achar um da lista de prioridade
+            const availableNames = listData.models.map((m: any) => m.name.replace('models/', ''));
+
+            for (const p of priorities) {
+                // Busca flexível (ex: "gemini-1.5-flash-001" contém "gemini-1.5-flash")
+                const found = availableNames.find((name: string) => name.includes(p));
+                if (found) {
+                    selectedModel = found;
+                    console.log(`Modelo escolhido automaticamente: ${selectedModel}`);
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Falha ao listar modelos, usando fallback manual.", e);
+    }
+
+    // Fallback se a auto-descoberta falhar
+    if (!selectedModel) selectedModel = "gemini-1.5-flash";
+
+    // 2. Tenta executar com o modelo escolhido (e tenta APIs diferentes se falhar)
     const versions = ["v1beta", "v1"];
-
     let lastError: any;
 
-    // Double loop: Try each model with each API version
-    for (const model of models) {
-        for (const version of versions) {
-            try {
-                console.log(`Tentando modelo: ${model} (${version})...`);
-                const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
+    for (const version of versions) {
+        try {
+            console.log(`Executando com: ${selectedModel} (${version})...`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${selectedModel}:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    const msg = err.error?.message || "Erro desconhecido";
-
-                    // Se for erro de modelo não encontrado, tenta o próximo
-                    if (msg.includes("not found") || msg.includes("not supported")) {
-                        // console.warn(`Modelo ${model} (${version}) falhou: ${msg}`);
-                        lastError = new Error(msg);
-                        continue;
-                    }
-                    throw new Error(msg); // Outros erros (auth, cota) param tudo
-                }
-
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!text) throw new Error("IA retornou resposta vazia");
-
-                return parseGeminiResponse(text);
-
-            } catch (error) {
-                lastError = error;
-                // Continua tentando...
-                continue;
+            if (!response.ok) {
+                const err = await response.json();
+                const msg = err.error?.message || "Erro desconhecido";
+                throw new Error(msg);
             }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) throw new Error("IA retornou resposta vazia");
+
+            return parseGeminiResponse(text);
+
+        } catch (error) {
+            console.warn(`Erro na versão ${version}:`, error);
+            lastError = error;
+            continue; // Tenta próxima versão da API
         }
     }
 
-    throw lastError || new Error("Nenhum modelo disponível funcionou. Verifique sua Chave API.");
+    throw lastError || new Error("Falha ao conectar com a IA. Verifique se sua chave API tem permissão 'Generative Language API' habilitada no Google Cloud.");
 };
