@@ -575,13 +575,17 @@ const BeamElevationView: React.FC<{
         />
 
         {/* Info Box / Label */}
-        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 35 : 0)} width="140" height="40" style={{ overflow: 'visible' }}>
-          <div className={`flex flex-col items-center h-full ${isTop ? 'justify-end' : 'justify-start'}`}>
-            <span className={`text-[11px] font-black uppercase tracking-tight transition-all ${isSelected ? 'text-indigo-600 scale-110' : (readOnly ? 'text-slate-800' : 'text-indigo-800 group-hover:text-amber-800 group-hover:scale-110')}`}>
-              {label}
-            </span>
-          </div>
-        </foreignObject>
+        {/* Info Box / Label (Converted to SVG Text for precision) */}
+        <text
+          x={startX + pxLen / 2}
+          y={yBase - (isTop ? 2 : -2)}
+          textAnchor="middle"
+          dominantBaseline={isTop ? "auto" : "hanging"}
+          className={`text-[11px] font-black uppercase tracking-tight transition-all select-none ${isSelected ? 'fill-indigo-600 scale-110' : (readOnly ? 'fill-slate-800' : 'fill-indigo-800 group-hover:fill-amber-800 group-hover:scale-110')}`}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+        >
+          {label}
+        </text>
 
         {/* Dimension Labels (Hooks) */}
         {hookStart > 0 && <text x={startX - 10} y={yBase} textAnchor="end" fontSize="11" fontWeight="900" fill="#475569" dominantBaseline="middle">{hookStart}</text>}
