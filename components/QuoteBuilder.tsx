@@ -476,9 +476,13 @@ const BeamElevationView: React.FC<{
   const spacing = item.stirrupSpacing || 20;
   const numStirrups = Math.floor(effectiveLengthCm / spacing);
   const visualStep = numStirrups > 40 ? Math.ceil(numStirrups / 40) : 1;
-  const stirrupX = [];
+  const stirrupData: { x: number; stirrupIdx: number; stirrupCm: number }[] = [];
   for (let i = 0; i <= numStirrups; i += visualStep) {
-    stirrupX.push(actualPadX + (i * spacing * scaleX));
+    stirrupData.push({
+      x: actualPadX + (i * spacing * scaleX),
+      stirrupIdx: i,
+      stirrupCm: i * spacing
+    });
   }
 
   const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
@@ -657,9 +661,9 @@ const BeamElevationView: React.FC<{
         <g>
           <rect x={actualPadX} y={beamTopY} width={totalWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
           {/* Stirrup Lines - Skip support zones */}
-          {stirrupX.map((x, i) => {
+          {stirrupData.map((stirrup, idx) => {
             // Check if this stirrup position falls within a gap zone
-            const stirrupCm = i * spacing;
+            const stirrupCm = stirrup.stirrupCm;
             const supports = item.supports || [];
             const startGap = item.startGap || 0;
             const endGap = item.endGap || 0;
@@ -680,7 +684,7 @@ const BeamElevationView: React.FC<{
             if (inSupportGap) return null;
 
             return (
-              <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
+              <line key={idx} x1={stirrup.x} y1={beamTopY} x2={stirrup.x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
             );
           })}
           {/* Axis Line */}
