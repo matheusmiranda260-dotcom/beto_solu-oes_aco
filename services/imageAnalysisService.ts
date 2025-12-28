@@ -156,7 +156,9 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
         "gemini-1.5-flash",
         "gemini-1.5-flash-latest",
         "gemini-1.5-flash-001",
-        "gemini-1.5-pro"
+        "gemini-1.5-pro",
+        "gemini-pro-vision",
+        "gemini-1.0-pro-vision-latest"
     ];
 
     const versions = ["v1beta", "v1"];
