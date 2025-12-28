@@ -1438,153 +1438,143 @@ const ItemDetailEditor: React.FC<{
         </div>
       </div>
 
-      {/* RIGHT SIDEBAR: CONTROLS (400px) */}
-      <div className="w-[400px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
+      {/* RIGHT SIDEBAR: CONTROLS (380px) */}
+      <div className="w-[380px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
 
-        {/* Cross Section - LARGE */}
-        <div className="h-[280px] shrink-0 p-4 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
-            <span className="text-[9px] font-bold text-slate-400">Clique para posicionar</span>
+        {/* FIXED TOP: Cross Section + Stirrups */}
+        <div className="shrink-0 border-b border-slate-200">
+          {/* Cross Section */}
+          <div className="h-[180px] p-3 bg-gradient-to-br from-slate-50 to-white flex flex-col">
+            <div className="flex justify-between items-center mb-1">
+              <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Seção Transversal</h4>
+              <span className="text-[8px] font-bold text-slate-400">Clique p/ posicionar</span>
+            </div>
+            <div className="flex-grow flex items-center justify-center bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="transform scale-[1.6]">
+                <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+              </div>
+            </div>
           </div>
-          <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-dashed border-slate-200 relative overflow-hidden">
-            <div className="transform scale-[2.2]">
-              <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+
+          {/* Stirrups - Compact Inline */}
+          <div className="px-3 py-2 bg-amber-50/50 border-t border-amber-100">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox scale-75" />
+                <span className="text-[10px] font-black text-amber-700 uppercase">Estribos</span>
+              </div>
+              {localItem.hasStirrups && (
+                <div className="flex-grow flex gap-2">
+                  <div className="flex-1"><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black">{GAUGES.map(g => <option key={g} value={g}>Ø{g}</option>)}</select></div>
+                  <div className="w-14"><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} placeholder="c/" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
+                  {!isSapata && (
+                    <>
+                      <div className="w-12"><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} placeholder="L" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
+                      <div className="w-12"><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} placeholder="H" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Form Area - Scrollable */}
-        <div className="flex-grow overflow-y-auto custom-scrollbar p-5">
+        {/* SCROLLABLE: Form */}
+        <div className="flex-grow overflow-y-auto custom-scrollbar p-4">
 
           {/* Form Header */}
-          <div className="flex justify-between items-center mb-4">
-            <h4 className={`font-black uppercase text-sm tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
+          <div className="flex justify-between items-center mb-3">
+            <h4 className={`font-black uppercase text-xs tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
               {editingIndex !== undefined ? `Editando #${editingIndex + 1}` : 'Adicionar Ferro'}
             </h4>
-            {editingIndex !== undefined && <button onClick={() => setEditingIndex(undefined)} className="text-xs font-bold text-slate-400 hover:text-red-500 underline">Cancelar</button>}
+            {editingIndex !== undefined && <button onClick={() => setEditingIndex(undefined)} className="text-[10px] font-bold text-red-500 hover:underline">✕ Cancelar</button>}
           </div>
 
-          {/* Quick Inputs - 3 cols */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          {/* Row 1: Qtd + Bitola + Pos */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
             <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Qtd</label>
-              <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-xl text-center outline-none focus:border-indigo-500 focus:bg-white transition-all" />
+              <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Qtd</label>
+              <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-lg text-center outline-none focus:border-indigo-500" />
             </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Bitola</label>
-              <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500 focus:bg-white transition-all">
-                {GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}
+            <div className="col-span-2">
+              <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Bitola</label>
+              <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base outline-none focus:border-indigo-500">
+                {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Pos.</label>
-              <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="N1" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg text-center outline-none focus:border-indigo-500 focus:bg-white transition-all" />
+              <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Pos.</label>
+              <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="N1" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base text-center outline-none focus:border-indigo-500" />
             </div>
           </div>
 
-          {/* Segment A - MAIN */}
-          <div className="mb-4">
-            <label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">Comprimento (A) em cm</label>
-            <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl font-black text-2xl text-indigo-700 text-center outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all" />
+          {/* Row 2: Comprimento A (destacado) */}
+          <div className="mb-3">
+            <label className="text-[9px] font-black text-indigo-600 uppercase block mb-0.5">Comprimento A (cm)</label>
+            <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-3 bg-indigo-50 border-2 border-indigo-300 rounded-xl font-black text-xl text-indigo-700 text-center outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
             {lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (
-              <button onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })} className="mt-2 w-full py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-sm font-bold hover:bg-amber-100 transition-all flex items-center justify-center gap-2">
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" /></svg>
-                Usar último: {lastUsedSegmentA}cm
-              </button>
+              <button onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })} className="mt-1 w-full py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100">↩ Usar último: {lastUsedSegmentA}cm</button>
             )}
           </div>
 
-          {/* Shape Selector - Grid */}
-          <div className="mb-4">
-            <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Formato da Barra</label>
-            <div className="grid grid-cols-5 gap-2">
+          {/* Row 3: Shapes (compact 3x3 grid) */}
+          <div className="mb-3">
+            <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Formato</label>
+            <div className="grid grid-cols-9 gap-1">
               {[{ s: 'straight', svg: 'M2,12 L22,12' }, { s: 'l_left_up', svg: 'M4,4 L4,12 L20,12' }, { s: 'l_right_up', svg: 'M4,12 L20,12 L20,4' }, { s: 'u_up', svg: 'M4,4 L4,16 L28,16 L28,4', w: 32 }, { s: 'c_up', svg: 'M8,8 L4,8 L4,16 L28,16 L28,8 L24,8', w: 32 }, { s: 'l_left_down', svg: 'M4,20 L4,12 L20,12' }, { s: 'l_right_down', svg: 'M4,12 L20,12 L20,20' }, { s: 'u_down', svg: 'M4,20 L4,8 L28,8 L28,20', w: 32 }, { s: 'c_down', svg: 'M8,16 L4,16 L4,8 L28,8 L28,16 L24,16', w: 32 }].map(sh => (
-                <button key={sh.s} onClick={() => { const hS = newBar.hookStart || 20; const hE = newBar.hookEnd || 20; const isC = sh.s.startsWith('c_'); setNewBar({ ...newBar, hookStartType: sh.s.includes('left') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookEndType: sh.s.includes('right') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookStart: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, hookEnd: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, shape: sh.s, segmentB: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, segmentC: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, segmentD: isC ? (newBar.segmentD || 10) : 0, segmentE: isC ? (newBar.segmentE || 10) : 0 }); setVisualShape(sh.s); }} className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === sh.s ? 'border-indigo-600 bg-indigo-100 text-indigo-600 shadow-inner' : 'border-slate-200 text-slate-400 hover:border-indigo-300 hover:bg-indigo-50'}`}>
-                  <svg width={sh.w || 24} height="24" viewBox={`0 0 ${sh.w || 24} 24`} className="stroke-current stroke-2 fill-none"><path d={sh.svg} /></svg>
+                <button key={sh.s} onClick={() => { const hS = newBar.hookStart || 20; const hE = newBar.hookEnd || 20; const isC = sh.s.startsWith('c_'); setNewBar({ ...newBar, hookStartType: sh.s.includes('left') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookEndType: sh.s.includes('right') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookStart: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, hookEnd: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, shape: sh.s, segmentB: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, segmentC: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, segmentD: isC ? (newBar.segmentD || 10) : 0, segmentE: isC ? (newBar.segmentE || 10) : 0 }); setVisualShape(sh.s); }} className={`h-8 rounded-lg border flex items-center justify-center transition-all ${visualShape === sh.s ? 'border-indigo-600 bg-indigo-100 text-indigo-600' : 'border-slate-200 text-slate-400 hover:border-indigo-300'}`}>
+                  <svg width={sh.w ? 18 : 16} height="16" viewBox={`0 0 ${sh.w || 24} 24`} className="stroke-current stroke-2 fill-none"><path d={sh.svg} /></svg>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Conditional Segments B/C/D/E */}
+          {/* Row 4: Segments B/C (only when needed) */}
           {(['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down', 'l_right_up', 'l_right_down'].includes(visualShape)) && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape) && (
                 <div>
-                  <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Perna B (cm)</label>
-                  <input type="number" value={newBar.segmentB || newBar.hookStart || ''} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentB: val, hookStart: val }); }} placeholder="20" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg text-center outline-none focus:border-indigo-500 transition-all" />
+                  <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Perna B (cm)</label>
+                  <input type="number" value={newBar.segmentB || newBar.hookStart || ''} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentB: val, hookStart: val }); }} placeholder="20" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base text-center outline-none focus:border-indigo-500" />
                 </div>
               )}
               {['u_up', 'u_down', 'c_up', 'c_down', 'l_right_up', 'l_right_down'].includes(visualShape) && (
                 <div>
-                  <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Perna C (cm)</label>
-                  <input type="number" value={newBar.segmentC || newBar.hookEnd || ''} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentC: val, hookEnd: val }); }} placeholder="20" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg text-center outline-none focus:border-indigo-500 transition-all" />
+                  <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Perna C (cm)</label>
+                  <input type="number" value={newBar.segmentC || newBar.hookEnd || ''} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentC: val, hookEnd: val }); }} placeholder="20" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base text-center outline-none focus:border-indigo-500" />
                 </div>
               )}
             </div>
           )}
           {['c_up', 'c_down'].includes(visualShape) && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Dobra D (cm)</label>
-                <input type="number" value={newBar.segmentD || ''} onChange={e => setNewBar({ ...newBar, segmentD: Number(e.target.value) })} placeholder="10" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg text-center outline-none focus:border-indigo-500 transition-all" />
+                <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Dobra D (cm)</label>
+                <input type="number" value={newBar.segmentD || ''} onChange={e => setNewBar({ ...newBar, segmentD: Number(e.target.value) })} placeholder="10" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base text-center outline-none focus:border-indigo-500" />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Dobra E (cm)</label>
-                <input type="number" value={newBar.segmentE || ''} onChange={e => setNewBar({ ...newBar, segmentE: Number(e.target.value) })} placeholder="10" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-lg text-center outline-none focus:border-indigo-500 transition-all" />
+                <label className="text-[9px] font-black text-slate-500 uppercase block mb-0.5">Dobra E (cm)</label>
+                <input type="number" value={newBar.segmentE || ''} onChange={e => setNewBar({ ...newBar, segmentE: Number(e.target.value) })} placeholder="10" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-base text-center outline-none focus:border-indigo-500" />
               </div>
             </div>
           )}
 
-          {/* Live Preview */}
-          <div className="mb-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl border border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase">Preview</span>
-              <div className="flex gap-2">
-                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-black">{newBar.count}x Ø{newBar.gauge}</span>
-                {newBar.segmentA && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-black">{((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0))}cm</span>}
-              </div>
+          {/* Mini Preview Inline */}
+          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+            <div className="flex gap-1">
+              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-black">{newBar.count}x Ø{newBar.gauge}</span>
+              {newBar.segmentA && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black">{((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0))}cm</span>}
             </div>
-            <div className="bg-white rounded-xl p-3 border border-slate-200 flex items-center justify-center min-h-[60px]">
-              <BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} />
-            </div>
-          </div>
-
-          {/* Stirrups - Compact */}
-          <div className="mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-            <div className="flex justify-between items-center mb-3">
-              <h5 className="text-xs font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500"></span> Estribos
-              </h5>
-              <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
-            </div>
-            {localItem.hasStirrups && (
-              <div className="grid grid-cols-4 gap-2">
-                <div><label className="text-[9px] font-bold text-amber-600 block mb-0.5">Bitola</label><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-2 bg-white border border-amber-200 rounded-lg text-xs font-black">{GAUGES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-                <div><label className="text-[9px] font-bold text-amber-600 block mb-0.5">Espaç.</label><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} className="w-full p-2 bg-white border border-amber-200 rounded-lg text-xs font-black" /></div>
-                {!isSapata && (
-                  <>
-                    <div><label className="text-[9px] font-bold text-amber-600 block mb-0.5">Larg.</label><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full p-2 bg-white border border-amber-200 rounded-lg text-xs font-black" /></div>
-                    <div><label className="text-[9px] font-bold text-amber-600 block mb-0.5">Alt.</label><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border border-amber-200 rounded-lg text-xs font-black" /></div>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="scale-75 origin-right"><BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} /></div>
           </div>
 
         </div>
 
-        {/* Add Button - Fixed at Bottom */}
-        <div className="flex-none p-4 border-t border-slate-100 bg-white">
-          <button onClick={handleAddOrUpdateBar} className={`w-full py-4 rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 ${editingIndex !== undefined ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/30' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-indigo-500/30'}`}>
-            {editingIndex !== undefined ? (
-              <><svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg> Atualizar Ferro</>
-            ) : (
-              <><svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg> Adicionar à Lista</>
-            )}
+        {/* FIXED BOTTOM: Add Button */}
+        <div className="flex-none p-3 border-t border-slate-100 bg-white">
+          <button onClick={handleAddOrUpdateBar} className={`w-full py-3 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${editingIndex !== undefined ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white'}`}>
+            {editingIndex !== undefined ? '✓ Atualizar' : '+ Adicionar Ferro'}
           </button>
-          <p className="text-center text-[10px] text-slate-400 font-bold mt-2">💡 Ctrl+Enter para adicionar rápido</p>
         </div>
 
       </div>
