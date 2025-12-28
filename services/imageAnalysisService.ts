@@ -106,7 +106,7 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                 const diff = Math.abs(rawLength - minConcreteNeeded);
                 if (diff > 0.5 || rawLength < minConcreteNeeded) {
                     // console.log(`Auto-correcting length from ${rawLength} to ${minConcreteNeeded} based on bars`);
-                    rawLength = Number((minConcreteNeeded + 0.05).toFixed(2)); // +5cm margin
+                    rawLength = Number((minConcreteNeeded).toFixed(2)); // Exact fit, no margin
                 }
             }
 
