@@ -740,9 +740,13 @@ const BeamElevationView: React.FC<{
             {(() => {
               const sW = item.stirrupWidth || 20;
               const sH = item.stirrupHeight || 40;
-              const scale = Math.min(100 / sW, 140 / sH);
-              const pW = sW * scale;
-              const pH = sH * scale;
+              const coverCm = 6; // 3cm de cada lado
+              const concreteW = sW + coverCm;
+              const concreteH = sH + coverCm;
+              const scale = Math.min(100 / concreteW, 140 / concreteH);
+              const pW = concreteW * scale;
+              const pH = concreteH * scale;
+              const coverPx = (coverCm / 2) * scale; // 3cm em pixels
 
               return (
                 <g>
@@ -751,7 +755,7 @@ const BeamElevationView: React.FC<{
                     <line x1={8} y1={0} x2={8} y2={pH} stroke="#000" strokeWidth="0.5" />
                     <line x1={5} y1={0} x2={11} y2={0} stroke="#000" strokeWidth="0.5" />
                     <line x1={5} y1={pH} x2={11} y2={pH} stroke="#000" strokeWidth="0.5" />
-                    <text x={0} y={pH / 2} textAnchor="end" dominantBaseline="middle" fontSize="12" fontWeight="bold" transform={`rotate(-90, 0, ${pH / 2})`}>{Math.round(sH)}</text>
+                    <text x={0} y={pH / 2} textAnchor="end" dominantBaseline="middle" fontSize="12" fontWeight="bold" transform={`rotate(-90, 0, ${pH / 2})`}>{Math.round(concreteH)}</text>
                   </g>
 
 
@@ -762,19 +766,19 @@ const BeamElevationView: React.FC<{
                   {/* Outer Border (Blue - Formwork/Concrete limit) */}
                   <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#2563eb" strokeWidth="1.5" />
 
-                  {/* Inner Stirrup (Black) */}
-                  <rect x={4} y={4} width={pW - 8} height={pH - 8} fill="none" stroke="#000" strokeWidth="2" />
+                  {/* Inner Stirrup (Black) - positioned with cover offset */}
+                  <rect x={coverPx} y={coverPx} width={pW - coverPx * 2} height={pH - coverPx * 2} fill="none" stroke="#000" strokeWidth="2" />
 
                   {/* Hook Cross (Top Left) */}
-                  <line x1={6} y1={10} x2={14} y2={10} stroke="#000" strokeWidth="1.5" />
-                  <line x1={10} y1={6} x2={10} y2={14} stroke="#000" strokeWidth="1.5" />
+                  <line x1={coverPx + 2} y1={coverPx + 6} x2={coverPx + 10} y2={coverPx + 6} stroke="#000" strokeWidth="1.5" />
+                  <line x1={coverPx + 6} y1={coverPx + 2} x2={coverPx + 6} y2={coverPx + 10} stroke="#000" strokeWidth="1.5" />
 
                   {/* Dimensions - Bottom (Width) */}
                   <g transform={`translate(0, ${pH + 12})`}>
                     <line x1={0} y1={-4} x2={pW} y2={-4} stroke="#000" strokeWidth="0.5" />
                     <line x1={0} y1={-7} x2={0} y2={-1} stroke="#000" strokeWidth="0.5" />
                     <line x1={pW} y1={-7} x2={pW} y2={-1} stroke="#000" strokeWidth="0.5" />
-                    <text x={pW / 2} y={10} textAnchor="middle" fontSize="12" fontWeight="bold">{Math.round(sW)}</text>
+                    <text x={pW / 2} y={10} textAnchor="middle" fontSize="12" fontWeight="bold">{Math.round(concreteW)}</text>
                   </g>
 
                   {/* Bars Punctuation - ALL BARS (No Limit) */}
