@@ -717,6 +717,65 @@ const BeamElevationView: React.FC<{
           offset={0}
         />
 
+        {/* CORTE A - Cross Section on Right Side */}
+        <g transform={`translate(${viewW - 180}, 30)`}>
+          {/* Title */}
+          <text x={70} y={0} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#1e293b">Corte A</text>
+
+          {/* Cross Section Box */}
+          <g transform="translate(20, 15)">
+            {/* Stirrup rectangle */}
+            <rect x={0} y={0} width={100} height={Math.min(item.stirrupHeight * 2 || 100, 120)} fill="none" stroke="#3b82f6" strokeWidth="2" rx="2" />
+
+            {/* Width dimension */}
+            <line x1={0} y1={-8} x2={100} y2={-8} stroke="#64748b" strokeWidth="1" />
+            <line x1={0} y1={-12} x2={0} y2={-4} stroke="#64748b" strokeWidth="1" />
+            <line x1={100} y1={-12} x2={100} y2={-4} stroke="#64748b" strokeWidth="1" />
+            <text x={50} y={-15} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1e293b">{item.stirrupWidth || 20}</text>
+
+            {/* Height dimension */}
+            <line x1={108} y1={0} x2={108} y2={Math.min(item.stirrupHeight * 2 || 100, 120)} stroke="#64748b" strokeWidth="1" />
+            <line x1={104} y1={0} x2={112} y2={0} stroke="#64748b" strokeWidth="1" />
+            <line x1={104} y1={Math.min(item.stirrupHeight * 2 || 100, 120)} x2={112} y2={Math.min(item.stirrupHeight * 2 || 100, 120)} stroke="#64748b" strokeWidth="1" />
+            <text x={120} y={Math.min(item.stirrupHeight || 50, 60)} textAnchor="start" fontSize="10" fontWeight="bold" fill="#1e293b">{item.stirrupHeight || 50}</text>
+
+            {/* Top bars */}
+            {item.mainBars.filter(b => b.placement === 'top').slice(0, 1).map((bar, idx) => (
+              <g key={`top-${idx}`}>
+                {Array.from({ length: Math.min(bar.count, 4) }).map((_, i) => (
+                  <circle key={i} cx={15 + i * 22} cy={10} r={4} fill="#ef4444" />
+                ))}
+                <text x={110} y={14} textAnchor="start" fontSize="9" fill="#ef4444" fontWeight="bold">{bar.count} ø{bar.gauge}</text>
+              </g>
+            ))}
+
+            {/* Bottom bars */}
+            {item.mainBars.filter(b => b.placement === 'bottom' || !b.placement).slice(0, 1).map((bar, idx) => (
+              <g key={`bot-${idx}`}>
+                {Array.from({ length: Math.min(bar.count, 4) }).map((_, i) => (
+                  <circle key={i} cx={15 + i * 22} cy={Math.min(item.stirrupHeight * 2 || 100, 120) - 10} r={4} fill="#0f172a" />
+                ))}
+                <text x={110} y={Math.min(item.stirrupHeight * 2 || 100, 120) - 6} textAnchor="start" fontSize="9" fill="#0f172a" fontWeight="bold">{bar.count} ø{bar.gauge}</text>
+              </g>
+            ))}
+          </g>
+
+          {/* Stirrup Diagram below */}
+          {item.hasStirrups && (
+            <g transform={`translate(20, ${Math.min(item.stirrupHeight * 2 || 100, 120) + 50})`}>
+              {/* Stirrup shape */}
+              <rect x={15} y={5} width={70} height={50} fill="none" stroke="#f59e0b" strokeWidth="2" rx="2" />
+              <line x1={70} y1={8} x2={80} y2={0} stroke="#f59e0b" strokeWidth="2" />
+              <line x1={30} y1={8} x2={20} y2={0} stroke="#f59e0b" strokeWidth="2" />
+
+              {/* Stirrup label */}
+              <text x={50} y={75} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#d97706">
+                {Math.floor(numStirrups)} {item.stirrupPosition || 'N4'} ø{item.stirrupGauge || '5'} C={Math.round(((item.stirrupWidth || 20) + (item.stirrupHeight || 50)) * 2 + 10)}
+              </text>
+            </g>
+          )}
+        </g>
+
       </svg>
       <div className="absolute top-4 right-4 bg-slate-100 rounded-full px-3 py-1 text-[10px] font-bold text-slate-500">
         Clique nas barras para editar
