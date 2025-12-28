@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { analyzeImageWithGemini } from '../services/imageAnalysisService';
 import { ElementType, BarUsage, SteelItem, Client, Quote, MainBarGroup, HookType } from '../types';
 import { GAUGES, STEEL_WEIGHTS, DEFAULT_KG_PRICE } from '../constants';
 
@@ -1199,6 +1199,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos', initialUsage?: BarUsage } | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false); // State for AI Analysis loading
 
   // Helper function to get effective length from bars (uses max segmentA)
   const getEffectiveLength = (item: SteelItem): number => {
@@ -1291,6 +1292,31 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   const saveStirrupConfig = (updatedItem: SteelItem) => {
     setItems(items.map(i => i.id === updatedItem.id ? { ...updatedItem, isConfigured: true } : i));
     setEditingContext(null);
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey) {
+      alert("Recurso indisponível: Configure a chave de API do Gemini (VITE_GEMINI_API_KEY) no arquivo .env");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const newItems = await analyzeImageWithGemini(file, apiKey);
+      setItems(prev => [...prev, ...newItems]);
+      // Optional: scroll to bottom or show toast
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao analisar imagem: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+    } finally {
+      setIsAnalyzing(false);
+      event.target.value = '';
+    }
   };
 
   return (
@@ -1427,12 +1453,39 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
           );
         })}
 
-        <button onClick={() => setShowTypeSelector(true)} className="w-full py-10 bg-white border-4 border-dashed border-slate-100 rounded-[3rem] text-slate-400 font-black uppercase tracking-widest hover:border-amber-300 hover:text-amber-500 transition-all active:scale-[0.99] flex items-center justify-center gap-4 group">
-          <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-amber-50 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-          </div>
-          Adicionar Novo Material
-        </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Import via AI Button */}
+          <label className={`w-full py-10 bg-white border-4 border-dashed border-indigo-100 rounded-[3rem] text-indigo-400 font-black uppercase tracking-widest hover:border-indigo-400 hover:text-indigo-600 transition-all active:scale-[0.99] flex items-center justify-center gap-4 group cursor-pointer relative overflow-hidden ${isAnalyzing ? 'opacity-50 pointer-events-none' : ''}`}>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+              disabled={isAnalyzing}
+            />
+            {isAnalyzing ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                <span className="text-xs">Analisando imagem...</span>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </div>
+                Importar de Imagem 📸
+              </>
+            )}
+          </label>
+
+          {/* Add Manual Button */}
+          <button onClick={() => setShowTypeSelector(true)} className="w-full py-10 bg-white border-4 border-dashed border-slate-100 rounded-[3rem] text-slate-400 font-black uppercase tracking-widest hover:border-amber-300 hover:text-amber-500 transition-all active:scale-[0.99] flex items-center justify-center gap-4 group">
+            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-amber-50 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+            </div>
+            Adicionar Novo Material
+          </button>
+        </div>
       </div>
 
       {showTypeSelector && (
