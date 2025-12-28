@@ -995,17 +995,21 @@ const BeamElevationView: React.FC<{
                   {(() => {
                     const topBars = item.mainBars.filter(b => b.placement === 'top');
                     const count = topBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    // Distribute *all* bars evenly
+                    const barMargin = coverPx + 4; // Inside the stirrup
+                    const barAreaW = pW - barMargin * 2;
+                    // Distribute *all* bars evenly inside stirrup
                     return Array.from({ length: count }).map((_, i) => (
-                      <circle key={`t${i}`} cx={6 + (i * ((pW - 12) / (Math.max(count - 1, 1))))} cy={6} r={2.5} fill="#2563eb" />
+                      <circle key={`t${i}`} cx={barMargin + (count > 1 ? i * (barAreaW / (count - 1)) : barAreaW / 2)} cy={coverPx + 4} r={2.5} fill="#2563eb" />
                     ));
                   })()}
                   {(() => {
                     const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
                     const count = botBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    // Distribute *all* bars evenly
+                    const barMargin = coverPx + 4; // Inside the stirrup
+                    const barAreaW = pW - barMargin * 2;
+                    // Distribute *all* bars evenly inside stirrup
                     return Array.from({ length: count }).map((_, i) => (
-                      <circle key={`b${i}`} cx={6 + (i * ((pW - 12) / (Math.max(count - 1, 1))))} cy={pH - 6} r={2.5} fill="#2563eb" />
+                      <circle key={`b${i}`} cx={barMargin + (count > 1 ? i * (barAreaW / (count - 1)) : barAreaW / 2)} cy={pH - coverPx - 4} r={2.5} fill="#2563eb" />
                     ));
                   })()}
                 </g>
