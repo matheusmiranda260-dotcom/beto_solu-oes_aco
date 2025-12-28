@@ -343,11 +343,17 @@ const BeamElevationView: React.FC<{
   item: SteelItem;
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
+  onBarUpdate?: (idx: number, newOffset: number) => void;
   readOnly?: boolean;
-}> = ({ item, onEditBar, onRemoveBar, readOnly }) => {
+}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, readOnly }) => {
   const viewW = 600; // Increased width for better clarity
   const viewH = 400; // Increased height for multiple layers
   const padX = 60;
+
+  // Drag State
+  const [draggingBarIdx, setDraggingBarIdx] = useState<number | null>(null);
+  const [dragStartX, setDragStartX] = useState<number>(0);
+  const [initialOffset, setInitialOffset] = useState<number>(0);
 
   // Vertical Layout Zones with Stacking
   const topZoneStart = 30; // Start flowing down from here
@@ -380,6 +386,38 @@ const BeamElevationView: React.FC<{
   // Limit scale to prevent very long bars from being too large
   const rawScale = beamWidthPx / effectiveLengthCm;
   const scaleX = Math.min(rawScale, 1.5); // Max 1.5px per cm to keep visualization compact
+
+  const handleMouseDown = (e: React.MouseEvent, idx: number, currentOffset: number) => {
+    if (readOnly) return;
+    e.stopPropagation();
+    setDraggingBarIdx(idx);
+    setDragStartX(e.clientX);
+    setInitialOffset(currentOffset);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (draggingBarIdx === null || !onBarUpdate) return;
+
+    const deltaPx = e.clientX - dragStartX;
+    const deltaCm = deltaPx / scaleX;
+
+    // Calculate new offset
+    let newOffset = Math.round(initialOffset + deltaCm);
+
+    // Constraints: 0 <= offset <= (totalLength - barLength)
+    const bar = item.mainBars[draggingBarIdx];
+    const barLen = bar.segmentA || 0;
+    const totalLen = Math.round(item.length * 100);
+    const maxOffset = Math.max(0, totalLen - barLen);
+
+    newOffset = Math.max(0, Math.min(newOffset, maxOffset));
+
+    onBarUpdate(draggingBarIdx, newOffset);
+  };
+
+  const handleMouseUp = () => {
+    setDraggingBarIdx(null);
+  };
 
   // Filter bars
   const topBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'top');
@@ -458,7 +496,8 @@ const BeamElevationView: React.FC<{
       <g
         key={group.originalIdx}
         className={readOnly ? "" : "cursor-pointer group hover:opacity-80"}
-        onClick={() => !readOnly && onEditBar(group.originalIdx)}
+        onMouseDown={(e) => handleMouseDown(e, group.originalIdx, offsetCm)}
+        onClick={(e) => { e.stopPropagation(); !readOnly && onEditBar(group.originalIdx) }}
       >
         {/* Invisible Hit Area for easier clicking */}
         <rect x={startX - 20} y={yBase - 20} width={pxLen + 40} height={40} fill="transparent" />
@@ -499,7 +538,15 @@ const BeamElevationView: React.FC<{
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Escala s/z</span>
       </div>
 
-      <svg width="100%" height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible select-none">
+      <svg
+        width="100%"
+        height={viewH}
+        viewBox={`0 0 ${viewW} ${viewH}`}
+        className={`overflow-visible select-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
 
         <defs>
           <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
@@ -567,7 +614,8 @@ const ItemReinforcementPreview: React.FC<{
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
   onEditStirrups: () => void;
-}> = ({ item, onEditBar, onRemoveBar, onEditStirrups }) => {
+  onBarUpdate?: (idx: number, newOffset: number) => void;
+}> = ({ item, onEditBar, onRemoveBar, onEditStirrups, onBarUpdate }) => {
   const isSapata = item.type === ElementType.SAPATA;
   if (item.mainBars.length === 0 && !item.hasStirrups) return null;
 
@@ -593,6 +641,7 @@ const ItemReinforcementPreview: React.FC<{
                 item={item}
                 onEditBar={onEditBar}
                 onRemoveBar={onRemoveBar}
+                onBarUpdate={onBarUpdate}
               />
 
               {/* Section */}
@@ -869,6 +918,14 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                   setItems(items.map(it => it.id === item.id ? { ...it, mainBars: newBars, isConfigured: newBars.length > 0 || it.hasStirrups } : it));
                 }}
                 onEditStirrups={() => setEditingContext({ item, initialTab: 'estribos' })}
+                onBarUpdate={(idx, offset) => {
+                  const newBars = [...item.mainBars];
+                  if (newBars[idx]) {
+                    newBars[idx] = { ...newBars[idx], offset };
+                    const newItem = { ...item, mainBars: newBars };
+                    setItems(items.map(it => it.id === item.id ? newItem : it));
+                  }
+                }}
               />
             </div>
           );
