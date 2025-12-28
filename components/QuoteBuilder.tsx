@@ -759,7 +759,7 @@ const BeamElevationView: React.FC<{
           {/* === DIMENSION ANNOTATIONS === */}
           {(() => {
             const annotations: React.ReactNode[] = [];
-            const dimY = beamBotY + 70; // Y position for dimension line
+            const dimY = viewH - 130; // Y position for dimension line (above ruler)
             const supports = item.supports || [];
             const sortedSupports = [...supports].sort((a, b) => a.position - b.position);
             const beamLen = effectiveLengthCm;
