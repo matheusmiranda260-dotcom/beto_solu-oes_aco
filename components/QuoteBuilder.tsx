@@ -1427,41 +1427,50 @@ const ItemDetailEditor: React.FC<{
           <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
             {/* Visualizer - Interactive - MAIOR PARA MELHOR VISUALIZAÇÃO */}
             {!isSapata && (
-              <div className="bg-white p-6 rounded-3xl border-2 border-slate-200 shadow-lg bg-slate-50/50 relative overflow-hidden group">
-                <div className="flex justify-between items-center mb-4 z-10 relative">
+              <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-lg bg-slate-50/50 relative overflow-hidden group flex flex-col h-[500px]">
+                <div className="flex-none p-6 pb-2 flex justify-between items-center z-20 bg-white/80 backdrop-blur-sm border-b border-slate-100">
                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                     Detalhamento Visual
                   </h4>
-                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm opacity-50 group-hover:opacity-100 transition-all">
-                    <button onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 font-black transition-colors">-</button>
-                    <span className="text-[10px] font-black text-indigo-600 w-10 text-center bg-indigo-50 py-1 rounded-md">{(zoomLevel * 100).toFixed(0)}%</span>
-                    <button onClick={() => setZoomLevel(z => Math.min(3.0, z + 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 font-black transition-colors">+</button>
+                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm transition-all text-slate-500 hover:text-indigo-600">
+                    <button onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 font-black transition-colors">-</button>
+                    <span className="text-[10px] font-black w-10 text-center bg-slate-50 py-1 rounded-md">{(zoomLevel * 100).toFixed(0)}%</span>
+                    <button onClick={() => setZoomLevel(z => Math.min(3.0, z + 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 font-black transition-colors">+</button>
                   </div>
                 </div>
-                <div
-                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
-                  className="transition-transform duration-200 ease-out py-4"
-                >
-                  <BeamElevationView
-                    item={localItem}
-                    newBar={editingIndex === undefined ? newBar : undefined}
-                    onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
-                    onEditBar={(idx) => setEditingIndex(idx)}
-                    onRemoveBar={handleRemoveBar}
-                    selectedIdx={editingIndex}
-                    onBarUpdate={(idx, offset) => {
-                      const bars = [...localItem.mainBars];
-                      if (bars[idx]) {
-                        bars[idx] = { ...bars[idx], offset };
-                        setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
-                        if (editingIndex === idx) {
-                          setNewBar(prev => ({ ...prev, offset }));
-                        }
-                      }
+
+                {/* Scrollable Area for Drawing */}
+                <div className="flex-grow overflow-auto custom-scrollbar p-6 relative">
+                  <div
+                    style={{
+                      transform: `scale(${zoomLevel})`,
+                      transformOrigin: 'top left',
+                      width: 'fit-content',
+                      minWidth: '100%'
                     }}
-                    readOnly={false}
-                  />
+                    className="transition-transform duration-200 ease-out"
+                  >
+                    <BeamElevationView
+                      item={localItem}
+                      newBar={editingIndex === undefined ? newBar : undefined}
+                      onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
+                      onEditBar={(idx) => setEditingIndex(idx)}
+                      onRemoveBar={handleRemoveBar}
+                      selectedIdx={editingIndex}
+                      onBarUpdate={(idx, offset) => {
+                        const bars = [...localItem.mainBars];
+                        if (bars[idx]) {
+                          bars[idx] = { ...bars[idx], offset };
+                          setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
+                          if (editingIndex === idx) {
+                            setNewBar(prev => ({ ...prev, offset }));
+                          }
+                        }
+                      }}
+                      readOnly={false}
+                    />
+                  </div>
                 </div>
               </div>
             )}
