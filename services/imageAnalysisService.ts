@@ -51,51 +51,27 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
         const items = Array.isArray(data) ? data : [data];
 
         // Map to SteelItem structure ensuring required fields
-        return items.map((item: any) => ({
-            id: crypto.randomUUID(),
-            type: (item.type && Object.values(ElementType).includes(item.type)) ? item.type : ElementType.VIGA_SUPERIOR,
-            observation: item.observation || 'Item Importado',
-            quantity: Number(item.quantity) || 1,
-            length: Number(item.length) || 3, // meters
-            width: Number(item.width) || 0.15, // meters
-            height: Number(item.height) || 0.3, // meters
-
-            // Stirrups
-            hasStirrups: item.hasStirrups ?? true,
-            stirrupGauge: String(item.stirrupGauge || '5.0'),
-            stirrupSpacing: Number(item.stirrupSpacing) || 20,
-            stirrupWidth: Number(item.stirrupWidth) || 15,
-            stirrupHeight: Number(item.stirrupHeight) || 25,
-            stirrupPosition: item.stirrupPosition,
-
-            // Bars
-            mainBars: (item.mainBars || []).map((bar: any) => {
+        return items.map((item: any) => {
+            // ... parsing bars first to use them for validation ...
+            const parsedBars = (item.mainBars || []).map((bar: any) => {
                 const hStart = Number(bar.hookStart) || 0;
                 const hEnd = Number(bar.hookEnd) || 0;
-
-                // 1. Determine Shape
                 let shape = bar.shape || 'straight';
-                // Auto-correct shape if hooks exist but shape is straight
+
+                // AUTO-CORRECTION: If hooks exist, FORCE the shape to be valid
                 if ((hStart > 0 || hEnd > 0) && shape === 'straight') {
                     const placement = bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top');
                     shape = (placement === 'top') ? 'u_down' : 'u_up';
                 }
 
-                // 2. Map Shape to Hook Types (REQUIRED for Renderer)
+                // Map Hook Types
                 let hookStartType: 'up' | 'down' | 'none' = 'none';
                 let hookEndType: 'up' | 'down' | 'none' = 'none';
 
-                if (shape === 'u_up') {
-                    hookStartType = 'up';
-                    hookEndType = 'up';
-                } else if (shape === 'u_down') {
-                    hookStartType = 'down';
-                    hookEndType = 'down';
-                } else if (shape === 'l_left_up') {
-                    hookStartType = 'up';
-                } else if (shape === 'l_right_up') {
-                    hookEndType = 'up';
-                }
+                if (shape === 'u_up') { hookStartType = 'up'; hookEndType = 'up'; }
+                else if (shape === 'u_down') { hookStartType = 'down'; hookEndType = 'down'; }
+                else if (shape === 'l_left_up') { hookStartType = 'up'; }
+                else if (shape === 'l_right_up') { hookEndType = 'up'; }
 
                 return {
                     id: crypto.randomUUID(),
@@ -111,21 +87,62 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                     hookEndType: hookEndType,
                     position: bar.position
                 };
-            }),
+            });
 
-            // Supports
-            supports: (item.supports || []).map((sup: any) => ({
-                label: sup.label,
-                position: Number(sup.position) || 0,
-                width: Number(sup.width) || 20,
-                leftGap: Number(sup.leftGap) || 0,
-                rightGap: Number(sup.rightGap) || 0
-            })),
-            startGap: Number(item.startGap) || 0,
-            endGap: Number(item.endGap) || 0,
+            // SANITY CHECK: Concrete Length vs Bar Length
+            // Find longest bar (segmentA + hooks is Total Cut, but 'concrete coverage' is mostly roughly segmentA)
+            // Actually, segmentA is the straight part. Concrete should be roughly SegmentA + cover.
+            // If item.length (from AI) is 300 (3m) but max SegmentA is 200cm, then AI is wrong about concrete length.
 
-            isConfigured: true
-        }));
+            let rawLength = Number(item.length) || 3;
+            const maxBarSegment = Math.max(...parsedBars.map((b: any) => b.segmentA || 0), 0);
+
+            if (maxBarSegment > 0) {
+                const minConcreteNeeded = (maxBarSegment / 100); // meters
+                // If AI says length is much larger (> 20% diff) than the bar, clamp it down.
+                // Or if AI says length is smaller than bar? Correct it up.
+
+                // Heuristic: Concrete usually is roughly equal to max straight bar length.
+                const diff = Math.abs(rawLength - minConcreteNeeded);
+                if (diff > 0.5 || rawLength < minConcreteNeeded) {
+                    // console.log(`Auto-correcting length from ${rawLength} to ${minConcreteNeeded} based on bars`);
+                    rawLength = Number((minConcreteNeeded + 0.05).toFixed(2)); // +5cm margin
+                }
+            }
+
+            return {
+                id: crypto.randomUUID(),
+                type: (item.type && Object.values(ElementType).includes(item.type)) ? item.type : ElementType.VIGA_SUPERIOR,
+                observation: item.observation || 'Item Importado',
+                quantity: Number(item.quantity) || 1,
+                length: rawLength,
+                width: Number(item.width) || 0.15,
+                height: Number(item.height) || 0.3,
+
+                // Stirrups
+                hasStirrups: item.hasStirrups ?? true,
+                stirrupGauge: String(item.stirrupGauge || '5.0'),
+                stirrupSpacing: Number(item.stirrupSpacing) || 20,
+                stirrupWidth: Number(item.stirrupWidth) || 15,
+                stirrupHeight: Number(item.stirrupHeight) || 25,
+                stirrupPosition: item.stirrupPosition,
+
+                mainBars: parsedBars,
+
+                // Supports
+                supports: (item.supports || []).map((sup: any) => ({
+                    label: sup.label,
+                    position: Number(sup.position) || 0,
+                    width: Number(sup.width) || 20,
+                    leftGap: Number(sup.leftGap) || 0,
+                    rightGap: Number(sup.rightGap) || 0
+                })),
+                startGap: Number(item.startGap) || 0,
+                endGap: Number(item.endGap) || 0,
+
+                isConfigured: true
+            };
+        });
     } catch (e) {
         console.error("Error parsing Gemini response:", e);
         throw new Error("Falha ao processar dados da IA: " + (e as Error).message);
