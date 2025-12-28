@@ -1320,7 +1320,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
 
     setIsAnalyzing(true);
     try {
-      const newItems = await analyzeImageWithGemini(file, apiKey);
+      const newItems = await analyzeImageWithGemini(file, apiKey, items);
       setItems(prev => [...prev, ...newItems]);
       // Optional: scroll to bottom or show toast
     } catch (error) {

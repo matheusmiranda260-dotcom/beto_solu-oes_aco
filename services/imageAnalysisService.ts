@@ -132,48 +132,65 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
     }
 };
 
-export const analyzeImageWithGemini = async (file: File, apiKey: string): Promise<SteelItem[]> => {
+export const analyzeImageWithGemini = async (file: File, apiKey: string, referenceItems?: SteelItem[]): Promise<SteelItem[]> => {
     if (!apiKey) throw new Error("API Key is required");
+
+    // Helper to safely access env variables in Vite/Vercel
+    const getEnv = (name: string) => {
+        try {
+            // @ts-ignore - access vite env
+            return import.meta.env[name];
+        } catch (e) {
+            return process.env[name];
+        }
+    };
+
+    // Convert reference items to a few-shot string for "learning"
+    const learningContext = referenceItems && referenceItems.length > 0
+        ? `
+  HERE ARE CORRECT EXAMPLES FROM PREVIOUS ANALYSES (LEARN FROM THESE):
+  ${JSON.stringify(referenceItems.slice(-3).map(item => ({
+            observation: item.observation,
+            length: item.length,
+            stirrupQty: item.mainBars[0]?.count, // simplistic summary
+            stirrupSpec: `${item.stirrupGauge} c/${item.stirrupSpacing}`
+        })), null, 2)}
+  ` : '';
 
     const base64Image = await fileToBase64(file);
 
     const prompt = `
   Analyze this structural engineering drawing (beam/column reinforcement detail) and extract technical specifications.
+  IGNORE COLORS. Focus on lines and text labels.
   
-  CRITICAL INSTRUCTIONS FOR "VÃOS" (SPANS) AND "DOBRAS" (BENDS/HOOKS):
+  ${learningContext}
 
-  1. SPANS (VÃOS):
-     - Look for HORIZONTAL dimension lines describing the clear span between supports.
-     - Example: A line labeled "300" between P1 and P2 means the span is 300cm.
-     - BEWARE: Do not confuse span with total beam length.
-     - Use these span numbers to calculate precise support positions.
+  CRITICAL INSTRUCTIONS:
 
-  2. BENDS/HOOKS (DOBRAS):
-     - Look for VERTICAL dimension lines at the very ends of the longitudinal bars.
-     - If you see a vertical line with "15", "20", etc., that is a HOOK.
-     - IF A HOOK IS FOUND, THE SHAPE IS NOT STRAIGHT. 
-     - Bottom bars mostly have hooks pointing UP ("u_up").
-     - Top bars mostly have hooks pointing DOWN ("u_down").
+  1. SPANS (VÃOS) & LENGTH:
+     - Total Beam Length (L) is often different from Span (Vão).
+     - ONLY detect a span if there is an explicit HORIZONTAL dimension line between supports (P1, P2, etc).
+     - If the "Center Concrete" drawing looks LONGER than the bars, double-check if you read the length correctly.
+     - Bars usually go from end-to-end of the concrete.
 
-  3. STIRRUPS (ESTRIBOS) - **EXCLUSIVE SOURCE: SECTION A-A (CORTE)**:
-     - DO NOT LOOK AT THE LONG BEAM DRAWING FOR STIRRUPS. LOOK ONLY AT THE CROSS-SECTION RECTANGLE (SEÇÃO/CORTE).
-     - **DIMENSIONS (Medidas):**
-       - Find the rectangular cross-section.
-       - Read the numbers on the sides of this rectangle.
-       - Example: A text "15" on the top/bottom and "35" on the left/right.
-       - RULE: The SMALLER number is 'stirrupWidth'. The LARGER number is 'stirrupHeight'.
-       - OUTPUT: stirrupWidth = 15, stirrupHeight = 35.
+  2. REBAR IDENTIFICATION (FERROS):
+     - Look for labels starting with "N" (e.g., "N1", "N3"). 
+     - "C=" or "Comp=" means TOTAL CUT LENGTH of the bar.
+     - IF "C=500" is seen and hooks are "15" on each side, then segmentA (straight part) must be 500 - 15 - 15 = 470.
+     - Always ensure: hookStart + segmentA + hookEnd = Total Cut Length (C).
 
-     - **QUANTITY & SPECS (Quantidade):**
-       - Look for the label pointing to this rectangle or written below it.
-       - PATTERN: "26 N2 ø5.0 c/15" -> Qty: 26, Gauge: 5.0, Spacing: 15.
-       - IF "26 N2" IS WRITTEN, USE 26. DO NOT CALCULATE.
-       - "c/15" means every 15cm.
+  3. STIRRUPS (ESTRIBOS) - **PRIMARY SOURCE: CROSS-SECTIONS**:
+     - LOOK FOR SECTIONS labeled "CORTE A-A", "SECÇÃO", etc.
+     - **SPECS PATTERN:** "13 N3 ø 5.0 c/15" or "13 n3 f 5mm c=81".
+       - "c/15" or "c/0.15" = SPACING (Espaçamento) between stirrups.
+       - "c=81" or "C=81" = CUT LENGTH of one stirrup (length of the cut wire). 
+       - DISTINGUISH THESE! If you see "c/15", spacing is 15. If you see "C=81", it's the wire length.
+       - "f 5mm" or "ø 5.0" = GAUGE.
+     - **QUANTITY:** If "13 N3" is written, quantity is 13.
 
-  4. BENDS/HOOKS (DOBRAS) - POSITIONING:
-     - A "Start Hook" is ONLY valid if the vertical line is at the EXTREME LEFT of the bar.
-     - A "End Hook" is ONLY valid if the vertical line is at the EXTREME RIGHT of the bar.
-     - If the number is in the middle, it is NOT a hook.
+  4. HEURISTICS FOR DIMENSIONS:
+     - Concrete width/height are usually around 15-20cm (width) and 30-60cm (height) for beams.
+     - Stirrup dimensions are usually the concrete dimensions minus 5-6cm (cover).
 
   For each structural element found, create an object in the JSON array:
   - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
@@ -186,18 +203,19 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
   - hasStirrups: boolean
   - stirrupGauge: mm (string e.g. "5.0")
   - stirrupSpacing: cm (number e.g. 15)
-  - stirrupWidth: cm (number). LOOK FOR "WxH" format in Section A-A.
-  - stirrupHeight: cm (number). LOOK FOR "WxH" format in Section A-A.
-  - stirrupPosition: Label (e.g. "N2")
+  - stirrupWidth: cm (number)
+  - stirrupHeight: cm (number)
+  - stirrupPosition: Label (N3)
   
   - mainBars: Array of bars
     - count: number
     - gauge: mm (string)
     - placement: "top" or "bottom"
     - shape: "u_up", "u_down", "straight"
-    - segmentA: Length of straight part (cm)
-    - hookStart: Vertical hook length left (cm). Only if at LEFT END.
-    - hookEnd: Vertical hook length right (cm). Only if at RIGHT END.
+    - segmentA: Straight length (cm)
+    - hookStart: Hook length (cm)
+    - hookEnd: Hook length (cm)
+    - position: Label (N1)
 
   - supports: Array of supports (P1, P2...)
     - label: Name
