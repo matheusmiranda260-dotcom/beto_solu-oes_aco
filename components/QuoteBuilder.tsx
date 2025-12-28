@@ -389,7 +389,13 @@ const BeamElevationView: React.FC<{
 
   // Limit scale to prevent very long bars from being too large
   const rawScale = beamWidthPx / effectiveLengthCm;
-  const scaleX = Math.min(rawScale, 1.5); // Max 1.5px per cm to keep visualization compact
+  const scaleX = Math.min(rawScale, 1.5);
+
+  // Calculate real width in pixels based on our scale
+  const totalWidthPx = effectiveLengthCm * scaleX;
+
+  // Center it visually in the 1000px viewport
+  const actualPadX = (viewW - totalWidthPx) / 2;
 
   const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
     if (readOnly) return;
@@ -480,10 +486,10 @@ const BeamElevationView: React.FC<{
   // Stirrups
   const spacing = item.stirrupSpacing || 20;
   const numStirrups = Math.floor(effectiveLengthCm / spacing);
-  const visualStep = numStirrups > 30 ? Math.ceil(numStirrups / 30) : 1;
+  const visualStep = numStirrups > 40 ? Math.ceil(numStirrups / 40) : 1;
   const stirrupX = [];
   for (let i = 0; i <= numStirrups; i += visualStep) {
-    stirrupX.push(padX + (i * spacing * scaleX));
+    stirrupX.push(actualPadX + (i * spacing * scaleX));
   }
 
   const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
@@ -491,7 +497,7 @@ const BeamElevationView: React.FC<{
 
     // Calculate start X based on offset - using scope scaleX
     const offsetCm = group.offset || 0;
-    const startX = padX + (offsetCm * scaleX);
+    const startX = actualPadX + (offsetCm * scaleX);
     const pxLen = baseLenCm * scaleX;
 
     // Total Length Calculation (C)
@@ -637,30 +643,30 @@ const BeamElevationView: React.FC<{
 
         {/* Beam Body / Stirrups */}
         <g>
-          <rect x={padX} y={beamTopY} width={beamWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
+          <rect x={actualPadX} y={beamTopY} width={totalWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
           {/* Stirrup Lines */}
           {stirrupX.map((x, i) => (
             <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
           ))}
           {/* Axis Line */}
-          <line x1={padX - 10} y1={beamTopY + 25} x2={padX + beamWidthPx + 10} y2={beamTopY + 25} stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" opacity="0.5" />
+          <line x1={actualPadX - 10} y1={beamTopY + 25} x2={actualPadX + totalWidthPx + 10} y2={beamTopY + 25} stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" opacity="0.5" />
         </g>
 
         {/* Bottom (Positive) Reinforcement Stack */}
         {bottomBars.map((b, i) => {
-          const y = 230 + (i * 35);
+          const y = beamBotY + 40 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
         {/* Center (Interior) Reinforcement Stack */}
         {centerBars.map((b, i) => {
-          const y = 230 + (bottomBars.length * 35) + 20 + (i * 35);
+          const y = beamBotY + 40 + (bottomBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
         {/* Side (Distributed) Reinforcement Stack */}
         {sideBars.map((b, i) => {
-          const y = 230 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
+          const y = beamBotY + 40 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
@@ -673,8 +679,8 @@ const BeamElevationView: React.FC<{
 
         {/* Stirrup Callout */}
         <TechnicalDimension
-          x1={padX} y1={beamBotY + 15}
-          x2={padX + beamWidthPx} y2={beamBotY + 15}
+          x1={actualPadX} y1={beamBotY + 15}
+          x2={actualPadX + totalWidthPx} y2={beamBotY + 15}
           text={`${Math.floor(numStirrups)} ${item.stirrupPosition || 'EST'} c/${spacing}`}
           offset={0}
         />
