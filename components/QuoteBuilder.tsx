@@ -575,7 +575,7 @@ const BeamElevationView: React.FC<{
         />
 
         {/* Info Box / Label */}
-        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 28 : -4)} width="140" height="40" style={{ overflow: 'visible' }}>
+        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 20 : -4)} width="140" height="40" style={{ overflow: 'visible' }}>
           <div className="flex flex-col items-center">
             <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-tight shadow-md border-2 transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-700 scale-110 shadow-indigo-200' : (readOnly ? 'bg-white border-slate-200 text-slate-800' : 'bg-white border-indigo-200 text-indigo-800 group-hover:bg-amber-100 group-hover:text-amber-800 group-hover:border-amber-300 group-hover:scale-110 transition-all')}`}>
               {label}
