@@ -139,16 +139,20 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - BEWARE: Do not confuse span with total beam length.
      - Use these span numbers to calculate precise support positions.
 
-  3. STIRRUPS (ESTRIBOS) - THE "SECTION A-A" RULE:
-     - The QUANTITY found in Section A-A (e.g., "25 N2") is the ABSOLUTE TRUTH. Use this number.
-     - Do NOT calculate quantity if this explicit number exists.
-     - LOOK for dimensions in format "Width x Height" (e.g., "15x35") inside or near the stirrup rectangle. 
-     - Do NOT confuse Stirrup Size (smaller, e.g. 15x35) with Beam Size (larger, e.g. 20x40).
+  3. STIRRUPS (ESTRIBOS) - THE "DATA STRING" AUTHORITY:
+     - SEARCH for the definition text line, commonly: "13 N3 ø5.0 c/15" or similar.
+     - IF FOUND, THIS IS THE LAW.
+       - "13" is the Quantity. STOP COUNTING VISUALLY. USE "13".
+       - "c/15" is the Spacing (15cm).
+     - CALCULATING SPANS (VÃOS) VIA SUBTRACTION:
+       - If you have Total Beam Length (e.g., 300) and Stirrup Coverage (Qty * Spacing, e.g., 15 * 20 = 300), the difference is the Gap.
+       - Logic: Total Length - (Quantity * Spacing) = Total Gap.
+       - Use this remainder to define the supports/gaps at the ends.
 
   4. BENDS/HOOKS (DOBRAS) - POSITIONING:
      - A "Start Hook" is ONLY valid if the vertical line is at the EXTREME LEFT of the bar.
      - A "End Hook" is ONLY valid if the vertical line is at the EXTREME RIGHT of the bar.
-     - If the number is in the middle, it is NOT a hook (it might be a position label).
+     - If the number is in the middle, it is NOT a hook.
 
   For each structural element found, create an object in the JSON array:
   - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
@@ -176,10 +180,10 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
 
   - supports: Array of supports (P1, P2...)
     - label: Name
-    - position: Center distance from start (cm). CALCULATE based on spans if needed.
+    - position: Center distance from start (cm).
     - width: column width (cm)
-    - leftGap: clear zone left of column (cm)
-    - rightGap: clear zone right of column (cm)
+    - leftGap: clear zone left of support (cm)
+    - rightGap: clear zone right of support (cm)
 
   Return ONLY valid JSON.
   `;
@@ -190,7 +194,13 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
                 { text: prompt },
                 { inline_data: { mime_type: file.type || 'image/jpeg', data: base64Image } }
             ]
-        }]
+        }],
+        generationConfig: {
+            temperature: 0.0,
+            topK: 1,
+            topP: 1,
+            maxOutputTokens: 2048,
+        }
     };
 
     // Lista de modelos conhecidos para visão (ordem de prioridade)
