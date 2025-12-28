@@ -63,12 +63,29 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
             mainBars: (item.mainBars || []).map((bar: any) => {
                 const hStart = Number(bar.hookStart) || 0;
                 const hEnd = Number(bar.hookEnd) || 0;
-                let shape = bar.shape || 'straight';
 
-                // AUTO-CORRECTION: If hooks exist, FORCE the shape to be valid (not straight)
+                // 1. Determine Shape
+                let shape = bar.shape || 'straight';
+                // Auto-correct shape if hooks exist but shape is straight
                 if ((hStart > 0 || hEnd > 0) && shape === 'straight') {
                     const placement = bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top');
                     shape = (placement === 'top') ? 'u_down' : 'u_up';
+                }
+
+                // 2. Map Shape to Hook Types (REQUIRED for Renderer)
+                let hookStartType: 'up' | 'down' | 'none' = 'none';
+                let hookEndType: 'up' | 'down' | 'none' = 'none';
+
+                if (shape === 'u_up') {
+                    hookStartType = 'up';
+                    hookEndType = 'up';
+                } else if (shape === 'u_down') {
+                    hookStartType = 'down';
+                    hookEndType = 'down';
+                } else if (shape === 'l_left_up') {
+                    hookStartType = 'up';
+                } else if (shape === 'l_right_up') {
+                    hookEndType = 'up';
                 }
 
                 return {
@@ -81,6 +98,8 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                     shape: shape,
                     hookStart: hStart,
                     hookEnd: hEnd,
+                    hookStartType: hookStartType,
+                    hookEndType: hookEndType,
                     position: bar.position
                 };
             }),
