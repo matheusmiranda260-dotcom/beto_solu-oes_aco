@@ -154,50 +154,53 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
 
     const models = [
         "gemini-1.5-flash",
-        "gemini-1.5-flash-001",
         "gemini-1.5-flash-latest",
-        "gemini-pro-vision"
+        "gemini-1.5-flash-001",
+        "gemini-1.5-pro"
     ];
+
+    const versions = ["v1beta", "v1"];
 
     let lastError: any;
 
+    // Double loop: Try each model with each API version
     for (const model of models) {
-        try {
-            console.log(`Tentando modelo: ${model}...`);
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
+        for (const version of versions) {
+            try {
+                console.log(`Tentando modelo: ${model} (${version})...`);
+                const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
 
-            if (!response.ok) {
-                const err = await response.json();
-                const msg = err.error?.message || "Erro desconhecido";
-                // Se for erro de modelo não encontrado, tenta o próximo
-                if (msg.includes("not found") || msg.includes("not supported")) {
-                    console.warn(`Modelo ${model} falhou: ${msg}`);
-                    lastError = new Error(msg);
-                    continue;
+                if (!response.ok) {
+                    const err = await response.json();
+                    const msg = err.error?.message || "Erro desconhecido";
+
+                    // Se for erro de modelo não encontrado, tenta o próximo
+                    if (msg.includes("not found") || msg.includes("not supported")) {
+                        // console.warn(`Modelo ${model} (${version}) falhou: ${msg}`);
+                        lastError = new Error(msg);
+                        continue;
+                    }
+                    throw new Error(msg); // Outros erros (auth, cota) param tudo
                 }
-                throw new Error(msg); // Outros erros (auth, cota) param tudo
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) throw new Error("IA retornou resposta vazia");
+
+                return parseGeminiResponse(text);
+
+            } catch (error) {
+                lastError = error;
+                // Continua tentando...
+                continue;
             }
-
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!text) throw new Error("IA retornou resposta vazia");
-
-            return parseGeminiResponse(text);
-
-        } catch (error) {
-            console.warn(`Erro no modelo ${model}:`, error);
-            lastError = error;
-            // Se não for erro de fetch, talvez deva tentar o próximo, mas assumimos que erro de rede = falha
-            if ((error as Error).message.includes("not found")) continue;
-            // Se for outro erro, continua tentando outros modelos apenas se for erro de API específico
-            continue;
         }
     }
 
-    throw lastError || new Error("Nenhum modelo disponível funcionou.");
+    throw lastError || new Error("Nenhum modelo disponível funcionou. Verifique sua Chave API.");
 };
