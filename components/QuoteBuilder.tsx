@@ -1391,59 +1391,6 @@ const ItemDetailEditor: React.FC<{
                 </div>
               </div>
 
-              {/* Alignment / Offset Controls */}
-              <div className="mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Alinhamento Longitudinal</label>
-                <div className="flex gap-2 mb-2">
-                  <button
-                    onClick={() => setNewBar({ ...newBar, offset: 0 })}
-                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${!newBar.offset || newBar.offset === 0 ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                  >
-                    Esquerda (0)
-                  </button>
-                  <button
-                    onClick={() => {
-                      const len = newBar.segmentA || 0;
-                      const totalLen = Math.round(localItem.length * 100);
-                      const mid = Math.max(0, Math.floor((totalLen - len) / 2));
-                      setNewBar({ ...newBar, offset: mid });
-                    }}
-                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${newBar.offset !== 0 && newBar.offset !== Math.round((localItem.length * 100) - (newBar.segmentA || 0)) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                  >
-                    Centro
-                  </button>
-                  <button
-                    onClick={() => {
-                      const len = newBar.segmentA || 0;
-                      const totalLen = Math.round(localItem.length * 100);
-                      const right = Math.max(0, totalLen - len);
-                      setNewBar({ ...newBar, offset: right });
-                    }}
-                    className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-xl border transition-all ${newBar.offset && newBar.offset > 0 && newBar.offset === Math.round((localItem.length * 100) - (newBar.segmentA || 0)) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                  >
-                    Direita
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold text-slate-400">OFFSET (CM):</span>
-                  <input
-                    type="number"
-                    value={newBar.offset || 0}
-                    onChange={e => setNewBar({ ...newBar, offset: Number(e.target.value) })}
-                    className="w-20 p-1 bg-white border border-slate-200 rounded-lg text-xs font-black text-center outline-none focus:border-indigo-500"
-                  />
-                  <div className="h-1 flex-grow bg-slate-200 rounded-full overflow-hidden relative">
-                    <div
-                      className="absolute h-full bg-indigo-500 opacity-50 transition-all duration-300"
-                      style={{
-                        left: `${Math.min(100, ((newBar.offset || 0) / (localItem.length * 100)) * 100)}%`,
-                        width: `${Math.min(100, ((newBar.segmentA || 0) / (localItem.length * 100)) * 100)}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Enhanced Bar Preview */}
               <div className="mb-6 bg-gradient-to-br from-slate-50 to-white p-6 rounded-3xl border-2 border-slate-200 shadow-inner">
                 <div className="flex items-center justify-between mb-3">
