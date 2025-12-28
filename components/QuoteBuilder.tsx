@@ -1793,8 +1793,8 @@ const ItemDetailEditor: React.FC<{
                         className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
                       />
                     </div>
-                    <div className="w-16">
-                      <label className="text-[8px] text-pink-600 font-bold">Larg (cm)</label>
+                    <div className="w-20">
+                      <label className="text-[8px] text-pink-600 font-bold">Vão (cm)</label>
                       <input
                         type="number"
                         value={support.width}
