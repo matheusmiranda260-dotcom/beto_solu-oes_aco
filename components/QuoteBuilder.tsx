@@ -344,20 +344,20 @@ const BeamElevationView: React.FC<{
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
   onBarUpdate?: (idx: number, newOffset: number) => void;
+  newBar?: MainBarGroup; // Current draft bar
+  onNewBarUpdate?: (newOffset: number) => void;
   selectedIdx?: number;
   readOnly?: boolean;
-}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, selectedIdx, readOnly }) => {
+}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const svgRef = React.useRef<SVGSVGElement>(null);
-  const viewW = 1000; // Increased width for better clarity
-  const viewH = 600; // Increased height for multiple layers
+  const viewW = 1000;
+  const viewH = 600;
   const padX = 60;
 
-  // Drag State
-  // Drag State
-  const [draggingBarIdx, setDraggingBarIdx] = useState<number | null>(null);
+  const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
   const [dragStartX, setDragStartX] = useState<number>(0);
   const [initialOffset, setInitialOffset] = useState<number>(0);
-  const [isDragging, setIsDragging] = useState<boolean>(false); // Track if a drag actually happened to prevent click
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Vertical Layout Zones with Stacking
   const topZoneStart = 30; // Start flowing down from here
@@ -391,10 +391,19 @@ const BeamElevationView: React.FC<{
   const rawScale = beamWidthPx / effectiveLengthCm;
   const scaleX = Math.min(rawScale, 1.5); // Max 1.5px per cm to keep visualization compact
 
-  const handleMouseDown = (e: React.MouseEvent, idx: number, currentOffset: number) => {
+  const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
     if (readOnly) return;
 
     if (!svgRef.current) return;
+
+    // Explicitly focus the SVG to ensure keyboard events work correctly
+    svgRef.current.focus();
+
+    // Blur any active input to allow arrow keys to move the bar
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     const pt = svgRef.current.createSVGPoint();
     pt.x = e.clientX;
     const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
@@ -405,13 +414,18 @@ const BeamElevationView: React.FC<{
     setDragStartX(svgPoint.x);
     setInitialOffset(currentOffset);
     setIsDragging(false);
+
+    // Also select this bar for keyboard movement (only for existing bars)
+    if (typeof idx === 'number') {
+      onEditBar(idx);
+    }
   };
 
   useEffect(() => {
     if (draggingBarIdx === null) return;
 
     const handleWindowMouseMove = (e: MouseEvent) => {
-      if (draggingBarIdx === null || !onBarUpdate || !svgRef.current) return;
+      if (draggingBarIdx === null || !svgRef.current) return;
 
       const pt = svgRef.current.createSVGPoint();
       pt.x = e.clientX;
@@ -421,15 +435,22 @@ const BeamElevationView: React.FC<{
       if (Math.abs(deltaSVG) > 2) setIsDragging(true);
 
       const deltaCm = deltaSVG / scaleX;
+      let nextOffset = Math.round(initialOffset + deltaCm);
 
-      let newOffset = Math.round(initialOffset + deltaCm);
-      const bar = item.mainBars[draggingBarIdx];
+      const bar = draggingBarIdx === 'new' ? newBar : item.mainBars[draggingBarIdx];
+      if (!bar) return;
+
       const barLen = bar.segmentA || 0;
       const totalLen = Math.round(item.length * 100);
       const maxOffset = Math.max(0, totalLen - barLen);
 
-      newOffset = Math.max(0, Math.min(newOffset, maxOffset));
-      onBarUpdate(draggingBarIdx, newOffset);
+      nextOffset = Math.max(0, Math.min(nextOffset, maxOffset));
+
+      if (draggingBarIdx === 'new') {
+        onNewBarUpdate?.(nextOffset);
+      } else {
+        onBarUpdate?.(draggingBarIdx, nextOffset);
+      }
     };
 
     const handleWindowMouseUp = () => {
@@ -642,6 +663,13 @@ const BeamElevationView: React.FC<{
           const y = 230 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
+
+        {/* Draft Bar (New Bar being added) */}
+        {newBar && selectedIdx === undefined && (
+          <g opacity="0.6" strokeDasharray="5 2">
+            {renderInteractableBar({ ...newBar, originalIdx: 'new' } as any, 500, false)}
+          </g>
+        )}
 
         {/* Stirrup Callout */}
         <TechnicalDimension
@@ -1211,31 +1239,40 @@ const ItemDetailEditor: React.FC<{
       }
 
       // Arrow Keys for Movement (Offset)
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && editingIndex !== undefined) {
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         const activeTag = document.activeElement?.tagName.toLowerCase();
-        if (activeTag === 'input' || activeTag === 'textarea') return; // Allow text navigation inside inputs
+        if (activeTag === 'input' || activeTag === 'textarea') return;
 
         e.preventDefault();
         const step = e.shiftKey ? 10 : 1;
         const delta = e.key === 'ArrowRight' ? step : -step;
 
-        const currentOffset = newBar.offset || 0;
-        const barLen = newBar.segmentA || 0;
-        const totalLen = Math.round(localItem.length * 100);
-        const maxOffset = Math.max(0, totalLen - barLen);
+        if (editingIndex !== undefined) {
+          const currentOffset = newBar.offset || 0;
+          const barLen = newBar.segmentA || 0;
+          const totalLen = Math.round(localItem.length * 100);
+          const maxOffset = Math.max(0, totalLen - barLen);
+          const nextOffset = Math.max(0, Math.min(currentOffset + delta, maxOffset));
 
-        const nextOffset = Math.max(0, Math.min(currentOffset + delta, maxOffset));
-
-        if (nextOffset !== currentOffset) {
-          setNewBar(prev => ({ ...prev, offset: nextOffset }));
-
-          // Sync with visual representation immediately
-          setLocalItem(prevItem => {
-            const newBars = [...prevItem.mainBars];
-            if (newBars[editingIndex]) {
-              newBars[editingIndex] = { ...newBars[editingIndex], offset: nextOffset };
-            }
-            return { ...prevItem, mainBars: newBars };
+          if (nextOffset !== currentOffset) {
+            setNewBar(prev => ({ ...prev, offset: nextOffset }));
+            setLocalItem(prevItem => {
+              const newBars = [...prevItem.mainBars];
+              if (newBars[editingIndex]) {
+                newBars[editingIndex] = { ...newBars[editingIndex], offset: nextOffset };
+              }
+              return { ...prevItem, mainBars: newBars };
+            });
+          }
+        } else {
+          // Handle movement for the NEW bar being added
+          setNewBar(prev => {
+            const currentOffset = prev.offset || 0;
+            const barLen = prev.segmentA || 0;
+            const totalLen = Math.round(localItem.length * 100);
+            const maxOffset = Math.max(0, totalLen - barLen);
+            const nextOffset = Math.max(0, Math.min(currentOffset + delta, maxOffset));
+            return { ...prev, offset: nextOffset };
           });
         }
       }
@@ -1325,6 +1362,8 @@ const ItemDetailEditor: React.FC<{
                 <div className="transform scale-110 origin-top">
                   <BeamElevationView
                     item={localItem}
+                    newBar={editingIndex === undefined ? newBar : undefined}
+                    onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
                     onEditBar={(idx) => setEditingIndex(idx)}
                     onRemoveBar={handleRemoveBar}
                     selectedIdx={editingIndex}
