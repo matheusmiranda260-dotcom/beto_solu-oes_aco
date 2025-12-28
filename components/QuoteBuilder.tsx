@@ -254,7 +254,7 @@ const CompositeCrossSection: React.FC<{
 
   return (
     <div className="flex flex-col items-center select-none">
-      <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '160px', height: '160px' }}>
+      <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '200px', height: '200px' }}>
         <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
 
           {/* Interactive Zones (Underlay) */}
@@ -1451,7 +1451,7 @@ const ItemDetailEditor: React.FC<{
               <span className="text-[10px] font-bold text-slate-400">Clique p/ posicionar</span>
             </div>
             <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
-              <div className="transform scale-[2.2]">
+              <div className="transform scale-[1.8]">
                 <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
               </div>
             </div>
