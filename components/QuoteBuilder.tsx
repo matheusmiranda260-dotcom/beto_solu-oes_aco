@@ -1442,7 +1442,7 @@ const ItemDetailEditor: React.FC<{
       <div className="w-[650px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
 
         {/* TOP ROW: Cross Section + Stirrups SIDE BY SIDE */}
-        <div className="h-[400px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-200 flex gap-4">
+        <div className="h-[480px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-200 flex gap-4">
 
           {/* LEFT: Cross Section */}
           <div className="flex-1 flex flex-col">
