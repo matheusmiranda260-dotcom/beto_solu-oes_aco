@@ -152,26 +152,52 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
         }]
     };
 
-    try {
-        const response = await fetch(`${GEN_AI_URL}?key=${apiKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
-        });
+    const models = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-001",
+        "gemini-1.5-flash-latest",
+        "gemini-pro-vision"
+    ];
 
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || "Gemini API Error");
+    let lastError: any;
+
+    for (const model of models) {
+        try {
+            console.log(`Tentando modelo: ${model}...`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                const msg = err.error?.message || "Erro desconhecido";
+                // Se for erro de modelo não encontrado, tenta o próximo
+                if (msg.includes("not found") || msg.includes("not supported")) {
+                    console.warn(`Modelo ${model} falhou: ${msg}`);
+                    lastError = new Error(msg);
+                    continue;
+                }
+                throw new Error(msg); // Outros erros (auth, cota) param tudo
+            }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) throw new Error("IA retornou resposta vazia");
+
+            return parseGeminiResponse(text);
+
+        } catch (error) {
+            console.warn(`Erro no modelo ${model}:`, error);
+            lastError = error;
+            // Se não for erro de fetch, talvez deva tentar o próximo, mas assumimos que erro de rede = falha
+            if ((error as Error).message.includes("not found")) continue;
+            // Se for outro erro, continua tentando outros modelos apenas se for erro de API específico
+            continue;
         }
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!text) throw new Error("Não foi possível ler a imagem");
-
-        return parseGeminiResponse(text);
-    } catch (error) {
-        console.error("Gemini Service Error:", error);
-        throw error;
     }
+
+    throw lastError || new Error("Nenhum modelo disponível funcionou.");
 };
