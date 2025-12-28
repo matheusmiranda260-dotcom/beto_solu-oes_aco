@@ -1441,33 +1441,33 @@ const ItemDetailEditor: React.FC<{
       {/* RIGHT PANEL: CONTROLS (500px - NO SCROLL) */}
       <div className="w-[500px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
 
-        {/* TOP: Cross Section (Large) */}
-        <div className="h-[220px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
+        {/* TOP: Cross Section (EXTRA LARGE - 2x) */}
+        <div className="h-[300px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
-            <span className="text-[9px] font-bold text-slate-400">Clique para posicionar</span>
+            <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
+            <span className="text-xs font-bold text-slate-400">Clique para posicionar</span>
           </div>
-          <div className="h-[calc(100%-24px)] flex items-center justify-center bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="transform scale-[2]">
+          <div className="h-[calc(100%-28px)] flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
+            <div className="transform scale-[2.5]">
               <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
             </div>
           </div>
         </div>
 
-        {/* MIDDLE: Stirrups Row */}
-        <div className="shrink-0 px-4 py-2 bg-amber-50/70 border-b border-amber-100 flex items-center gap-3">
+        {/* MIDDLE: Stirrups Row (LARGER) */}
+        <div className="shrink-0 px-4 py-3 bg-amber-50 border-b border-amber-200 flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox scale-75" />
-            <span className="text-[10px] font-black text-amber-700 uppercase">Estribos</span>
+            <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
+            <span className="text-sm font-black text-amber-700 uppercase">Estribos</span>
           </div>
           {localItem.hasStirrups && (
-            <div className="flex-grow flex gap-2">
-              <div className="flex-1"><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black">{GAUGES.map(g => <option key={g} value={g}>Ø{g}</option>)}</select></div>
-              <div className="w-16"><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} placeholder="c/15" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
+            <div className="flex-grow flex gap-3">
+              <div className="flex-1"><label className="text-[9px] font-bold text-amber-600 block">Bitola</label><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black">{GAUGES.map(g => <option key={g} value={g}>Ø{g}mm</option>)}</select></div>
+              <div className="w-20"><label className="text-[9px] font-bold text-amber-600 block">Espaç.</label><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} placeholder="15" className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
               {!isSapata && (
                 <>
-                  <div className="w-14"><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} placeholder="L" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
-                  <div className="w-14"><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} placeholder="H" className="w-full p-1.5 bg-white border border-amber-200 rounded text-[10px] font-black text-center" /></div>
+                  <div className="w-16"><label className="text-[9px] font-bold text-amber-600 block">Larg.</label><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
+                  <div className="w-16"><label className="text-[9px] font-bold text-amber-600 block">Alt.</label><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
                 </>
               )}
             </div>
@@ -1485,25 +1485,25 @@ const ItemDetailEditor: React.FC<{
             {editingIndex !== undefined && <button onClick={() => setEditingIndex(undefined)} className="text-[10px] font-bold text-red-500 hover:underline">✕ Cancelar</button>}
           </div>
 
-          {/* Row 1: Qtd + Bitola + Pos + Comprimento */}
-          <div className="grid grid-cols-5 gap-2 mb-2">
+          {/* Row 1: Qtd + Bitola + Pos + Comprimento (LARGER) */}
+          <div className="grid grid-cols-5 gap-3 mb-3">
             <div>
-              <label className="text-[8px] font-black text-slate-500 uppercase block">Qtd</label>
-              <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-lg text-center outline-none focus:border-indigo-500" />
+              <label className="text-[10px] font-black text-slate-600 uppercase block">Qtd</label>
+              <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-2xl text-center outline-none focus:border-indigo-500" />
             </div>
             <div>
-              <label className="text-[8px] font-black text-slate-500 uppercase block">Bitola</label>
-              <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-indigo-500">
+              <label className="text-[10px] font-black text-slate-600 uppercase block">Bitola</label>
+              <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-3 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-base outline-none focus:border-indigo-500">
                 {GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[8px] font-black text-slate-500 uppercase block">Pos.</label>
-              <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="N1" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-sm text-center outline-none focus:border-indigo-500" />
+              <label className="text-[10px] font-black text-slate-600 uppercase block">Pos.</label>
+              <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="N1" className="w-full p-3 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-base text-center outline-none focus:border-indigo-500" />
             </div>
             <div className="col-span-2">
-              <label className="text-[8px] font-black text-indigo-600 uppercase block">Comp. A (cm)</label>
-              <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-2 bg-indigo-50 border-2 border-indigo-300 rounded-lg font-black text-lg text-indigo-700 text-center outline-none focus:border-indigo-500" />
+              <label className="text-[10px] font-black text-indigo-600 uppercase block">Comp. A (cm)</label>
+              <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-3 bg-indigo-50 border-2 border-indigo-400 rounded-xl font-black text-2xl text-indigo-700 text-center outline-none focus:border-indigo-500" />
             </div>
           </div>
 
