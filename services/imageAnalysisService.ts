@@ -139,21 +139,16 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - BEWARE: Do not confuse span with total beam length.
      - Use these span numbers to calculate precise support positions.
 
-  3. STIRRUPS (ESTRIBOS) & SPANS (VÃOS) CORRELATION:
-     - USE VISUAL CUES: Look for the area covered by stirrups (often dashed lines or repeated vertical lines |||||).
-     - SPAN DETECTION: The valid "Span" is often the length covered by these stirrup lines.
-     - QUANTITY CALCULATION: If you find specific text like "25 N2", use it. 
-       - FALLBACK: If explicit quantity is missing, CALCULATE IT: (Span Length in cm / Spacing) + 1.
-     - PILLARS vs GAPS: A gap in the stirrup lines usually indicates a Pillar/Support.
+  3. STIRRUPS (ESTRIBOS) - THE "SECTION A-A" RULE:
+     - The QUANTITY found in Section A-A (e.g., "25 N2") is the ABSOLUTE TRUTH. Use this number.
+     - Do NOT calculate quantity if this explicit number exists.
+     - LOOK for dimensions in format "Width x Height" (e.g., "15x35") inside or near the stirrup rectangle. 
+     - Do NOT confuse Stirrup Size (smaller, e.g. 15x35) with Beam Size (larger, e.g. 20x40).
 
-  4. STIRRUPS (ESTRIBOS) - SECTION A-A:
-     - Look specifically at "SEÇÃO A-A" or similar cross-section views.
-     - EXTRACT DIMENSIONS: Look for text like "15x35", "15 x 35" or separate width/height labels on the rectangle.
-     - EXTRACT SPECS: Look for the full definition string, e.g., "25 N2 ø5.0 c/15".
-       - "25" = Quantity
-       - "ø5.0" = Gauge (Bitola)
-       - "c/15" = Spacing (Espaçamento)
-     - WARNING: The stirrup width/height are the OUTER dimensions of the rebar rectangle.
+  4. BENDS/HOOKS (DOBRAS) - POSITIONING:
+     - A "Start Hook" is ONLY valid if the vertical line is at the EXTREME LEFT of the bar.
+     - A "End Hook" is ONLY valid if the vertical line is at the EXTREME RIGHT of the bar.
+     - If the number is in the middle, it is NOT a hook (it might be a position label).
 
   For each structural element found, create an object in the JSON array:
   - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
@@ -166,8 +161,8 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
   - hasStirrups: boolean
   - stirrupGauge: mm (string e.g. "5.0")
   - stirrupSpacing: cm (number e.g. 15)
-  - stirrupWidth: cm (number). LOOK FOR EXPLICIT NUMBERS (e.g. 12, 15, 20).
-  - stirrupHeight: cm (number). LOOK FOR EXPLICIT NUMBERS (e.g. 25, 30, 40).
+  - stirrupWidth: cm (number). LOOK FOR "WxH" format in Section A-A.
+  - stirrupHeight: cm (number). LOOK FOR "WxH" format in Section A-A.
   - stirrupPosition: Label (e.g. "N2")
   
   - mainBars: Array of bars
@@ -176,8 +171,8 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
     - placement: "top" or "bottom"
     - shape: "u_up", "u_down", "straight"
     - segmentA: Length of straight part (cm)
-    - hookStart: Vertical hook length left (cm). REQUIRED if drawing shows a bend.
-    - hookEnd: Vertical hook length right (cm). REQUIRED if drawing shows a bend.
+    - hookStart: Vertical hook length left (cm). Only if at LEFT END.
+    - hookEnd: Vertical hook length right (cm). Only if at RIGHT END.
 
   - supports: Array of supports (P1, P2...)
     - label: Name
