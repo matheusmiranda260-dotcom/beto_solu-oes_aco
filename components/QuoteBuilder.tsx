@@ -759,7 +759,7 @@ const BeamElevationView: React.FC<{
           {/* === DIMENSION ANNOTATIONS === */}
           {(() => {
             const annotations: React.ReactNode[] = [];
-            const dimY = viewH - 130; // Y position for dimension line (above ruler)
+            const dimY = beamBotY + 60; // Y position for dimension line (right below beam)
             const supports = item.supports || [];
             const sortedSupports = [...supports].sort((a, b) => a.position - b.position);
             const beamLen = effectiveLengthCm;
@@ -872,19 +872,19 @@ const BeamElevationView: React.FC<{
 
         {/* Bottom (Positive) Reinforcement Stack */}
         {bottomBars.map((b, i) => {
-          const y = beamBotY + 40 + (i * 35);
+          const y = beamBotY + 110 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
         {/* Center (Interior) Reinforcement Stack */}
         {centerBars.map((b, i) => {
-          const y = beamBotY + 40 + (bottomBars.length * 35) + 20 + (i * 35);
+          const y = beamBotY + 110 + (bottomBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
         {/* Side (Distributed) Reinforcement Stack */}
         {sideBars.map((b, i) => {
-          const y = beamBotY + 40 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
+          const y = beamBotY + 110 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
