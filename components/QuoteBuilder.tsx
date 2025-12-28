@@ -1430,7 +1430,7 @@ const ItemDetailEditor: React.FC<{
             </div>
 
             {/* RIGHT: Sidebar (Cross Section + Stirrups) */}
-            <div className="w-[280px] shrink-0 flex flex-col gap-3">
+            <div className="w-[350px] shrink-0 flex flex-col gap-3">
               {/* 1. Cross Section */}
               <div className="flex-1 bg-white p-3 rounded-3xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden">
                 <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 z-10 relative">Seção Transversal</h4>
@@ -1438,7 +1438,7 @@ const ItemDetailEditor: React.FC<{
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-full h-full"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
                 </div>
                 <div className="flex-grow flex items-center justify-center z-10">
-                  <div className="transform scale-90">
+                  <div className="transform scale-[1.8]">
                     <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
                   </div>
                 </div>
