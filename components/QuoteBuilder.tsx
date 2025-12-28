@@ -365,8 +365,8 @@ const BeamElevationView: React.FC<{
   // Beam Drawing at Y=140 to Y=190 (50px height).
   // Bottom Bars starting at Y=220, stacking down.
 
-  const beamTopY = 140;
-  const beamBotY = 190;
+  const beamTopY = 375;
+  const beamBotY = 425;
 
   // Calculate effective length from all bars extents (including the one being added)
   const getExtents = () => {
@@ -648,11 +648,8 @@ const BeamElevationView: React.FC<{
 
         {/* Top (Negative) Reinforcement Stack */}
         {topBars.map((b, i) => {
-          // Stack upwards from beam top? Or just list from Y=30 down.
-          // Let's list from Y=30 down to beam.
-          // If many bars, we might need more space.
-          // Let's assume max 3-4 layers.
-          const y = 30 + (i * 35);
+          // Stack upwards from beam top
+          const y = beamTopY - 40 - (i * 35);
           return renderInteractableBar(b, y, true);
         })}
 
