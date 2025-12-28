@@ -588,25 +588,25 @@ const BeamElevationView: React.FC<{
         />
 
         {/* Info Box / Label */}
-        <foreignObject x={startX + pxLen / 2 - 60} y={yBase - (isTop ? 28 : -10)} width="120" height="40" style={{ overflow: 'visible' }}>
+        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 32 : -12)} width="140" height="40" style={{ overflow: 'visible' }}>
           <div className="flex flex-col items-center">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight shadow-sm border ${isSelected ? 'bg-indigo-600 text-white border-indigo-700' : (readOnly ? 'bg-white border-slate-100 text-slate-800' : 'bg-white border-indigo-100 text-indigo-700 group-hover:bg-amber-100 group-hover:text-amber-700 group-hover:border-amber-200 transition-colors')}`}>
+            <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-tight shadow-md border-2 transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-700 scale-110 shadow-indigo-200' : (readOnly ? 'bg-white border-slate-200 text-slate-800' : 'bg-white border-indigo-200 text-indigo-800 group-hover:bg-amber-100 group-hover:text-amber-800 group-hover:border-amber-300 group-hover:scale-110 transition-all')}`}>
               {label}
             </span>
           </div>
         </foreignObject>
 
         {/* Dimension Labels (Hooks) */}
-        {hookStart > 0 && <text x={startX - 8} y={yBase} textAnchor="end" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookStart}</text>}
-        {hookEnd > 0 && <text x={startX + pxLen + 8} y={yBase} textAnchor="start" fontSize="10" fontWeight="bold" fill="#64748b" dominantBaseline="middle">{hookEnd}</text>}
+        {hookStart > 0 && <text x={startX - 10} y={yBase} textAnchor="end" fontSize="11" fontWeight="900" fill="#475569" dominantBaseline="middle">{hookStart}</text>}
+        {hookEnd > 0 && <text x={startX + pxLen + 10} y={yBase} textAnchor="start" fontSize="11" fontWeight="900" fill="#475569" dominantBaseline="middle">{hookEnd}</text>}
 
         {/* Length Label (Middle) */}
-        <text x={startX + pxLen / 2} y={yBase + (isTop ? 14 : -14)} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#94a3b8" className="select-none">{Math.round(baseLenCm)}</text>
+        <text x={startX + pxLen / 2} y={yBase + (isTop ? 18 : -18)} textAnchor="middle" fontSize="11" fontWeight="900" fill="#64748b" className="select-none">{Math.round(baseLenCm)}cm</text>
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
-            <circle cx={startX + pxLen + 30} cy={yBase} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
-            <path d={`M${startX + pxLen + 27},${yBase - 3} L${startX + pxLen + 33},${yBase + 3} M${startX + pxLen + 33},${yBase - 3} L${startX + pxLen + 27},${yBase + 3}`} stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx={startX + pxLen + 35} cy={yBase} r={10} fill="#fee2e2" stroke="#ef4444" strokeWidth="1.5" />
+            <path d={`M${startX + pxLen + 31},${yBase - 4} L${startX + pxLen + 39},${yBase + 4} M${startX + pxLen + 39},${yBase - 4} L${startX + pxLen + 31},${yBase + 4}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
           </g>
         )}
       </g>
@@ -614,10 +614,20 @@ const BeamElevationView: React.FC<{
   };
 
   return (
-    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center w-full mx-auto overflow-hidden relative" style={{ maxWidth: '1000px' }}>
-      <div className="flex justify-between w-full mb-4 px-4">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalhamento Long.</span>
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Escala s/z</span>
+    <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-slate-200 shadow-xl flex flex-col items-center w-full mx-auto overflow-hidden relative" style={{ maxWidth: '1100px' }}>
+      <div className="flex justify-between w-full mb-6 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-6 bg-indigo-500 rounded-full" />
+          <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Detalhamento Long. Profissional</span>
+        </div>
+        <div className="flex gap-4">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-400" /> Superior
+          </span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-slate-800" /> Inferior
+          </span>
+        </div>
       </div>
 
       <svg
@@ -625,15 +635,25 @@ const BeamElevationView: React.FC<{
         width="100%"
         height={viewH}
         viewBox={`0 0 ${viewW} ${viewH}`}
-        className={`overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        className={`bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
         tabIndex={0}
       >
 
         <defs>
-          <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: 'black', strokeWidth: 0.5 }} opacity="0.1" />
+          <pattern id="technicalGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" strokeWidth="1" />
           </pattern>
+          <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: '#475569', strokeWidth: 1 }} opacity="0.1" />
+          </pattern>
+          <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="currentColor" stopOpacity="1" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.8" />
+          </linearGradient>
         </defs>
+
+        <rect width="100%" height="100%" fill="url(#technicalGrid)" rx="32" />
 
         {/* Top (Negative) Reinforcement Stack */}
         {topBars.map((b, i) => {
@@ -675,29 +695,30 @@ const BeamElevationView: React.FC<{
         })}
 
         {/* Ruler (Regua de Medição) */}
-        <g transform={`translate(${actualPadX}, ${beamBotY + 90})`}>
-          <line x1={0} y1={0} x2={totalWidthPx} y2={0} stroke="#94a3b8" strokeWidth="1" strokeDasharray="4 4" />
+        <g transform={`translate(${actualPadX}, ${beamBotY + 120})`}>
+          <line x1={0} y1={0} x2={totalWidthPx} y2={0} stroke="#cbd5e1" strokeWidth="2" />
           {Array.from({ length: Math.floor(effectiveLengthCm / 100) + 1 }).map((_, i) => {
             const x = i * 100 * scaleX;
             return (
               <g key={i} transform={`translate(${x}, 0)`}>
-                <line x1={0} y1={0} x2={0} y2={10} stroke="#94a3b8" strokeWidth="2" />
-                <text y={25} textAnchor="middle" fontSize="10" className="fill-slate-500 font-black">{i}m</text>
+                <line x1={0} y1={0} x2={0} y2={15} stroke="#64748b" strokeWidth="3" strokeLinecap="round" />
+                <text y={35} textAnchor="middle" fontSize="14" className="fill-slate-800 font-black tabular-nums">{i}m</text>
               </g>
             );
           })}
-          {/* Detailed ticks every 20cm */}
-          {Array.from({ length: Math.floor(effectiveLengthCm / 20) + 1 }).map((_, i) => {
-            const x = i * 20 * scaleX;
-            if (i % 5 === 0) return null; // Skip if it's a meter mark
-            return <line key={`t-${i}`} x1={x} y1={0} x2={x} y2={5} stroke="#cbd5e1" strokeWidth="1" />;
+          {/* Detailed ticks every 10cm for better precision */}
+          {Array.from({ length: Math.floor(effectiveLengthCm / 10) + 1 }).map((_, i) => {
+            const x = i * 10 * scaleX;
+            if (i % 10 === 0) return null;
+            const isMid = i % 5 === 0;
+            return <line key={`t-${i}`} x1={x} y1={0} x2={x} y2={isMid ? 8 : 4} stroke="#94a3b8" strokeWidth={isMid ? 1.5 : 1} />;
           })}
         </g>
 
         {/* Draft Bar (New Bar being added) */}
         {newBar && selectedIdx === undefined && (newBar.segmentA || 0) > 0 && (
           <g opacity="0.6" strokeDasharray="5 2">
-            {renderInteractableBar({ ...newBar, originalIdx: 'new' } as any, beamBotY + 160, false)}
+            {renderInteractableBar({ ...newBar, originalIdx: 'new' as any } as any, beamBotY + 220, false)}
           </g>
         )}
 
