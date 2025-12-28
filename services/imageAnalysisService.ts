@@ -160,7 +160,8 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - **DIMENSIONS (Medidas):**
        - Find the rectangular cross-section.
        - Read the numbers on the sides of this rectangle.
-       - Example: A text "15" on the top/bottom and "35" on the left/right means 15x35.
+       - Example: A text "15" on the top/bottom and "35" on the left/right.
+       - RULE: The SMALLER number is 'stirrupWidth'. The LARGER number is 'stirrupHeight'.
        - OUTPUT: stirrupWidth = 15, stirrupHeight = 35.
 
      - **QUANTITY & SPECS (Quantidade):**
