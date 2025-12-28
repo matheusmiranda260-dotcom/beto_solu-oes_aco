@@ -23,6 +23,7 @@ const fileToBase64 = (file: File): Promise<string> => {
  * Parses the AI response text into SteelItem objects
  */
 const parseGeminiResponse = (responseText: string): SteelItem[] => {
+    console.log(">>> RESPOSTA BRUTA DA IA:", responseText);
     try {
         // Clean up markdown code blocks if present
         // Clean up markdown code blocks if present
@@ -204,7 +205,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
             ]
         }],
         generationConfig: {
-            temperature: 0.0,
+            temperature: 0.2, // Um pouco mais flexível para evitar travamento em sintaxe
             topK: 1,
             topP: 1,
             maxOutputTokens: 2048,
