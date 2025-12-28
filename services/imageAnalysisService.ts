@@ -1,7 +1,7 @@
 
 import { SteelItem, ElementType, MainBarGroup, BarUsage } from '../types';
 
-const GEN_AI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEN_AI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
 /**
  * Converts a File object to a clean Base64 string (without data:image/...;base64 prefix)
