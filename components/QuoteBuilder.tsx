@@ -726,8 +726,7 @@ const BeamElevationView: React.FC<{
 
         {/* SEÇÃO A-A - Dynamic & Positioned after content */}
         <g transform={`translate(${Math.max(actualPadX + totalWidthPx + 60, viewW - 200)}, 20)`}>
-          {/* Container Background (Card style) */}
-          <rect x="-10" y="0" width="180" height="380" fill="white" stroke="#e2e8f0" rx="4" filter="drop-shadow(0 2px 4px rgb(0 0 0 / 0.1))" />
+
 
           {/* Title Group */}
           <g transform="translate(80, 25)">
@@ -755,6 +754,12 @@ const BeamElevationView: React.FC<{
                   </g>
 
 
+
+                  {/* Background with Hatch (Concrete) */}
+                  <rect x={0} y={0} width={pW} height={pH} fill="url(#diagonalHatch)" stroke="none" />
+
+                  {/* Outer Border (Blue - Formwork/Concrete limit) */}
+                  <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#2563eb" strokeWidth="1.5" />
 
                   {/* Inner Stirrup (Black) */}
                   <rect x={4} y={4} width={pW - 8} height={pH - 8} fill="none" stroke="#000" strokeWidth="2" />
