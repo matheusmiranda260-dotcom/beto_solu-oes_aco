@@ -1184,11 +1184,41 @@ const ItemDetailEditor: React.FC<{
         e.preventDefault();
         onCancel();
       }
+
+      // Arrow Keys for Movement (Offset)
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && editingIndex !== undefined) {
+        const activeTag = document.activeElement?.tagName.toLowerCase();
+        if (activeTag === 'input' || activeTag === 'textarea') return; // Allow text navigation inside inputs
+
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const delta = e.key === 'ArrowRight' ? step : -step;
+
+        const currentOffset = newBar.offset || 0;
+        const barLen = newBar.segmentA || 0;
+        const totalLen = Math.round(localItem.length * 100);
+        const maxOffset = Math.max(0, totalLen - barLen);
+
+        const nextOffset = Math.max(0, Math.min(currentOffset + delta, maxOffset));
+
+        if (nextOffset !== currentOffset) {
+          setNewBar(prev => ({ ...prev, offset: nextOffset }));
+
+          // Sync with visual representation immediately
+          setLocalItem(prevItem => {
+            const newBars = [...prevItem.mainBars];
+            if (newBars[editingIndex]) {
+              newBars[editingIndex] = { ...newBars[editingIndex], offset: nextOffset };
+            }
+            return { ...prevItem, mainBars: newBars };
+          });
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAddOrUpdateBar, onCancel]);
+  }, [handleAddOrUpdateBar, onCancel, editingIndex, newBar, localItem.length]);
 
 
   // Helper for Hook Selector
