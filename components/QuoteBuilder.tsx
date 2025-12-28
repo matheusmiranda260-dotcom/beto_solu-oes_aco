@@ -1438,40 +1438,65 @@ const ItemDetailEditor: React.FC<{
         </div>
       </div>
 
-      {/* RIGHT PANEL: CONTROLS (500px - NO SCROLL) */}
-      <div className="w-[500px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
+      {/* RIGHT PANEL: CONTROLS (650px - WIDER) */}
+      <div className="w-[650px] shrink-0 bg-white flex flex-col border-l border-slate-200 shadow-2xl">
 
-        {/* TOP: Cross Section (EXTRA LARGE - 2x) */}
-        <div className="h-[300px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
-            <span className="text-xs font-bold text-slate-400">Clique para posicionar</span>
-          </div>
-          <div className="h-[calc(100%-28px)] flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
-            <div className="transform scale-[2]">
-              <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+        {/* TOP ROW: Cross Section + Stirrups SIDE BY SIDE */}
+        <div className="h-[320px] shrink-0 p-4 bg-gradient-to-br from-slate-50 to-white border-b border-slate-200 flex gap-4">
+
+          {/* LEFT: Cross Section */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
+              <span className="text-[10px] font-bold text-slate-400">Clique p/ posicionar</span>
+            </div>
+            <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
+              <div className="transform scale-[2.2]">
+                <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* MIDDLE: Stirrups Row (LARGER) */}
-        <div className="shrink-0 px-4 py-3 bg-amber-50 border-b border-amber-200 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
-            <span className="text-sm font-black text-amber-700 uppercase">Estribos</span>
-          </div>
-          {localItem.hasStirrups && (
-            <div className="flex-grow flex gap-3">
-              <div className="flex-1"><label className="text-[9px] font-bold text-amber-600 block">Bitola</label><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black">{GAUGES.map(g => <option key={g} value={g}>Ø{g}mm</option>)}</select></div>
-              <div className="w-20"><label className="text-[9px] font-bold text-amber-600 block">Espaç.</label><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} placeholder="15" className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
-              {!isSapata && (
-                <>
-                  <div className="w-16"><label className="text-[9px] font-bold text-amber-600 block">Larg.</label><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
-                  <div className="w-16"><label className="text-[9px] font-bold text-amber-600 block">Alt.</label><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-black text-center" /></div>
-                </>
-              )}
+          {/* RIGHT: Stirrups Config */}
+          <div className="w-[200px] shrink-0 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span> Estribos
+              </h4>
+              <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
             </div>
-          )}
+            {localItem.hasStirrups && (
+              <div className="flex-grow bg-amber-50 rounded-2xl border-2 border-amber-200 p-3 flex flex-col gap-2">
+                <div>
+                  <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Bitola</label>
+                  <select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full p-3 bg-white border-2 border-amber-300 rounded-xl text-lg font-black">
+                    {GAUGES.map(g => <option key={g} value={g}>Ø {g}mm</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Espaçamento</label>
+                  <input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} placeholder="15" className="w-full p-3 bg-white border-2 border-amber-300 rounded-xl text-lg font-black text-center" />
+                </div>
+                {!isSapata && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Larg.</label>
+                      <input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-xl text-base font-black text-center" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Alt.</label>
+                      <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-xl text-base font-black text-center" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {!localItem.hasStirrups && (
+              <div className="flex-grow bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center">
+                <span className="text-slate-400 text-sm font-bold">Desativado</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* FORM - NO SCROLL */}
