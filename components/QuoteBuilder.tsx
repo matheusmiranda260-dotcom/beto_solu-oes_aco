@@ -338,7 +338,7 @@ const BeamElevationView: React.FC<{
 }> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const viewW = 1000;
-  const viewH = 600;
+  const viewH = 800;
   const padX = 60;
 
   const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
