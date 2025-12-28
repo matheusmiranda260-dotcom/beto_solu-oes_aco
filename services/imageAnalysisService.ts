@@ -141,27 +141,33 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
   Analyze this structural engineering drawing (beam/column reinforcement detail) and extract technical specifications.
   
   CRITICAL INSTRUCTIONS FOR "VÃOS" (SPANS) AND "DOBRAS" (BENDS/HOOKS):
-  
+
   1. SPANS (VÃOS):
      - Look for HORIZONTAL dimension lines describing the clear span between supports.
      - Example: A line labeled "300" between P1 and P2 means the span is 300cm.
      - BEWARE: Do not confuse span with total beam length.
      - Use these span numbers to calculate precise support positions.
 
-  3. STIRRUPS (ESTRIBOS) - THE "DATA STRING" AUTHORITY:
-     - SEARCH for the definition text line with arrows pointing to the stirrups.
-     - PATTERN EXAMPLES (Learn this syntax):
-       - Image text: "26 N2 ø5.0 c/15"  -> Output: { "quantity": 26, "stirrupPosition": "N2", "stirrupGauge": "5.0", "stirrupSpacing": 15 }
-       - Image text: "12 estribos ø4.2 c=20" -> Output: { "quantity": 12, "stirrupPosition": "estribos", "stirrupGauge": "4.2", "stirrupSpacing": 20 }
-     
-     - IF FOUND, THIS IS THE ABSOLUTE LAW. Override any visual count.
-     - "c/" or "c=" means Spacing (Espaçamento).
-     - "ø" or "diam" or "mm" means Gauge (Bitola).
+  2. BENDS/HOOKS (DOBRAS):
+     - Look for VERTICAL dimension lines at the very ends of the longitudinal bars.
+     - If you see a vertical line with "15", "20", etc., that is a HOOK.
+     - IF A HOOK IS FOUND, THE SHAPE IS NOT STRAIGHT. 
+     - Bottom bars mostly have hooks pointing UP ("u_up").
+     - Top bars mostly have hooks pointing DOWN ("u_down").
 
-     - CALCULATING SPANS (VÃOS) VIA SUBTRACTION:
-       - If you have Total Beam Length (e.g., 300) and Stirrup Coverage (Qty * Spacing, e.g., 15 * 20 = 300), the difference is the Gap.
-       - Logic: Total Length - (Quantity * Spacing) = Total Gap.
-       - Use this remainder to define the supports/gaps at the ends.
+  3. STIRRUPS (ESTRIBOS) - **EXCLUSIVE SOURCE: SECTION A-A (CORTE)**:
+     - DO NOT LOOK AT THE LONG BEAM DRAWING FOR STIRRUPS. LOOK ONLY AT THE CROSS-SECTION RECTANGLE (SEÇÃO/CORTE).
+     - **DIMENSIONS (Medidas):**
+       - Find the rectangular cross-section.
+       - Read the numbers on the sides of this rectangle.
+       - Example: A text "15" on the top/bottom and "35" on the left/right means 15x35.
+       - OUTPUT: stirrupWidth = 15, stirrupHeight = 35.
+
+     - **QUANTITY & SPECS (Quantidade):**
+       - Look for the label pointing to this rectangle or written below it.
+       - PATTERN: "26 N2 ø5.0 c/15" -> Qty: 26, Gauge: 5.0, Spacing: 15.
+       - IF "26 N2" IS WRITTEN, USE 26. DO NOT CALCULATE.
+       - "c/15" means every 15cm.
 
   4. BENDS/HOOKS (DOBRAS) - POSITIONING:
      - A "Start Hook" is ONLY valid if the vertical line is at the EXTREME LEFT of the bar.
