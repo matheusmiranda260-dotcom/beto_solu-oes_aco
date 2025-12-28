@@ -658,13 +658,27 @@ const BeamElevationView: React.FC<{
           <rect x={actualPadX} y={beamTopY} width={totalWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
           {/* Stirrup Lines - Skip support zones */}
           {stirrupX.map((x, i) => {
-            // Check if this stirrup position falls within a support zone
+            // Check if this stirrup position falls within a gap zone
             const stirrupCm = i * spacing;
             const supports = item.supports || [];
-            const inSupportZone = supports.some(s =>
-              stirrupCm >= s.position - s.width / 2 && stirrupCm <= s.position + s.width / 2
-            );
-            if (inSupportZone) return null;
+            const startGap = item.startGap || 0;
+            const endGap = item.endGap || 0;
+            const beamLen = effectiveLengthCm;
+
+            // Skip if in start gap
+            if (stirrupCm < startGap) return null;
+
+            // Skip if in end gap
+            if (stirrupCm > beamLen - endGap) return null;
+
+            // Skip if in any support gap zone (left or right of support)
+            const inSupportGap = supports.some(s => {
+              const leftBound = s.position - (s.leftGap || 0);
+              const rightBound = s.position + (s.rightGap || 0);
+              return stirrupCm >= leftBound && stirrupCm <= rightBound;
+            });
+            if (inSupportGap) return null;
+
             return (
               <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
             );
@@ -673,49 +687,187 @@ const BeamElevationView: React.FC<{
           <line x1={actualPadX - 10} y1={beamTopY + 25} x2={actualPadX + totalWidthPx + 10} y2={beamTopY + 25} stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" opacity="0.5" />
         </g>
 
-        {/* Support Markers (Pink/Magenta Lines) */}
+        {/* Support Markers and Gap Lines */}
         <g>
-          {/* Start of Beam */}
+          {/* === PINK LINES: Beam Extremities === */}
           <line x1={actualPadX} y1={beamTopY - 30} x2={actualPadX} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
-          {/* End of Beam */}
           <line x1={actualPadX + totalWidthPx} y1={beamTopY - 30} x2={actualPadX + totalWidthPx} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
 
-          {/* Intermediate Supports */}
+          {/* === BLUE LINES: Gap Boundaries (Start/End of stirrup zones) === */}
+          {/* Start Gap */}
+          {(item.startGap || 0) > 0 && (
+            <line
+              x1={actualPadX + (item.startGap || 0) * scaleX}
+              y1={beamTopY - 20}
+              x2={actualPadX + (item.startGap || 0) * scaleX}
+              y2={beamBotY + 20}
+              stroke="#2563eb"
+              strokeWidth="1.5"
+            />
+          )}
+          {/* End Gap */}
+          {(item.endGap || 0) > 0 && (
+            <line
+              x1={actualPadX + totalWidthPx - (item.endGap || 0) * scaleX}
+              y1={beamTopY - 20}
+              x2={actualPadX + totalWidthPx - (item.endGap || 0) * scaleX}
+              y2={beamBotY + 20}
+              stroke="#2563eb"
+              strokeWidth="1.5"
+            />
+          )}
+
+          {/* Intermediate Supports with Left/Right Gap Lines */}
           {(item.supports || []).map((support, idx) => {
             const supportX = actualPadX + (support.position * scaleX);
-            const halfWidth = (support.width / 2) * scaleX;
+            const leftGapPx = ((support.leftGap || 0)) * scaleX;
+            const rightGapPx = ((support.rightGap || 0)) * scaleX;
 
             return (
               <g key={idx}>
-                {/* Vertical support line */}
+                {/* PINK: Central Support Line */}
                 <line x1={supportX} y1={beamTopY - 30} x2={supportX} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
 
-                {/* Gap symbol (no stirrups zone) - wave/break pattern */}
-                <path
-                  d={`M${supportX - halfWidth},${beamTopY + 25} 
-                      L${supportX - halfWidth + 5},${beamTopY + 20}
-                      L${supportX},${beamTopY + 30}
-                      L${supportX + halfWidth - 5},${beamTopY + 20}
-                      L${supportX + halfWidth},${beamTopY + 25}`}
-                  fill="none"
-                  stroke="#db2777"
+                {/* BLUE: Left Gap Boundary */}
+                <line
+                  x1={supportX - leftGapPx}
+                  y1={beamTopY - 20}
+                  x2={supportX - leftGapPx}
+                  y2={beamBotY + 20}
+                  stroke="#2563eb"
+                  strokeWidth="1.5"
+                />
+
+                {/* BLUE: Right Gap Boundary */}
+                <line
+                  x1={supportX + rightGapPx}
+                  y1={beamTopY - 20}
+                  x2={supportX + rightGapPx}
+                  y2={beamBotY + 20}
+                  stroke="#2563eb"
                   strokeWidth="1.5"
                 />
 
                 {/* Support Label */}
-                <text
-                  x={supportX}
-                  y={beamBotY + 50}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontWeight="bold"
-                  fill="#db2777"
-                >
+                <text x={supportX} y={beamBotY + 50} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#db2777">
                   {support.label || `P${idx + 1}`}
                 </text>
               </g>
             );
           })}
+
+          {/* === DIMENSION ANNOTATIONS === */}
+          {(() => {
+            const annotations: React.ReactNode[] = [];
+            const dimY = beamBotY + 70; // Y position for dimension line
+            const supports = item.supports || [];
+            const sortedSupports = [...supports].sort((a, b) => a.position - b.position);
+            const beamLen = effectiveLengthCm;
+
+            // Build spans from supports
+            let currentPos = 0;
+
+            // Start Gap
+            const startGap = item.startGap || 0;
+            if (startGap > 0) {
+              const x1 = actualPadX;
+              const x2 = actualPadX + startGap * scaleX;
+              annotations.push(
+                <g key="start-gap">
+                  <line x1={x1} y1={dimY} x2={x2} y2={dimY} stroke="#64748b" strokeWidth="0.5" />
+                  <text x={(x1 + x2) / 2} y={dimY + 12} textAnchor="middle" fontSize="10" fill="#64748b">{startGap}</text>
+                </g>
+              );
+              currentPos = startGap;
+            }
+
+            // Process each support
+            sortedSupports.forEach((support, idx) => {
+              const leftGap = support.leftGap || 0;
+              const rightGap = support.rightGap || 0;
+              const stirrupZoneEnd = support.position - leftGap;
+              const stirrupZoneStart = currentPos;
+              const stirrupZoneLen = stirrupZoneEnd - stirrupZoneStart;
+
+              if (stirrupZoneLen > 0) {
+                // Stirrup zone dimension
+                const x1 = actualPadX + stirrupZoneStart * scaleX;
+                const x2 = actualPadX + stirrupZoneEnd * scaleX;
+                const stirrupCount = Math.floor(stirrupZoneLen / spacing);
+
+                annotations.push(
+                  <g key={`zone-${idx}`}>
+                    <line x1={x1} y1={dimY} x2={x2} y2={dimY} stroke="#0f172a" strokeWidth="1" />
+                    <line x1={x1} y1={dimY - 3} x2={x1} y2={dimY + 3} stroke="#0f172a" strokeWidth="1" />
+                    <line x1={x2} y1={dimY - 3} x2={x2} y2={dimY + 3} stroke="#0f172a" strokeWidth="1" />
+                    <text x={(x1 + x2) / 2} y={dimY + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(stirrupZoneLen)}</text>
+                    <text x={(x1 + x2) / 2} y={dimY + 24} textAnchor="middle" fontSize="9" fill="#64748b">{stirrupCount} {item.stirrupPosition || 'N2'} c/{spacing}</text>
+                  </g>
+                );
+              }
+
+              // Left gap of support
+              if (leftGap > 0) {
+                const gx1 = actualPadX + (support.position - leftGap) * scaleX;
+                const gx2 = actualPadX + support.position * scaleX;
+                annotations.push(
+                  <g key={`lgap-${idx}`}>
+                    <line x1={gx1} y1={dimY} x2={gx2} y2={dimY} stroke="#2563eb" strokeWidth="0.5" />
+                    <text x={(gx1 + gx2) / 2} y={dimY + 12} textAnchor="middle" fontSize="9" fill="#2563eb">{leftGap}</text>
+                  </g>
+                );
+              }
+
+              // Right gap of support
+              if (rightGap > 0) {
+                const gx1 = actualPadX + support.position * scaleX;
+                const gx2 = actualPadX + (support.position + rightGap) * scaleX;
+                annotations.push(
+                  <g key={`rgap-${idx}`}>
+                    <line x1={gx1} y1={dimY} x2={gx2} y2={dimY} stroke="#2563eb" strokeWidth="0.5" />
+                    <text x={(gx1 + gx2) / 2} y={dimY + 12} textAnchor="middle" fontSize="9" fill="#2563eb">{rightGap}</text>
+                  </g>
+                );
+              }
+
+              currentPos = support.position + rightGap;
+            });
+
+            // Last span (after last support to end of beam)
+            const endGap = item.endGap || 0;
+            const lastStirrupZoneEnd = beamLen - endGap;
+            const lastStirrupZoneLen = lastStirrupZoneEnd - currentPos;
+
+            if (lastStirrupZoneLen > 0) {
+              const x1 = actualPadX + currentPos * scaleX;
+              const x2 = actualPadX + lastStirrupZoneEnd * scaleX;
+              const stirrupCount = Math.floor(lastStirrupZoneLen / spacing);
+
+              annotations.push(
+                <g key="last-zone">
+                  <line x1={x1} y1={dimY} x2={x2} y2={dimY} stroke="#0f172a" strokeWidth="1" />
+                  <line x1={x1} y1={dimY - 3} x2={x1} y2={dimY + 3} stroke="#0f172a" strokeWidth="1" />
+                  <line x1={x2} y1={dimY - 3} x2={x2} y2={dimY + 3} stroke="#0f172a" strokeWidth="1" />
+                  <text x={(x1 + x2) / 2} y={dimY + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(lastStirrupZoneLen)}</text>
+                  <text x={(x1 + x2) / 2} y={dimY + 24} textAnchor="middle" fontSize="9" fill="#64748b">{stirrupCount} {item.stirrupPosition || 'N2'} c/{spacing}</text>
+                </g>
+              );
+            }
+
+            // End Gap
+            if (endGap > 0) {
+              const x1 = actualPadX + totalWidthPx - endGap * scaleX;
+              const x2 = actualPadX + totalWidthPx;
+              annotations.push(
+                <g key="end-gap">
+                  <line x1={x1} y1={dimY} x2={x2} y2={dimY} stroke="#64748b" strokeWidth="0.5" />
+                  <text x={(x1 + x2) / 2} y={dimY + 12} textAnchor="middle" fontSize="10" fill="#64748b">{endGap}</text>
+                </g>
+              );
+            }
+
+            return annotations;
+          })()}
         </g>
 
         {/* Bottom (Positive) Reinforcement Stack */}
@@ -1748,40 +1900,67 @@ const ItemDetailEditor: React.FC<{
         </div>
 
         {/* APOIOS (Supports) Section */}
-        <div className="p-4 border-t border-slate-200 bg-gradient-to-b from-pink-50 to-white">
+        <div className="p-4 border-t border-slate-200 bg-gradient-to-b from-blue-50 to-white max-h-64 overflow-y-auto">
+          <h4 className="font-black uppercase text-xs tracking-widest text-blue-600 mb-3">Vãos e Apoios</h4>
+
+          {/* Beam Extremity Gaps */}
+          <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-white rounded-lg border border-blue-200">
+            <div>
+              <label className="text-[8px] text-blue-600 font-bold block">Vão Início (cm)</label>
+              <input
+                type="number"
+                value={localItem.startGap || ''}
+                onChange={e => setLocalItem({ ...localItem, startGap: Number(e.target.value) })}
+                placeholder="40"
+                className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
+              />
+            </div>
+            <div>
+              <label className="text-[8px] text-blue-600 font-bold block">Vão Final (cm)</label>
+              <input
+                type="number"
+                value={localItem.endGap || ''}
+                onChange={e => setLocalItem({ ...localItem, endGap: Number(e.target.value) })}
+                placeholder="20"
+                className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
+              />
+            </div>
+          </div>
+
+          {/* Support List Header */}
           <div className="flex justify-between items-center mb-2">
-            <h4 className="font-black uppercase text-xs tracking-widest text-pink-600">Apoios (Pilares)</h4>
+            <span className="text-[9px] font-bold text-pink-600 uppercase">Apoios Intermediários</span>
             <button
               onClick={() => {
-                const newSupport = { position: localItem.length * 50, width: 20, label: `P${(localItem.supports?.length || 0) + 1}` };
+                const newSupport = { position: localItem.length * 50, width: 20, leftGap: 20, rightGap: 20, label: `P${(localItem.supports?.length || 0) + 1}` };
                 setLocalItem({ ...localItem, supports: [...(localItem.supports || []), newSupport] });
               }}
-              className="px-3 py-1 rounded-lg bg-pink-500 text-white text-[10px] font-bold hover:bg-pink-600 transition-all"
+              className="px-2 py-0.5 rounded bg-pink-500 text-white text-[9px] font-bold hover:bg-pink-600"
             >
               + Apoio
             </button>
           </div>
 
           {(!localItem.supports || localItem.supports.length === 0) ? (
-            <p className="text-[10px] text-slate-400 text-center py-2">Nenhum apoio intermediário</p>
+            <p className="text-[10px] text-slate-400 text-center py-2 bg-slate-50 rounded border border-dashed border-slate-200">Nenhum apoio intermediário</p>
           ) : (
-            <div className="space-y-2 max-h-32 overflow-y-auto">
+            <div className="space-y-2">
               {localItem.supports.map((support, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-pink-200">
-                  <input
-                    type="text"
-                    value={support.label || ''}
-                    onChange={e => {
-                      const supports = [...(localItem.supports || [])];
-                      supports[idx] = { ...supports[idx], label: e.target.value };
-                      setLocalItem({ ...localItem, supports });
-                    }}
-                    placeholder="P1"
-                    className="w-16 p-1 text-xs font-bold text-center border border-pink-300 rounded"
-                  />
-                  <div className="flex-1 flex gap-1">
+                <div key={idx} className="bg-white p-2 rounded-lg border border-pink-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={support.label || ''}
+                      onChange={e => {
+                        const supports = [...(localItem.supports || [])];
+                        supports[idx] = { ...supports[idx], label: e.target.value };
+                        setLocalItem({ ...localItem, supports });
+                      }}
+                      placeholder="P1"
+                      className="w-14 p-1 text-xs font-bold text-center border border-pink-300 rounded bg-pink-50"
+                    />
                     <div className="flex-1">
-                      <label className="text-[8px] text-pink-600 font-bold">Posição (cm)</label>
+                      <label className="text-[7px] text-pink-600 font-bold">Posição (cm)</label>
                       <input
                         type="number"
                         value={support.position}
@@ -1793,8 +1972,34 @@ const ItemDetailEditor: React.FC<{
                         className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
                       />
                     </div>
-                    <div className="w-20">
-                      <label className="text-[8px] text-pink-600 font-bold">Vão (cm)</label>
+                    <button
+                      onClick={() => {
+                        const supports = (localItem.supports || []).filter((_, i) => i !== idx);
+                        setLocalItem({ ...localItem, supports });
+                      }}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                  {/* Gap fields */}
+                  <div className="grid grid-cols-3 gap-1">
+                    <div>
+                      <label className="text-[7px] text-blue-600 font-bold">Vão ← (cm)</label>
+                      <input
+                        type="number"
+                        value={support.leftGap || ''}
+                        onChange={e => {
+                          const supports = [...(localItem.supports || [])];
+                          supports[idx] = { ...supports[idx], leftGap: Number(e.target.value) };
+                          setLocalItem({ ...localItem, supports });
+                        }}
+                        placeholder="20"
+                        className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[7px] text-gray-500 font-bold">Largura (cm)</label>
                       <input
                         type="number"
                         value={support.width}
@@ -1803,19 +2008,24 @@ const ItemDetailEditor: React.FC<{
                           supports[idx] = { ...supports[idx], width: Number(e.target.value) };
                           setLocalItem({ ...localItem, supports });
                         }}
-                        className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
+                        className="w-full p-1 text-xs font-bold text-center border border-gray-300 rounded bg-gray-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[7px] text-blue-600 font-bold">Vão → (cm)</label>
+                      <input
+                        type="number"
+                        value={support.rightGap || ''}
+                        onChange={e => {
+                          const supports = [...(localItem.supports || [])];
+                          supports[idx] = { ...supports[idx], rightGap: Number(e.target.value) };
+                          setLocalItem({ ...localItem, supports });
+                        }}
+                        placeholder="20"
+                        className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
                       />
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const supports = (localItem.supports || []).filter((_, i) => i !== idx);
-                      setLocalItem({ ...localItem, supports });
-                    }}
-                    className="p-1 text-red-500 hover:bg-red-50 rounded"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
                 </div>
               ))}
             </div>

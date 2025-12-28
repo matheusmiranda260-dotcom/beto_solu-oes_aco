@@ -157,10 +157,16 @@ export interface SteelItem {
 
     // Apoios (Pilares/Colunas) - Define zonas sem estribos
     supports?: {
-        position: number;  // Distância em cm do início da viga
-        width: number;     // Largura do apoio em cm
-        label?: string;    // Ex: "P62", "P54"
+        position: number;   // Distância em cm do início da viga (centro do pilar)
+        width: number;      // Largura do pilar em cm
+        leftGap: number;    // Vão sem estribo à esquerda do pilar (cm)
+        rightGap: number;   // Vão sem estribo à direita do pilar (cm)
+        label?: string;     // Ex: "P62", "P54"
     }[];
+
+    // Gaps nas extremidades da viga (onde não há estribos)
+    startGap?: number;  // Vão sem estribos no início (cm)
+    endGap?: number;    // Vão sem estribos no final (cm)
 }
 
 export interface Quote {
