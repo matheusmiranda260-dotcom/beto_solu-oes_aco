@@ -1301,7 +1301,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
-      alert("Recurso indisponível: Configure a chave de API do Gemini (VITE_GEMINI_API_KEY) no arquivo .env");
+      alert("Recurso indisponível: Configure a chave de API do Gemini (VITE_GEMINI_API_KEY) no arquivo .env e REINICIE o servidor.");
       return;
     }
 
