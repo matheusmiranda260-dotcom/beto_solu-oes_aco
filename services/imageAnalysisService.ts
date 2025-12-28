@@ -139,7 +139,14 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - BEWARE: Do not confuse span with total beam length.
      - Use these span numbers to calculate precise support positions.
 
-  3. STIRRUPS (ESTRIBOS) - SECTION A-A:
+  3. STIRRUPS (ESTRIBOS) & SPANS (VÃOS) CORRELATION:
+     - USE VISUAL CUES: Look for the area covered by stirrups (often dashed lines or repeated vertical lines |||||).
+     - SPAN DETECTION: The valid "Span" is often the length covered by these stirrup lines.
+     - QUANTITY CALCULATION: If you find specific text like "25 N2", use it. 
+       - FALLBACK: If explicit quantity is missing, CALCULATE IT: (Span Length in cm / Spacing) + 1.
+     - PILLARS vs GAPS: A gap in the stirrup lines usually indicates a Pillar/Support.
+
+  4. STIRRUPS (ESTRIBOS) - SECTION A-A:
      - Look specifically at "SEÇÃO A-A" or similar cross-section views.
      - EXTRACT DIMENSIONS: Look for text like "15x35", "15 x 35" or separate width/height labels on the rectangle.
      - EXTRACT SPECS: Look for the full definition string, e.g., "25 N2 ø5.0 c/15".
