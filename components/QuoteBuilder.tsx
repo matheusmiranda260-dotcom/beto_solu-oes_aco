@@ -578,7 +578,7 @@ const BeamElevationView: React.FC<{
         {/* Info Box / Label (Converted to SVG Text for precision) */}
         <text
           x={startX + pxLen / 2}
-          y={yBase - (isTop ? -3 : -2)}
+          y={isTop ? yBase + 4 : yBase + 2}
           textAnchor="middle"
           dominantBaseline={isTop ? "auto" : "hanging"}
           className={`text-[11px] font-black uppercase tracking-tight transition-all select-none ${isSelected ? 'fill-indigo-600 scale-110' : (readOnly ? 'fill-slate-800' : 'fill-indigo-800 group-hover:fill-amber-800 group-hover:scale-110')}`}
