@@ -247,7 +247,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   Return ONLY valid JSON.
   `;
 
-    // Configuration for Speed and Accuracy
+    // Configuration for Robustness (Reverted to working state)
     const body = {
         contents: [{
             parts: [
@@ -256,58 +256,94 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
             ]
         }],
         generationConfig: {
-            temperature: 0.1, // Lower temperature for faster, more deterministic output
-            topK: 1, // Only consider the very best token (faster decoding)
+            temperature: 0.1,
+            topK: 1,
+            topP: 1,
             maxOutputTokens: 2048,
             responseMimeType: "application/json"
         }
     };
 
-    // SPEED OPTIMIZATION:
-    // 1. Direct prioritized list (Flash is fastest).
-    // 2. No dynamic discovery (saves 1 round-trip).
-    // 3. Stick to v1beta which is standard for these models.
-    const candidateModels = [
-        "gemini-1.5-flash-latest",
+    // Lista de modelos conhecidos para visão (ordem de prioridade)
+    // Revertendo para lista completa para garantir compatibilidade
+    const knownModels = [
         "gemini-1.5-flash",
-        "gemini-1.5-pro-latest" // Fallback only if Flash fails completely
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash-001",
+        "gemini-1.5-pro",
+        "gemini-1.5-pro-latest",
+        "gemini-pro-vision",
+        "gemini-1.0-pro-vision-latest"
     ];
 
+    let candidateModels = [...knownModels];
+
+    // 1. Tenta descobrir o melhor modelo disponível na chave (Discovery)
+    try {
+        const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (listReq.ok) {
+            const listData = await listReq.json();
+            if (listData.models) {
+                const availableVision = listData.models
+                    .map((m: any) => m.name.replace('models/', ''))
+                    .filter((name: string) =>
+                        (name.includes('flash') || name.includes('vision') || name.includes('pro')) &&
+                        !name.includes('embedding')
+                    );
+
+                if (availableVision.length > 0) {
+                    const others = candidateModels.filter(m => !availableVision.includes(m));
+                    candidateModels = [...availableVision, ...others];
+                    // console.log("Modelos detectados:", availableVision);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Falha silenciosa na descoberta:", e);
+    }
+
+    // 2. Loop Robusto (Legacy + Modern)
+    const versions = ["v1beta", "v1"];
     let lastError: any;
+    let success = false;
 
     for (const model of candidateModels) {
-        try {
-            // console.log(`Tentando modelo rápido: ${model}...`);
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
+        if (success) break;
 
-            if (!response.ok) {
-                const err = await response.json();
-                const msg = err.error?.message || "Erro";
-                // Only continue if it's a 404 (model found) or similar. Authentication errors should throw immediately.
-                if (msg.includes("not found") || msg.includes("not supported")) {
-                    continue;
+        for (const version of versions) {
+            if (success) break;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    const msg = err.error?.message || "Erro";
+                    if (msg.includes("not found") || msg.includes("not supported")) {
+                        continue;
+                    }
+                    throw new Error(msg);
                 }
-                throw new Error(msg);
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) continue;
+
+                success = true;
+                console.log(`SUCESSO com: ${model} (${version})`);
+                return parseGeminiResponse(text);
+
+            } catch (error) {
+                lastError = error;
+                continue;
             }
-
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!text) continue;
-
-            console.log(`SUCESSO RÁPIDO com: ${model}`);
-            return parseGeminiResponse(text);
-
-        } catch (error) {
-            lastError = error;
-            console.warn(`Falha no modelo ${model}, tentando próximo...`);
-            continue;
         }
     }
 
-    throw lastError || new Error("Não foi possível processar a imagem. Verifique sua chave API.");
+    throw lastError || new Error("Não foi possível processar a imagem com nenhum modelo disponível. Verifique se a API 'Generative AI' está habilitada no Google Cloud.");
 };
