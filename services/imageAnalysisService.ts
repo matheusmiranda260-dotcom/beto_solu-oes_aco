@@ -149,10 +149,15 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - Use these span numbers to calculate precise support positions.
 
   3. STIRRUPS (ESTRIBOS) - THE "DATA STRING" AUTHORITY:
-     - SEARCH for the definition text line, commonly: "13 N3 ø5.0 c/15" or similar.
-     - IF FOUND, THIS IS THE LAW.
-       - "13" is the Quantity. STOP COUNTING VISUALLY. USE "13".
-       - "c/15" is the Spacing (15cm).
+     - SEARCH for the definition text line with arrows pointing to the stirrups.
+     - PATTERN EXAMPLES (Learn this syntax):
+       - Image text: "26 N2 ø5.0 c/15"  -> Output: { "quantity": 26, "stirrupPosition": "N2", "stirrupGauge": "5.0", "stirrupSpacing": 15 }
+       - Image text: "12 estribos ø4.2 c=20" -> Output: { "quantity": 12, "stirrupPosition": "estribos", "stirrupGauge": "4.2", "stirrupSpacing": 20 }
+     
+     - IF FOUND, THIS IS THE ABSOLUTE LAW. Override any visual count.
+     - "c/" or "c=" means Spacing (Espaçamento).
+     - "ø" or "diam" or "mm" means Gauge (Bitola).
+
      - CALCULATING SPANS (VÃOS) VIA SUBTRACTION:
        - If you have Total Beam Length (e.g., 300) and Stirrup Coverage (Qty * Spacing, e.g., 15 * 20 = 300), the difference is the Gap.
        - Logic: Total Length - (Quantity * Spacing) = Total Gap.
