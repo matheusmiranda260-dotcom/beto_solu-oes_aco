@@ -247,6 +247,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   Return ONLY valid JSON.
   `;
 
+    // Configuration for Speed and Accuracy
     const body = {
         contents: [{
             parts: [
@@ -255,100 +256,58 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
             ]
         }],
         generationConfig: {
-            temperature: 0.2, // Um pouco mais flexível para evitar travamento em sintaxe
-            topK: 1,
-            topP: 1,
+            temperature: 0.1, // Lower temperature for faster, more deterministic output
+            topK: 1, // Only consider the very best token (faster decoding)
             maxOutputTokens: 2048,
             responseMimeType: "application/json"
         }
     };
 
-    // Lista de modelos conhecidos para visão (ordem de prioridade)
-    const knownModels = [
-        "gemini-1.5-flash",
+    // SPEED OPTIMIZATION:
+    // 1. Direct prioritized list (Flash is fastest).
+    // 2. No dynamic discovery (saves 1 round-trip).
+    // 3. Stick to v1beta which is standard for these models.
+    const candidateModels = [
         "gemini-1.5-flash-latest",
-        "gemini-1.5-flash-001",
-        "gemini-1.5-pro",
-        "gemini-1.5-pro-latest",
-        "gemini-pro-vision", // Clássico v1
-        "gemini-1.0-pro-vision-latest"
+        "gemini-1.5-flash",
+        "gemini-1.5-pro-latest" // Fallback only if Flash fails completely
     ];
 
-    let candidateModels = [...knownModels];
-
-    // 1. Tenta descobrir o melhor modelo disponível na chave
-    try {
-        const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (listReq.ok) {
-            const listData = await listReq.json();
-            if (listData.models) {
-                // Filtra modelos que suportam generateContent e visão (heurística por nome)
-                const availableVision = listData.models
-                    .map((m: any) => m.name.replace('models/', ''))
-                    .filter((name: string) =>
-                        (name.includes('flash') || name.includes('vision') || name.includes('pro')) &&
-                        !name.includes('embedding')
-                    );
-
-                // Coloca os descobertos no topo da lista
-                if (availableVision.length > 0) {
-                    // Remove duplicatas e prioriza os descobertos
-                    const others = candidateModels.filter(m => !availableVision.includes(m));
-                    candidateModels = [...availableVision, ...others];
-                    console.log("Modelos detectados na chave:", availableVision);
-                }
-            }
-        }
-    } catch (e) {
-        console.warn("Falha silenciosa na descoberta de modelos:", e);
-    }
-
-    // 2. Tenta executar TODOS os candidatos em TODAS as versões
-    const versions = ["v1beta", "v1"];
     let lastError: any;
-    let success = false;
 
     for (const model of candidateModels) {
-        if (success) break;
+        try {
+            // console.log(`Tentando modelo rápido: ${model}...`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
 
-        for (const version of versions) {
-            if (success) break;
-
-            try {
-                // console.log(`Tentando: ${model} (${version})...`);
-                const response = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    const msg = err.error?.message || "Erro";
-
-                    // Se for erro de "not found", tenta o próximo silenciosamente
-                    if (msg.includes("not found") || msg.includes("not supported")) {
-                        continue;
-                    }
-                    throw new Error(msg); // Outros erros (ex: key inválida) devem ser reportados
+            if (!response.ok) {
+                const err = await response.json();
+                const msg = err.error?.message || "Erro";
+                // Only continue if it's a 404 (model found) or similar. Authentication errors should throw immediately.
+                if (msg.includes("not found") || msg.includes("not supported")) {
+                    continue;
                 }
-
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!text) continue; // Resposta vazia, tenta próximo
-
-                // SUCESSO!
-                success = true;
-                console.log(`SUCESSO com modelo: ${model} (${version})`);
-                return parseGeminiResponse(text);
-
-            } catch (error) {
-                lastError = error;
-                continue;
+                throw new Error(msg);
             }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) continue;
+
+            console.log(`SUCESSO RÁPIDO com: ${model}`);
+            return parseGeminiResponse(text);
+
+        } catch (error) {
+            lastError = error;
+            console.warn(`Falha no modelo ${model}, tentando próximo...`);
+            continue;
         }
     }
 
-    throw lastError || new Error("Não foi possível processar a imagem com nenhum modelo disponível. Verifique se a API 'Generative AI' está habilitada no Google Cloud.");
+    throw lastError || new Error("Não foi possível processar a imagem. Verifique sua chave API.");
 };
