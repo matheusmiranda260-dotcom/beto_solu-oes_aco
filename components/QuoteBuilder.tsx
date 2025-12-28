@@ -1369,641 +1369,168 @@ const ItemDetailEditor: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[250] flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-[95%] h-[95vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border border-slate-200">
 
-        {/* Left Column: Visualization & Stirrups */}
-        <div className="w-1/2 flex flex-col border-r border-slate-100 bg-gradient-to-br from-slate-50/50 to-white">
-          {/* Enhanced Header with Stats */}
-          <div className="p-6 border-b border-slate-100 bg-white">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-700 text-amber-500 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
-                  {localItem.type.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-800 text-xl leading-tight">Editor de Armação</h3>
-                  <p className="text-xs text-slate-500 font-bold">{localItem.observation || localItem.type}</p>
-                </div>
-              </div>
-              <button
-                onClick={onCancel}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
-                title="Fechar (Esc)"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        {/* 1. Global Header (Stats & Actions) */}
+        <div className="flex-none p-4 bg-white border-b border-slate-100 flex justify-between items-center z-30 shadow-sm shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-slate-700 text-amber-500 rounded-xl flex items-center justify-center font-black text-lg shadow-md">
+              {localItem.type.charAt(0)}
             </div>
-
-            {/* Real-time Statistics */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-3 rounded-2xl border border-indigo-200/50">
-                <p className="text-[9px] font-black text-indigo-600 uppercase tracking-wider">Barras</p>
-                <p className="text-2xl font-black text-indigo-700">{localItem.mainBars.length}</p>
-              </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-3 rounded-2xl border border-emerald-200/50">
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">Peso Total</p>
-                <p className="text-2xl font-black text-emerald-700">
-                  {localItem.mainBars.reduce((acc, bar) => {
-                    const weightPerMeter = STEEL_WEIGHTS[bar.gauge] || 0;
-                    const baseLenM = (bar.segmentA || 0) / 100;
-                    const extraM = ((bar.segmentB || 0) + (bar.segmentC || 0) + (bar.segmentD || 0) + (bar.segmentE || 0)) / 100;
-                    return acc + (bar.count * (baseLenM + extraM) * weightPerMeter);
-                  }, 0).toFixed(1)}
-                  <span className="text-sm ml-1">kg</span>
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-2xl border border-amber-200/50">
-                <p className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Comprimento</p>
-                <p className="text-2xl font-black text-amber-700">
-                  {Math.max(...localItem.mainBars.map(b => b.segmentA || 0), 0)}
-                  <span className="text-sm ml-1">cm</span>
-                </p>
-              </div>
+            <div>
+              <h3 className="font-black text-slate-800 text-lg leading-tight">Editor de Armação</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{localItem.observation || localItem.type}</p>
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
-            {/* Visualizer - Interactive - MAIOR PARA MELHOR VISUALIZAÇÃO */}
-            {!isSapata && (
-              <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-lg bg-slate-50/50 relative overflow-hidden group flex flex-col h-[500px]">
-                <div className="flex-none p-6 pb-2 flex justify-between items-center z-20 bg-white/80 backdrop-blur-sm border-b border-slate-100">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                    Detalhamento Visual
-                  </h4>
-                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm transition-all text-slate-500 hover:text-indigo-600">
-                    <button onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 font-black transition-colors">-</button>
-                    <span className="text-[10px] font-black w-10 text-center bg-slate-50 py-1 rounded-md">{(zoomLevel * 100).toFixed(0)}%</span>
-                    <button onClick={() => setZoomLevel(z => Math.min(3.0, z + 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 font-black transition-colors">+</button>
-                  </div>
-                </div>
-
-                {/* Scrollable Area for Drawing */}
-                <div className="flex-grow overflow-auto custom-scrollbar p-6 relative">
-                  <div
-                    style={{
-                      transform: `scale(${zoomLevel})`,
-                      transformOrigin: 'top left',
-                      width: 'fit-content',
-                      minWidth: '100%'
-                    }}
-                    className="transition-transform duration-200 ease-out"
-                  >
-                    <BeamElevationView
-                      item={localItem}
-                      newBar={editingIndex === undefined ? newBar : undefined}
-                      onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
-                      onEditBar={(idx) => setEditingIndex(idx)}
-                      onRemoveBar={handleRemoveBar}
-                      selectedIdx={editingIndex}
-                      onBarUpdate={(idx, offset) => {
-                        const bars = [...localItem.mainBars];
-                        if (bars[idx]) {
-                          bars[idx] = { ...bars[idx], offset };
-                          setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
-                          if (editingIndex === idx) {
-                            setNewBar(prev => ({ ...prev, offset }));
-                          }
-                        }
-                      }}
-                      readOnly={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Cross-Section Visualizer (Always Visible) */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Seção Transversal (Clique para posicionar)</h4>
-              <CompositeCrossSection
-                stirrupW={localItem.stirrupWidth}
-                stirrupH={localItem.stirrupHeight}
-                bars={localItem.mainBars}
-                stirrupPos={localItem.stirrupPosition}
-                stirrupGauge={localItem.stirrupGauge}
-                onZoneClick={(zone) => {
-                  setNewBar(prev => ({ ...prev, placement: zone }));
-                }}
-                selectedZone={newBar.placement}
-              />
+          {/* Middle Stats */}
+          <div className="flex gap-6 items-center">
+            <div className="flex flex-col items-center px-4 border-r border-slate-100 last:border-0">
+              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Barras</span>
+              <span className="text-xl font-black text-indigo-700 leading-none">{localItem.mainBars.length}</span>
             </div>
-
-            {/* Stirrup Configuration (Always Visible) */}
-            <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-black text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  Estribos {isSapata ? '(Gaiola)' : ''}
-                </h4>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Ativo</span>
-                  <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox" />
-                </label>
-              </div>
-
-              {localItem.hasStirrups && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Bitola</label>
-                    <select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500">
-                      {GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Espaçamento</label>
-                    <input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400">Posição</label>
-                    <input type="text" value={localItem.stirrupPosition || ''} onChange={e => setLocalItem({ ...localItem, stirrupPosition: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" placeholder="Auto" />
-                  </div>
-                  {!isSapata && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400">Largura (cm)</label>
-                        <input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400">Altura (cm)</label>
-                        <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-black outline-none focus:border-indigo-500" />
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+            <div className="flex flex-col items-center px-4">
+              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider">Peso Total</span>
+              <span className="text-xl font-black text-emerald-700 leading-none">
+                {localItem.mainBars.reduce((acc, bar) => {
+                  const weightPerMeter = STEEL_WEIGHTS[bar.gauge] || 0;
+                  const baseLenM = (bar.segmentA || 0) / 100;
+                  const extraM = ((bar.segmentB || 0) + (bar.segmentC || 0) + (bar.segmentD || 0) + (bar.segmentE || 0)) / 100;
+                  return acc + (bar.count * (baseLenM + extraM) * weightPerMeter);
+                }, 0).toFixed(1)} <span className="text-xs text-emerald-500">kg</span>
+              </span>
             </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={onCancel} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancelar</button>
+            <button onClick={handleSaveAll} className="px-6 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-wide hover:bg-slate-800 shadow-lg transform active:scale-95 transition-all">Salvar Tudo</button>
           </div>
         </div>
 
-        {/* Right Column: Longitudinal Bars Management */}
-        <div className="w-1/2 bg-slate-50 flex flex-col">
-          <div className="p-6 border-b border-slate-200 bg-white shadow-sm flex justify-between">
-            <h3 className="font-black text-slate-800 text-lg">Barras Longitudinais</h3>
-            <div className="flex gap-2">
-              <button onClick={onCancel} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
-              <button onClick={handleSaveAll} className="px-6 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-wide hover:bg-slate-800 shadow-lg">Salvar Tudo</button>
+        {/* 2. Main Content Area */}
+        <div className="flex-grow flex flex-col p-4 gap-4 overflow-hidden bg-slate-50/50">
+
+          {/* TOP ROW: VISUALIZATION */}
+          <div className="flex gap-4 h-[45%] shrink-0 min-h-[300px]">
+            {/* LEFT: Longitudinal Detail */}
+            <div className="flex-grow bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col group">
+              {/* Zoom Header */}
+              <div className="flex-none p-3 flex justify-between items-center z-20 bg-white/90 backdrop-blur-sm border-b border-slate-100">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                  Detalhamento Visual
+                </h4>
+                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
+                  <button onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.1))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-white hover:shadow-sm text-slate-500 font-black transition-all">-</button>
+                  <span className="text-[9px] font-black w-8 text-center text-indigo-600">{(zoomLevel * 100).toFixed(0)}%</span>
+                  <button onClick={() => setZoomLevel(z => Math.min(3.0, z + 0.1))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-white hover:shadow-sm text-slate-500 font-black transition-all">+</button>
+                </div>
+              </div>
+              {/* Drawing Area */}
+              <div className="flex-grow overflow-auto custom-scrollbar p-6 relative bg-slate-50/30">
+                <div style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', width: 'fit-content', minWidth: '100%' }} className="transition-transform duration-200 ease-out">
+                  <BeamElevationView item={localItem} newBar={editingIndex === undefined ? newBar : undefined} onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))} onEditBar={(idx) => setEditingIndex(idx)} onRemoveBar={handleRemoveBar} selectedIdx={editingIndex} onBarUpdate={(idx, offset) => { const bars = [...localItem.mainBars]; if (bars[idx]) { bars[idx] = { ...bars[idx], offset }; setLocalItem({ ...localItem, mainBars: bars, isConfigured: true }); if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); } } }} readOnly={false} />
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT: Sidebar (Cross Section + Stirrups) */}
+            <div className="w-[280px] shrink-0 flex flex-col gap-3">
+              {/* 1. Cross Section */}
+              <div className="flex-1 bg-white p-3 rounded-3xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden">
+                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 z-10 relative">Seção Transversal</h4>
+                <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none transform scale-150">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-full h-full"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                </div>
+                <div className="flex-grow flex items-center justify-center z-10">
+                  <div className="transform scale-90">
+                    <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Stirrups */}
+              <div className="bg-white p-3 rounded-3xl border border-indigo-50 shadow-sm flex flex-col shrink-0">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-black text-slate-700 uppercase text-[9px] tracking-widest flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Estribos
+                  </h4>
+                  <input type="checkbox" checked={localItem.hasStirrups} onChange={e => setLocalItem({ ...localItem, hasStirrups: e.target.checked })} className="toggle-checkbox scale-75" />
+                </div>
+                {localItem.hasStirrups && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><label className="text-[8px] font-black text-slate-400 block mb-0.5">Bitola</label><select value={localItem.stirrupGauge} onChange={e => setLocalItem({ ...localItem, stirrupGauge: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-[10px] font-black outline-none focus:border-indigo-500">{GAUGES.map(g => <option key={g} value={g}>{g}mm</option>)}</select></div>
+                    <div><label className="text-[8px] font-black text-slate-400 block mb-0.5">Espaçamento</label><input type="number" value={localItem.stirrupSpacing} onChange={e => setLocalItem({ ...localItem, stirrupSpacing: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-[10px] font-black outline-none focus:border-indigo-500" /></div>
+                    {!isSapata && (
+                      <>
+                        <div><label className="text-[8px] font-black text-slate-400 block mb-0.5">Largura</label><input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-[10px] font-black outline-none" /></div>
+                        <div><label className="text-[8px] font-black text-slate-400 block mb-0.5">Altura</label><input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-[10px] font-black outline-none" /></div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex-grow p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+          {/* BOTTOM ROW: Form Left + List Right */}
+          <div className="flex-grow flex gap-4 overflow-hidden">
 
-            {/* Form to Add/Edit Bar */}
-            <div className={`p-6 rounded-[2rem] border-2 transition-all ${editingIndex !== undefined ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-100' : 'bg-white border-indigo-100 shadow-md'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h4 className={`font-black uppercase text-xs tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
-                  {editingIndex !== undefined ? `Editando Grupo #${editingIndex + 1}` : 'Adicionar Novo Grupo'}
+            {/* LEFT: Add/Edit Form */}
+            <div className="flex-grow bg-white rounded-3xl p-4 border border-slate-200 shadow-sm overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className={`font-black uppercase text-[10px] tracking-widest ${editingIndex !== undefined ? 'text-amber-600' : 'text-indigo-600'}`}>
+                  {editingIndex !== undefined ? `Editando #${editingIndex + 1}` : 'Adicionar Novo Grupo'}
                 </h4>
-                {editingIndex !== undefined && (
-                  <button onClick={() => setEditingIndex(undefined)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 underline">Cancelar Edição</button>
-                )}
+                {editingIndex !== undefined && (<button onClick={() => setEditingIndex(undefined)} className="text-[9px] font-bold text-slate-400 hover:text-slate-600 underline">Cancelar</button>)}
               </div>
 
-              <div className="grid grid-cols-4 gap-4 mb-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Qtd</label>
-                  <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Bitola</label>
-                  <select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500">
-                    {GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Posição</label>
-                  <input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="Auto" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-lg outline-none focus:border-indigo-500" />
-                </div>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <div><label className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Qtd</label><input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-indigo-500" /></div>
+                <div className="col-span-2"><label className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Bitola</label><select value={newBar.gauge} onChange={e => setNewBar({ ...newBar, gauge: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-indigo-500">{GAUGES.map(g => <option key={g} value={g}>{g} mm</option>)}</select></div>
+                <div><label className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Posição</label><input type="text" value={newBar.position || ''} onChange={e => setNewBar({ ...newBar, position: e.target.value })} placeholder="Auto" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-indigo-500" /></div>
               </div>
 
-              {/* Enhanced Bar Preview */}
-              <div className="mb-6 bg-gradient-to-br from-slate-50 to-white p-6 rounded-3xl border-2 border-slate-200 shadow-inner">
-                <div className="flex items-center justify-between mb-3">
-                  <h5 className="text-xs font-black text-slate-600 uppercase tracking-wider">Preview em Tempo Real</h5>
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black">
-                      {newBar.count}x ø{newBar.gauge}mm
-                    </span>
-                    {newBar.segmentA && (
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black">
-                        {((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0) + (newBar.segmentD || 0) + (newBar.segmentE || 0))}cm total
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <BarDrawing
-                  length={(newBar.segmentA || 0) / 100}
-                  hookStart={newBar.segmentB || newBar.hookStart || 0}
-                  hookEnd={newBar.segmentC || newBar.hookEnd || 0}
-                  startType={newBar.hookStartType}
-                  endType={newBar.hookEndType}
-                  shape={visualShape}
-                  segmentD={newBar.segmentD}
-                  segmentE={newBar.segmentE}
-                />
+              {/* Preview */}
+              <div className="mb-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between">
+                <div className="flex gap-2"><span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-black">{newBar.count}x ø{newBar.gauge}mm</span>{newBar.segmentA && (<span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black">{((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0))}cm</span>)}</div>
+                <BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} />
               </div>
 
-              {/* Segment Inputs (A-B-C-D-E) - Logic based on Visual Shape */}
-              <div className="mb-4">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimensões (cm)</label>
-                </div>
+              {/* Segment A */}
+              <div className="mb-2"><label className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Seg. A (Base cm)</label><input type="number" value={newBar.segmentA || 0} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} className="w-full p-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg font-black text-sm outline-none focus:border-indigo-500" />{lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (<button onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })} className="mt-1 w-full px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[9px] font-bold hover:bg-amber-100">Usar último: {lastUsedSegmentA}cm</button>)}</div>
 
-                {/* Segment A (Always Visible - Base) */}
-                <div className="mb-2">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase flex justify-between">
-                    <span>Segmento A (Base/Comprimento)</span>
-                    <span className="text-slate-300">Principal</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={newBar.segmentA || 0}
-                    onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })}
-                    className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
-                  />
-                  {lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (
-                    <button
-                      onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })}
-                      className="mt-2 w-full px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition-all flex items-center justify-center gap-2"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" /></svg>
-                      Usar último: {lastUsedSegmentA}cm
-                    </button>
-                  )}
-                </div>
+              {/* Segments B/C */}
+              {(['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape)) && (<div className="grid grid-cols-2 gap-2 mb-2">{['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape) && (<div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">Seg. B</label><input type="number" value={newBar.segmentB || newBar.hookStart || 0} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentB: val, hookStart: val }); }} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm" /></div>)}{['u_up', 'u_down', 'c_up', 'c_down', 'l_right_up', 'l_right_down'].includes(visualShape) && (<div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">Seg. C</label><input type="number" value={newBar.segmentC || newBar.hookEnd || 0} onChange={e => { const val = Number(e.target.value); setNewBar({ ...newBar, segmentC: val, hookEnd: val }); }} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm" /></div>)}</div>)}
+              {['c_up', 'c_down'].includes(visualShape) && (<div className="grid grid-cols-2 gap-2 mb-2"><div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">Seg. D</label><input type="number" value={newBar.segmentD || 0} onChange={e => setNewBar({ ...newBar, segmentD: Number(e.target.value) })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm" /></div><div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">Seg. E</label><input type="number" value={newBar.segmentE || 0} onChange={e => setNewBar({ ...newBar, segmentE: Number(e.target.value) })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm" /></div></div>)}
 
-                {/* Segments B and C (Legs) */}
-                {(['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape)) && (
-                  <div className="grid grid-cols-2 gap-4 mb-2">
-                    {/* Segment B (Left Leg) */}
-                    {['l_left_up', 'l_left_down', 'u_up', 'u_down', 'c_up', 'c_down'].includes(visualShape) && (
-                      <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. B (Esq.)</label>
-                        <input
-                          type="number"
-                          value={newBar.segmentB || newBar.hookStart || 0}
-                          onChange={e => {
-                            const val = Number(e.target.value);
-                            setNewBar({ ...newBar, segmentB: val, hookStart: val }); // Sync to hookStart for compatibility
-                          }}
-                          className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    )}
+              {/* Shape Library */}
+              <div className="mb-3"><label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Formatos</label><div className="grid grid-cols-5 gap-1">{[{ s: 'straight', svg: 'M2,12 L22,12' }, { s: 'l_left_up', svg: 'M4,4 L4,12 L20,12' }, { s: 'l_right_up', svg: 'M4,12 L20,12 L20,4' }, { s: 'u_up', svg: 'M4,4 L4,16 L28,16 L28,4', w: 32 }, { s: 'c_up', svg: 'M8,8 L4,8 L4,16 L28,16 L28,8 L24,8', w: 32 }, { s: 'l_left_down', svg: 'M4,20 L4,12 L20,12' }, { s: 'l_right_down', svg: 'M4,12 L20,12 L20,20' }, { s: 'u_down', svg: 'M4,20 L4,8 L28,8 L28,20', w: 32 }, { s: 'c_down', svg: 'M8,16 L4,16 L4,8 L28,8 L28,16 L24,16', w: 32 }].map(sh => (<button key={sh.s} onClick={() => { const hS = newBar.hookStart || 20; const hE = newBar.hookEnd || 20; const isC = sh.s.startsWith('c_'); setNewBar({ ...newBar, hookStartType: sh.s.includes('left') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookEndType: sh.s.includes('right') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookStart: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, hookEnd: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, shape: sh.s, segmentB: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, segmentC: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, segmentD: isC ? (newBar.segmentD || 10) : 0, segmentE: isC ? (newBar.segmentE || 10) : 0 }); setVisualShape(sh.s); }} className={`h-9 rounded-lg border flex items-center justify-center transition-all ${visualShape === sh.s ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-slate-400 hover:border-slate-300'}`}><svg width={sh.w || 24} height="24" viewBox={`0 0 ${sh.w || 24} 24`} className="stroke-current stroke-2 fill-none"><path d={sh.svg} /></svg></button>))}</div></div>
 
-                    {/* Segment C (Right Leg) - Only for U and C (and technically L-Right but logic differs) */}
-                    {['u_up', 'u_down', 'c_up', 'c_down', 'l_right_up', 'l_right_down'].includes(visualShape) && (
-                      <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. C (Dir.)</label>
-                        <input
-                          type="number"
-                          value={newBar.segmentC || newBar.hookEnd || 0}
-                          onChange={e => {
-                            const val = Number(e.target.value);
-                            setNewBar({ ...newBar, segmentC: val, hookEnd: val }); // Sync to hookEnd for compatibility
-                          }}
-                          className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    )}
-
-                    {/* Special case for L-Right only (it occupies slot 2 but is "C"?) 
-                            Actually L-Right implies A + right leg. So it maps to "C".
-                            Above condition handles it.
-                        */}
-                  </div>
-                )}
-
-                {/* Segments D and E (Inward Hooks - C shape only) */}
-                {['c_up', 'c_down'].includes(visualShape) && (
-                  <div className="grid grid-cols-2 gap-4 mb-2">
-                    <div className="space-y-1 animate-in slide-in-from-left-2 fade-in">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. D (Dobra Esq.)</label>
-                      <input
-                        type="number"
-                        value={newBar.segmentD || 0}
-                        onChange={e => setNewBar({ ...newBar, segmentD: Number(e.target.value) })}
-                        className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500 border-dashed"
-                      />
-                    </div>
-                    <div className="space-y-1 animate-in slide-in-from-right-2 fade-in">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase">Seg. E (Dobra Dir.)</label>
-                      <input
-                        type="number"
-                        value={newBar.segmentE || 0}
-                        onChange={e => setNewBar({ ...newBar, segmentE: Number(e.target.value) })}
-                        className="w-full p-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black text-lg outline-none focus:border-indigo-500 border-dashed"
-                      />
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              <div className="mb-6">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biblioteca de Formatos</label>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {/* 1. Straight */}
-                  <button
-                    onClick={() => {
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'none',
-                        hookEndType: 'none',
-                        hookStart: 0,
-                        hookEnd: 0,
-                        shape: 'straight',
-                        segmentB: 0,
-                        segmentC: 0,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('straight');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'straight' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="Reta (I)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <line x1="2" y1="12" x2="22" y2="12" />
-                    </svg>
-                  </button>
-
-                  {/* 2. L Left Up */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 30;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'up',
-                        hookEndType: 'none',
-                        hookStart: hStart,
-                        hookEnd: 0,
-                        shape: 'l_left_up',
-                        segmentB: hStart,
-                        segmentC: 0,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('l_left_up');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="L Esquerda (Cima)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,4 L4,12 L20,12" />
-                    </svg>
-                  </button>
-
-                  {/* 3. L Right Up */}
-                  <button
-                    onClick={() => {
-                      const hEnd = newBar.hookEnd || 30;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'none',
-                        hookEndType: 'up',
-                        hookStart: 0,
-                        hookEnd: hEnd,
-                        shape: 'l_right_up',
-                        segmentB: 0,
-                        segmentC: hEnd,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('l_right_up');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="L Direita (Cima)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,12 L20,12 L20,4" />
-                    </svg>
-                  </button>
-
-                  {/* 4. U / Hooks Up */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 20;
-                      const hEnd = newBar.hookEnd || 20;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'up',
-                        hookEndType: 'up',
-                        hookStart: hStart,
-                        hookEnd: hEnd,
-                        shape: 'u_up',
-                        segmentB: hStart,
-                        segmentC: hEnd,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('u_up');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="U / Ganchos (Cima)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,4 L4,16 L28,16 L28,4" />
-                    </svg>
-                  </button>
-
-                  {/* 5. C Shape (Official Open Stirrup) */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 20;
-                      const hEnd = newBar.hookEnd || 20;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'up',
-                        hookEndType: 'up',
-                        hookStart: hStart,
-                        hookEnd: hEnd,
-                        shape: 'c_up',
-                        segmentB: hStart,
-                        segmentC: hEnd,
-                        segmentD: newBar.segmentD || 10,
-                        segmentE: newBar.segmentE || 10
-                      });
-                      setVisualShape('c_up');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_up' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
-                    title="C / Estribo Aberto (Cima)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M8,8 L4,8 L4,16 L28,16 L28,8 L24,8" />
-                    </svg>
-                  </button>
-
-                  {/* 6. L Left Down */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 30;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'down',
-                        hookEndType: 'none',
-                        hookStart: hStart,
-                        hookEnd: 0,
-                        shape: 'l_left_down',
-                        segmentB: hStart,
-                        segmentC: 0,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('l_left_down');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_left_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="L Esquerda (Baixo)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,20 L4,12 L20,12" />
-                    </svg>
-                  </button>
-
-                  {/* 7. L Right Down */}
-                  <button
-                    onClick={() => {
-                      const hEnd = newBar.hookEnd || 30;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'none',
-                        hookEndType: 'down',
-                        hookStart: 0,
-                        hookEnd: hEnd,
-                        shape: 'l_right_down',
-                        segmentB: 0,
-                        segmentC: hEnd,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('l_right_down');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'l_right_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="L Direita (Baixo)"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,12 L20,12 L20,20" />
-                    </svg>
-                  </button>
-
-                  {/* 8. U / Hooks Down */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 20;
-                      const hEnd = newBar.hookEnd || 20;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'down',
-                        hookEndType: 'down',
-                        hookStart: hStart,
-                        hookEnd: hEnd,
-                        shape: 'u_down',
-                        segmentB: hStart,
-                        segmentC: hEnd,
-                        segmentD: 0,
-                        segmentE: 0
-                      });
-                      setVisualShape('u_down');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'u_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'}`}
-                    title="U / Ganchos (Baixo)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M4,20 L4,8 L28,8 L28,20" />
-                    </svg>
-                  </button>
-
-                  {/* 9. C Shape Down */}
-                  <button
-                    onClick={() => {
-                      const hStart = newBar.hookStart || 20;
-                      const hEnd = newBar.hookEnd || 20;
-                      setNewBar({
-                        ...newBar,
-                        hookStartType: 'down',
-                        hookEndType: 'down',
-                        hookStart: hStart,
-                        hookEnd: hEnd,
-                        shape: 'c_down',
-                        segmentB: hStart,
-                        segmentC: hEnd,
-                        segmentD: newBar.segmentD || 10,
-                        segmentE: newBar.segmentE || 10
-                      });
-                      setVisualShape('c_down');
-                    }}
-                    className={`h-12 rounded-xl border-2 flex items-center justify-center transition-all ${visualShape === 'c_down' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-inner' : 'border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'} group`}
-                    title="C / Estribo Aberto (Baixo)"
-                  >
-                    <svg width="32" height="24" viewBox="0 0 32 24" className="stroke-current stroke-2 fill-none">
-                      <path d="M8,16 L4,16 L4,8 L28,8 L28,16 L24,16" />
-                    </svg>
-                  </button>
-
-                </div>
-              </div>
-
-              {/* Enhanced Add/Update Button */}
-              <div className="space-y-2">
-                <button
-                  onClick={handleAddOrUpdateBar}
-                  className={`w-full py-4 rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 ${editingIndex !== undefined
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'
-                    : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800'
-                    }`}
-                >
-                  {editingIndex !== undefined ? (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                      </svg>
-                      Atualizar Ferro
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                      </svg>
-                      Adicionar Ferro à Lista
-                    </>
-                  )}
-                </button>
-                <p className="text-center text-[10px] text-slate-400 font-bold">
-                  💡 Dica: Pressione <kbd className="px-2 py-0.5 bg-slate-100 rounded border border-slate-300 font-mono">Ctrl+Enter</kbd> para adicionar
-                </p>
-              </div>
+              {/* Add Button */}
+              <button onClick={handleAddOrUpdateBar} className={`w-full py-2.5 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 ${editingIndex !== undefined ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>{editingIndex !== undefined ? 'Atualizar' : '+ Adicionar Ferro'}</button>
             </div>
 
-            {/* List of Bars */}
-            <div className="space-y-2">
-              <h4 className="font-black text-slate-400 uppercase text-xs tracking-widest px-2">Itens Adicionados ({localItem.mainBars.length})</h4>
-              {localItem.mainBars.length === 0 && (
-                <div className="text-center p-8 text-slate-300 font-bold bg-white rounded-3xl border border-dashed border-slate-200">
-                  Nenhum ferro adicionado ainda.
-                </div>
-              )}
-              {localItem.mainBars.map((bar, idx) => (
-                <div key={idx} className={`bg-white p-4 rounded-2xl border flex justify-between items-center group transition-all ${editingIndex === idx ? 'border-amber-400 bg-amber-50 shadow-md transform scale-[1.02]' : 'border-slate-100 hover:border-indigo-200'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${bar.placement === 'top' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                      {bar.count}
+            {/* RIGHT: Items List */}
+            <div className="w-[300px] shrink-0 bg-slate-100/50 rounded-3xl p-3 border border-slate-200 overflow-y-auto custom-scrollbar">
+              <h4 className="font-black text-slate-400 uppercase text-[9px] tracking-widest mb-2">Itens ({localItem.mainBars.length})</h4>
+              {localItem.mainBars.length === 0 && (<div className="text-center p-6 text-slate-300 font-bold border-2 border-dashed border-slate-200 rounded-2xl text-xs">Vazio</div>)}
+              <div className="space-y-2">
+                {localItem.mainBars.map((bar, idx) => (
+                  <div key={idx} className={`bg-white p-3 rounded-xl border shadow-sm flex justify-between items-center group transition-all ${editingIndex === idx ? 'border-amber-400 ring-1 ring-amber-100' : 'border-slate-100 hover:border-indigo-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] ${bar.placement === 'top' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>{bar.count}</div>
+                      <div><p className="font-bold text-slate-700 text-[11px]">Ø {bar.gauge}mm • {bar.placement === 'top' ? 'Sup' : bar.placement === 'distributed' ? 'Lat' : 'Inf'}</p><p className="text-[9px] text-slate-400 font-bold">{bar.position || `N${idx + 1}`}</p></div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-700 text-sm">Ø {bar.gauge}mm <span className="text-slate-400 font-normal">• {bar.placement === 'top' ? 'Superior' : bar.placement === 'distributed' ? 'Lateral' : bar.placement === 'center' ? 'Central' : 'Inferior'}</span></p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{bar.position || `N${idx + 1}`}</p>
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditingIndex(idx)} className="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded"><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                      <button onClick={() => handleDuplicateBar(idx)} className="p-1.5 text-slate-400 hover:text-emerald-600 bg-slate-50 rounded"><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                      <button onClick={() => handleRemoveBar(idx)} className="p-1.5 text-slate-400 hover:text-red-600 bg-slate-50 rounded"><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                     </div>
                   </div>
-                  <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditingIndex(idx)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
-                    <button onClick={() => handleDuplicateBar(idx)} className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-lg" title="Duplicar"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" /></svg></button>
-                    <button onClick={() => handleRemoveBar(idx)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg" title="Remover"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
