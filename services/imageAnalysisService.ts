@@ -139,12 +139,14 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
      - BEWARE: Do not confuse span with total beam length.
      - Use these span numbers to calculate precise support positions.
 
-  2. BENDS/HOOKS (DOBRAS):
-     - Look for VERTICAL dimension lines at the very ends of the longitudinal bars.
-     - If you see a vertical line with "15", "20", etc., that is a HOOK.
-     - IF A HOOK IS FOUND, THE SHAPE IS NOT STRAIGHT. 
-     - Bottom bars mostly have hooks pointing UP ("u_up").
-     - Top bars mostly have hooks pointing DOWN ("u_down").
+  3. STIRRUPS (ESTRIBOS) - SECTION A-A:
+     - Look specifically at "SEÇÃO A-A" or similar cross-section views.
+     - EXTRACT DIMENSIONS: Look for text like "15x35", "15 x 35" or separate width/height labels on the rectangle.
+     - EXTRACT SPECS: Look for the full definition string, e.g., "25 N2 ø5.0 c/15".
+       - "25" = Quantity
+       - "ø5.0" = Gauge (Bitola)
+       - "c/15" = Spacing (Espaçamento)
+     - WARNING: The stirrup width/height are the OUTER dimensions of the rebar rectangle.
 
   For each structural element found, create an object in the JSON array:
   - type: "Viga", "Balanço", "Pilarete", "Pilar", "Sapata"
@@ -155,8 +157,11 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
   - height: Section height (m)
   
   - hasStirrups: boolean
-  - stirrupGauge: mm (string)
-  - stirrupSpacing: cm (number)
+  - stirrupGauge: mm (string e.g. "5.0")
+  - stirrupSpacing: cm (number e.g. 15)
+  - stirrupWidth: cm (number). LOOK FOR EXPLICIT NUMBERS (e.g. 12, 15, 20).
+  - stirrupHeight: cm (number). LOOK FOR EXPLICIT NUMBERS (e.g. 25, 30, 40).
+  - stirrupPosition: Label (e.g. "N2")
   
   - mainBars: Array of bars
     - count: number
