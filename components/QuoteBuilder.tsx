@@ -650,6 +650,14 @@ const BeamElevationView: React.FC<{
 
         <rect width="100%" height="100%" fill="url(#technicalGrid)" rx="32" />
 
+        {/* Element Name/Identifier (Top Left) */}
+        <g transform="translate(30, 40)">
+          <text fontSize="28" fontWeight="900" fill="#0f172a" fontFamily="Arial, sans-serif">
+            {item.observation || item.type}
+          </text>
+          <text y="20" fontSize="12" fill="#64748b" fontWeight="bold">ESC 1:50</text>
+        </g>
+
         {/* Top (Negative) Reinforcement Stack */}
         {topBars.map((b, i) => {
           // Stack upwards from beam top
