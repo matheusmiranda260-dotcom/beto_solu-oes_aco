@@ -991,26 +991,62 @@ const BeamElevationView: React.FC<{
                     <text x={pW / 2} y={10} textAnchor="middle" fontSize="12" fontWeight="bold">{Math.round(concreteW)}</text>
                   </g>
 
-                  {/* Bars Punctuation - ALL BARS (No Limit) */}
+                  {/* Bars Punctuation - Reflects actual bars */}
                   {(() => {
+                    const barMargin = coverPx + 4;
+                    const barAreaW = pW - barMargin * 2;
+                    const barAreaH = pH - barMargin * 2;
+                    const circles: React.ReactNode[] = [];
+
+                    // Top bars
                     const topBars = item.mainBars.filter(b => b.placement === 'top');
-                    const count = topBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    const barMargin = coverPx + 4; // Inside the stirrup
-                    const barAreaW = pW - barMargin * 2;
-                    // Distribute *all* bars evenly inside stirrup
-                    return Array.from({ length: count }).map((_, i) => (
-                      <circle key={`t${i}`} cx={barMargin + (count > 1 ? i * (barAreaW / (count - 1)) : barAreaW / 2)} cy={coverPx + 4} r={2.5} fill="#2563eb" />
-                    ));
-                  })()}
-                  {(() => {
+                    const topCount = topBars.reduce((sum, b) => sum + b.count, 0);
+                    if (topCount > 0) {
+                      Array.from({ length: topCount }).forEach((_, i) => {
+                        const cx = barMargin + (topCount > 1 ? i * (barAreaW / (topCount - 1)) : barAreaW / 2);
+                        circles.push(<circle key={`t${i}`} cx={cx} cy={coverPx + 4} r={2.5} fill="#2563eb" />);
+                      });
+                    }
+
+                    // Bottom bars
                     const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
-                    const count = botBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    const barMargin = coverPx + 4; // Inside the stirrup
-                    const barAreaW = pW - barMargin * 2;
-                    // Distribute *all* bars evenly inside stirrup
-                    return Array.from({ length: count }).map((_, i) => (
-                      <circle key={`b${i}`} cx={barMargin + (count > 1 ? i * (barAreaW / (count - 1)) : barAreaW / 2)} cy={pH - coverPx - 4} r={2.5} fill="#2563eb" />
-                    ));
+                    const botCount = botBars.reduce((sum, b) => sum + b.count, 0);
+                    if (botCount > 0) {
+                      Array.from({ length: botCount }).forEach((_, i) => {
+                        const cx = barMargin + (botCount > 1 ? i * (barAreaW / (botCount - 1)) : barAreaW / 2);
+                        circles.push(<circle key={`b${i}`} cx={cx} cy={pH - coverPx - 4} r={2.5} fill="#2563eb" />);
+                      });
+                    }
+
+                    // Side/Distributed bars (on left and right edges)
+                    const sideBars = item.mainBars.filter(b => b.placement === 'distributed');
+                    const sideCount = sideBars.reduce((sum, b) => sum + b.count, 0);
+                    if (sideCount > 0) {
+                      const perSide = Math.ceil(sideCount / 2);
+                      // Left side
+                      Array.from({ length: perSide }).forEach((_, i) => {
+                        const cy = barMargin + (perSide > 1 ? i * (barAreaH / (perSide - 1)) : barAreaH / 2);
+                        circles.push(<circle key={`sl${i}`} cx={coverPx + 4} cy={cy} r={2.5} fill="#10b981" />);
+                      });
+                      // Right side
+                      Array.from({ length: sideCount - perSide }).forEach((_, i) => {
+                        const rightCount = sideCount - perSide;
+                        const cy = barMargin + (rightCount > 1 ? i * (barAreaH / (rightCount - 1)) : barAreaH / 2);
+                        circles.push(<circle key={`sr${i}`} cx={pW - coverPx - 4} cy={cy} r={2.5} fill="#10b981" />);
+                      });
+                    }
+
+                    // Center bars
+                    const centerBars = item.mainBars.filter(b => b.placement === 'center');
+                    const centerCount = centerBars.reduce((sum, b) => sum + b.count, 0);
+                    if (centerCount > 0) {
+                      Array.from({ length: centerCount }).forEach((_, i) => {
+                        const cx = barMargin + (centerCount > 1 ? i * (barAreaW / (centerCount - 1)) : barAreaW / 2);
+                        circles.push(<circle key={`c${i}`} cx={cx} cy={pH / 2} r={2.5} fill="#f59e0b" />);
+                      });
+                    }
+
+                    return circles;
                   })()}
                 </g>
               );
