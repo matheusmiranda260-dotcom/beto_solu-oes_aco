@@ -125,7 +125,7 @@ export interface MainBarGroup {
     hookStart: number;       // Medida em cm
     hookEnd: number;         // Medida em cm
     position?: string;       // Posição opcional (N...)
-    placement?: 'top' | 'bottom' | 'distributed'; // Posição na seção (Superior/Inferior/Lateral)
+    placement?: 'top' | 'bottom' | 'distributed' | 'center'; // Posição na seção (Superior/Inferior/Lateral/Centro)
     shape?: string; // Formato visual (ex: 'straight', 'u_up', 'c_up')
 
     // New Segment Model (A-B-C-D-E)

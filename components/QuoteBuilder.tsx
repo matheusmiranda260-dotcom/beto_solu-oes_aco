@@ -182,8 +182,8 @@ const CompositeCrossSection: React.FC<{
   stirrupPos?: string;
   stirrupGauge?: string;
   stirrupCount?: number;
-  onZoneClick?: (zone: 'top' | 'bottom' | 'distributed') => void;
-  selectedZone?: 'top' | 'bottom' | 'distributed' | null;
+  onZoneClick?: (zone: 'top' | 'bottom' | 'distributed' | 'center') => void;
+  selectedZone?: 'top' | 'bottom' | 'distributed' | 'center' | null;
 }> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, onZoneClick, selectedZone }) => {
   const width = stirrupW || 15;
   const height = stirrupH || 20;
@@ -234,6 +234,14 @@ const CompositeCrossSection: React.FC<{
         const yPos = (h * (rowIdx + 1)) / (rows + 1);
         allPoints.push({ x: side, y: yPos, color });
       }
+    } else if (placement === 'center') {
+      // Center bars (Inside/Core)
+      // Distribute horizontally at h/2, avoiding edges to prevent overlap with Costela
+      for (let i = 0; i < count; i++) {
+        // (i + 1) / (count + 1) gives e.g. 1/2 for 1 bar, 1/3 & 2/3 for 2 bars -> Distinct from sides
+        const xPos = (w * (i + 1)) / (count + 1);
+        allPoints.push({ x: xPos, y: h / 2, color });
+      }
     }
   });
 
@@ -273,6 +281,15 @@ const CompositeCrossSection: React.FC<{
                 className="hover:fill-blue-50 transition-colors"
                 onClick={() => onZoneClick('distributed')}
               />
+              {/* Center Zone (Inner Core) */}
+              <rect
+                x={w * 0.25} y={h * 0.25} width={w * 0.5} height={h * 0.5}
+                fill={selectedZone === 'center' ? '#dbeafe' : 'transparent'}
+                className="hover:fill-blue-100 transition-colors"
+                stroke={selectedZone === 'center' ? '#3b82f6' : 'none'}
+                strokeDasharray="2 2"
+                onClick={(e) => { e.stopPropagation(); onZoneClick('center'); }}
+              />
             </g>
           )}
 
@@ -298,6 +315,7 @@ const CompositeCrossSection: React.FC<{
             <>
               <text x={w / 2} y={-15} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">SUPERIOR</text>
               <text x={w / 2} y={h + 25} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">INFERIOR</text>
+              <text x={w / 2} y={h / 2} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.3" pointerEvents="none">CENTRO</text>
             </>
           )}
 
@@ -367,6 +385,7 @@ const BeamElevationView: React.FC<{
   const topBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'top');
   const bottomBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'bottom' || !b.placement);
   const sideBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'distributed');
+  const centerBars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx })).filter(b => b.placement === 'center');
 
   // Stirrups
   const spacing = item.stirrupSpacing || 20;
@@ -426,7 +445,7 @@ const BeamElevationView: React.FC<{
     }
 
     const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
-    const subLabel = isTop ? 'Superior' : group.placement === 'distributed' ? 'Lateral' : 'Inferior';
+    const subLabel = isTop ? 'Superior' : group.placement === 'distributed' ? 'Lateral' : group.placement === 'center' ? 'Central' : 'Inferior';
 
     return (
       <g
@@ -508,9 +527,15 @@ const BeamElevationView: React.FC<{
           return renderInteractableBar(b, y, false);
         })}
 
+        {/* Center (Interior) Reinforcement Stack */}
+        {centerBars.map((b, i) => {
+          const y = 230 + (bottomBars.length * 35) + 20 + (i * 35);
+          return renderInteractableBar(b, y, false);
+        })}
+
         {/* Side (Distributed) Reinforcement Stack */}
         {sideBars.map((b, i) => {
-          const y = 230 + (bottomBars.length * 35) + 20 + (i * 35);
+          const y = 230 + (bottomBars.length * 35) + 20 + (centerBars.length * 35) + 20 + (i * 35);
           return renderInteractableBar(b, y, false);
         })}
 
@@ -1640,8 +1665,8 @@ const ItemDetailEditor: React.FC<{
                 <button
                   onClick={handleAddOrUpdateBar}
                   className={`w-full py-4 rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 ${editingIndex !== undefined
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'
-                      : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'
+                    : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800'
                     }`}
                 >
                   {editingIndex !== undefined ? (
@@ -1681,7 +1706,7 @@ const ItemDetailEditor: React.FC<{
                       {bar.count}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-700 text-sm">Ø {bar.gauge}mm <span className="text-slate-400 font-normal">• {bar.placement === 'top' ? 'Superior' : bar.placement === 'distributed' ? 'Lateral' : 'Inferior'}</span></p>
+                      <p className="font-bold text-slate-700 text-sm">Ø {bar.gauge}mm <span className="text-slate-400 font-normal">• {bar.placement === 'top' ? 'Superior' : bar.placement === 'distributed' ? 'Lateral' : bar.placement === 'center' ? 'Central' : 'Inferior'}</span></p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">{bar.position || `N${idx + 1}`}</p>
                     </div>
                   </div>
