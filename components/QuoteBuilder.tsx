@@ -775,19 +775,21 @@ const BeamElevationView: React.FC<{
                     <text x={pW / 2} y={10} textAnchor="middle" fontSize="12" fontWeight="bold">{Math.round(sW)}</text>
                   </g>
 
-                  {/* Bars Punctuation */}
+                  {/* Bars Punctuation - ALL BARS (No Limit) */}
                   {(() => {
                     const topBars = item.mainBars.filter(b => b.placement === 'top');
                     const count = topBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    return Array.from({ length: Math.min(count, 4) }).map((_, i) => (
-                      <circle key={`t${i}`} cx={6 + (i * ((pW - 12) / (Math.min(count, 4) - 1 || 1)))} cy={6} r={2.5} fill="#2563eb" />
+                    // Distribute *all* bars evenly
+                    return Array.from({ length: count }).map((_, i) => (
+                      <circle key={`t${i}`} cx={6 + (i * ((pW - 12) / (Math.max(count - 1, 1))))} cy={6} r={2.5} fill="#2563eb" />
                     ));
                   })()}
                   {(() => {
                     const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
                     const count = botBars.reduce((sum, b) => sum + b.count, 0) || 2;
-                    return Array.from({ length: Math.min(count, 4) }).map((_, i) => (
-                      <circle key={`b${i}`} cx={6 + (i * ((pW - 12) / (Math.min(count, 4) - 1 || 1)))} cy={pH - 6} r={2.5} fill="#2563eb" />
+                    // Distribute *all* bars evenly
+                    return Array.from({ length: count }).map((_, i) => (
+                      <circle key={`b${i}`} cx={6 + (i * ((pW - 12) / (Math.max(count - 1, 1))))} cy={pH - 6} r={2.5} fill="#2563eb" />
                     ));
                   })()}
                 </g>
@@ -806,20 +808,18 @@ const BeamElevationView: React.FC<{
 
               return (
                 <g>
-                  {/* Stirrup Shape with Hooks UP */}
-                  <path d={`M${pW * 0.1},${pH * 0.1} L${pW * 0.1},${pH} L${pW},${pH} L${pW},${pH * 0.1}`} fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* Stirrup Shape - Full Rectangle */}
+                  <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#000" strokeWidth="2" />
 
-                  {/* Hooks going UP and IN */}
-                  <path d={`M${pW * 0.1},${pH * 0.1} L${pW * 0.1},0 L${pW * 0.2},0`} fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d={`M${pW},${pH * 0.1} L${pW},0 L${pW * 0.9},-2`} fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* Hook Cross Detail (Top Left) */}
+                  {/* Hooks crossing inwards at top-left corner */}
+                  <path d="M4,4 L12,4" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M4,4 L4,12" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M4,4 L8,8" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
 
                   {/* Dimensions */}
                   <text x={pW + 10} y={pH / 2} dominantBaseline="middle" fontSize="14" fill="#000">{Math.round(sH)}</text>
                   <text x={pW / 2} y={pH + 18} textAnchor="middle" fontSize="14" fill="#000">{Math.round(sW)}</text>
-
-                  {/* Hook Cross */}
-                  <line x1={pW * 0.1 - 4} y1={pH * 0.1} x2={pW * 0.1 + 8} y2={pH * 0.1} stroke="#000" strokeWidth="1.5" />
-                  <line x1={pW * 0.1 + 2} y1={pH * 0.1 - 6} x2={pW * 0.1 + 2} y2={pH * 0.1 + 6} stroke="#000" strokeWidth="1.5" />
 
                   {/* Info Text */}
                   <text x={0} y={pH + 45} textAnchor="start" fontSize="12" fontWeight="bold" fill="#0f172a" style={{ whiteSpace: 'pre' }}>
