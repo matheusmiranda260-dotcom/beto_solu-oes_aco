@@ -578,9 +578,9 @@ const BeamElevationView: React.FC<{
         {/* Info Box / Label (Converted to SVG Text for precision) */}
         <text
           x={startX + pxLen / 2}
-          y={isTop ? yBase - 15 : yBase + 2}
+          y={yBase + 2}
           textAnchor="middle"
-          dominantBaseline={isTop ? "auto" : "hanging"}
+          dominantBaseline="hanging"
           className={`text-[11px] font-black uppercase tracking-tight transition-all select-none ${isSelected ? 'fill-indigo-600 scale-110' : (readOnly ? 'fill-slate-800' : 'fill-indigo-800 group-hover:fill-amber-800 group-hover:scale-110')}`}
           style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
         >
@@ -592,7 +592,7 @@ const BeamElevationView: React.FC<{
         {hookEnd > 0 && <text x={startX + pxLen + 10} y={yBase} textAnchor="start" fontSize="11" fontWeight="900" fill="#475569" dominantBaseline="middle">{hookEnd}</text>}
 
         {/* Length Label (Middle) */}
-        <text x={startX + pxLen / 2} y={yBase + (isTop ? -8 : -3)} textAnchor="middle" fontSize="11" fontWeight="900" fill="#64748b" className="select-none">{Math.round(baseLenCm)}cm</text>
+        <text x={startX + pxLen / 2} y={yBase - 3} textAnchor="middle" fontSize="11" fontWeight="900" fill="#64748b" className="select-none">{Math.round(baseLenCm)}cm</text>
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
