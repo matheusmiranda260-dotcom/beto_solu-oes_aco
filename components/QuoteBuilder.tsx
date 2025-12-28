@@ -592,7 +592,7 @@ const BeamElevationView: React.FC<{
         {hookEnd > 0 && <text x={startX + pxLen + 10} y={yBase} textAnchor="start" fontSize="11" fontWeight="900" fill="#475569" dominantBaseline="middle">{hookEnd}</text>}
 
         {/* Length Label (Middle) */}
-        <text x={startX + pxLen / 2} y={yBase + (isTop ? 3 : -3)} textAnchor="middle" fontSize="11" fontWeight="900" fill="#64748b" className="select-none">{Math.round(baseLenCm)}cm</text>
+        <text x={startX + pxLen / 2} y={yBase + (isTop ? 8 : -3)} textAnchor="middle" fontSize="11" fontWeight="900" fill="#64748b" className="select-none">{Math.round(baseLenCm)}cm</text>
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
