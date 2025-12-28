@@ -337,8 +337,8 @@ const BeamElevationView: React.FC<{
   readOnly?: boolean;
 }> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const svgRef = React.useRef<SVGSVGElement>(null);
-  const viewW = 1400;
-  const viewH = 900;
+  const viewW = 1000;
+  const viewH = 600;
   const padX = 60;
 
   const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
@@ -365,8 +365,8 @@ const BeamElevationView: React.FC<{
   // Beam Drawing at Y=140 to Y=190 (50px height).
   // Bottom Bars starting at Y=220, stacking down.
 
-  const beamTopY = 200;
-  const beamBotY = 250;
+  const beamTopY = 140;
+  const beamBotY = 190;
 
   // Calculate effective length from all bars extents (including the one being added)
   const getExtents = () => {
@@ -601,7 +601,7 @@ const BeamElevationView: React.FC<{
   };
 
   return (
-    <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-slate-200 shadow-xl flex flex-col items-center w-full mx-auto overflow-hidden relative" style={{ maxWidth: '1100px' }}>
+    <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-slate-200 shadow-xl flex flex-col items-center w-full mx-auto overflow-hidden relative" style={{ width: '100%' }}>
       <div className="flex justify-between w-full mb-6 px-4">
         <div className="flex items-center gap-3">
           <div className="w-2 h-6 bg-indigo-500 rounded-full" />
