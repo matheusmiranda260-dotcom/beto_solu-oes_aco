@@ -717,78 +717,95 @@ const BeamElevationView: React.FC<{
           offset={0}
         />
 
-        {/* CORTE A - Professional Cross Section on Right Side */}
-        <foreignObject x={viewW - 200} y={20} width={180} height={280}>
-          <div className="bg-white border-2 border-slate-200 rounded-xl p-3 shadow-lg">
+        {/* SEÇÃO A-A - Professional Cross Section - Positioned FAR RIGHT to avoid overlap */}
+        <foreignObject x={viewW - 160} y={80} width={150} height={350}>
+          <div className="bg-white border border-slate-300 rounded-lg p-2 shadow-md" style={{ fontFamily: 'Arial, sans-serif' }}>
             {/* Title */}
-            <div className="text-center mb-2">
-              <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Corte A</span>
+            <div className="text-center border-b border-slate-200 pb-1 mb-2">
+              <span className="text-[11px] font-bold text-slate-800">SEÇÃO A-A</span>
+              <br />
+              <span className="text-[8px] text-slate-500">ESC 1:25</span>
             </div>
 
-            {/* Cross Section Drawing - Professional Style */}
+            {/* Cross Section Drawing - Exact Reference Style */}
             <div className="flex justify-center mb-3">
-              <svg width="120" height="100" viewBox="-15 -15 130 130" className="overflow-visible">
-                {/* Outer stirrup rectangle */}
-                <rect x={0} y={0} width={100} height={80} fill="none" stroke="#1e293b" strokeWidth="2.5" rx="3" />
-                {/* Inner stirrup rectangle */}
-                <rect x={5} y={5} width={90} height={70} fill="none" stroke="#1e293b" strokeWidth="1.5" rx="2" />
+              <svg width="100" height="120" viewBox="0 0 100 120">
+                {/* Background fill beige/cream color like reference */}
+                <rect x={15} y={10} width={60} height={80} fill="#f5f0e6" stroke="#1e293b" strokeWidth="1.5" />
 
-                {/* Top bars */}
+                {/* Inner blue rectangle (stirrup outline) */}
+                <rect x={20} y={15} width={50} height={70} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+
+                {/* Top bars (red circles) */}
                 {(() => {
                   const topBars = item.mainBars.filter(b => b.placement === 'top');
-                  const count = topBars.reduce((sum, b) => sum + b.count, 0) || 0;
-                  const maxBars = Math.min(count, 5);
+                  const count = topBars.reduce((sum, b) => sum + b.count, 0) || 2;
+                  const maxBars = Math.min(count, 4);
+                  const spacing = 40 / Math.max(maxBars - 1, 1);
                   return Array.from({ length: maxBars }).map((_, i) => (
-                    <circle key={`t${i}`} cx={15 + (i * (70 / Math.max(maxBars - 1, 1)))} cy={12} r={5} fill="#ef4444" stroke="#fff" strokeWidth="1" />
+                    <circle key={`t${i}`} cx={25 + (i * spacing)} cy={22} r={4} fill="#dc2626" />
                   ));
                 })()}
 
-                {/* Bottom bars */}
+                {/* Bottom bars (black circles) */}
                 {(() => {
                   const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
-                  const count = botBars.reduce((sum, b) => sum + b.count, 0) || 0;
+                  const count = botBars.reduce((sum, b) => sum + b.count, 0) || 3;
                   const maxBars = Math.min(count, 5);
+                  const spacing = 40 / Math.max(maxBars - 1, 1);
                   return Array.from({ length: maxBars }).map((_, i) => (
-                    <circle key={`b${i}`} cx={15 + (i * (70 / Math.max(maxBars - 1, 1)))} cy={68} r={5} fill="#0f172a" stroke="#fff" strokeWidth="1" />
+                    <circle key={`b${i}`} cx={25 + (i * spacing)} cy={78} r={4} fill="#0f172a" />
                   ));
                 })()}
 
-                {/* Dimension - Width */}
-                <g transform="translate(0, -10)">
-                  <line x1={0} y1={0} x2={100} y2={0} stroke="#64748b" strokeWidth="1" markerEnd="url(#arrow)" markerStart="url(#arrow)" />
-                  <text x={50} y={-5} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1e293b">{item.stirrupWidth || 20}</text>
+                {/* Dimension - Width (bottom) */}
+                <g transform="translate(0, 100)">
+                  <line x1={15} y1={0} x2={15} y2={8} stroke="#1e293b" strokeWidth="1" />
+                  <line x1={75} y1={0} x2={75} y2={8} stroke="#1e293b" strokeWidth="1" />
+                  <line x1={15} y1={5} x2={75} y2={5} stroke="#1e293b" strokeWidth="1" />
+                  <text x={45} y={18} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1e293b">{item.stirrupWidth || 20}</text>
                 </g>
 
-                {/* Dimension - Height */}
-                <g transform="translate(108, 0)">
-                  <line x1={0} y1={0} x2={0} y2={80} stroke="#64748b" strokeWidth="1" />
-                  <text x={8} y={45} textAnchor="start" fontSize="10" fontWeight="bold" fill="#1e293b">{item.stirrupHeight || 50}</text>
+                {/* Dimension - Height (left side) */}
+                <g transform="translate(5, 10)">
+                  <line x1={0} y1={0} x2={0} y2={80} stroke="#1e293b" strokeWidth="1" />
+                  <line x1={-4} y1={0} x2={4} y2={0} stroke="#1e293b" strokeWidth="1" />
+                  <line x1={-4} y1={80} x2={4} y2={80} stroke="#1e293b" strokeWidth="1" />
+                  <text x={-8} y={45} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1e293b" transform="rotate(-90, -8, 45)">{item.stirrupHeight || 50}</text>
                 </g>
 
                 {/* Bar labels on right */}
                 {item.mainBars.filter(b => b.placement === 'top').slice(0, 1).map((bar, idx) => (
-                  <text key={`tl${idx}`} x={105} y={16} textAnchor="start" fontSize="8" fill="#ef4444" fontWeight="bold">{bar.count}ø{bar.gauge}</text>
+                  <text key={`tl${idx}`} x={80} y={26} fontSize="8" fill="#dc2626" fontWeight="bold">{bar.count}ø{bar.gauge}</text>
                 ))}
                 {item.mainBars.filter(b => b.placement === 'bottom' || !b.placement).slice(0, 1).map((bar, idx) => (
-                  <text key={`bl${idx}`} x={105} y={72} textAnchor="start" fontSize="8" fill="#0f172a" fontWeight="bold">{bar.count}ø{bar.gauge}</text>
+                  <text key={`bl${idx}`} x={80} y={82} fontSize="8" fill="#0f172a" fontWeight="bold">{bar.count}ø{bar.gauge}</text>
                 ))}
               </svg>
             </div>
 
-            {/* Stirrup Diagram - Below */}
+            {/* Stirrup Diagram - Below with HOOKS GOING UP */}
             {item.hasStirrups && (
               <div className="border-t border-slate-200 pt-2">
                 <div className="flex justify-center">
-                  <svg width="90" height="60" viewBox="0 0 90 60">
-                    {/* Stirrup shape */}
-                    <rect x={10} y={10} width={70} height={40} fill="none" stroke="#f59e0b" strokeWidth="2" rx="2" />
-                    {/* Hooks */}
-                    <line x1={65} y1={12} x2={75} y2={4} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
-                    <line x1={25} y1={12} x2={15} y2={4} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
+                  <svg width="80" height="55" viewBox="0 0 80 55">
+                    {/* Stirrup rectangle */}
+                    <rect x={15} y={15} width={50} height={30} fill="none" stroke="#0f172a" strokeWidth="1.5" />
+
+                    {/* Hooks going UP at top corners */}
+                    <path d="M20,15 L20,8 L15,5" fill="none" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M60,15 L60,8 L65,5" fill="none" stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+
+                    {/* Width dimension */}
+                    <line x1={15} y1={50} x2={65} y2={50} stroke="#1e293b" strokeWidth="0.5" />
+                    <text x={40} y={54} textAnchor="middle" fontSize="8" fill="#1e293b">{item.stirrupWidth || 14}</text>
+
+                    {/* Height dimension on right */}
+                    <text x={72} y={32} fontSize="8" fill="#1e293b">{item.stirrupHeight || 24}</text>
                   </svg>
                 </div>
-                <p className="text-center text-[9px] font-bold text-amber-700 mt-1">
-                  {Math.floor(numStirrups)} {item.stirrupPosition || 'N4'} ø{item.stirrupGauge || '5.0'} C={Math.round(((item.stirrupWidth || 20) + (item.stirrupHeight || 50)) * 2 + 10)}
+                <p className="text-center text-[9px] font-bold text-slate-700 mt-0">
+                  {Math.floor(numStirrups)} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge || '5.0'} C={Math.round(((item.stirrupWidth || 20) + (item.stirrupHeight || 50)) * 2 + 10)}
                 </p>
               </div>
             )}
