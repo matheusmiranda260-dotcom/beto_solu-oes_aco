@@ -123,8 +123,8 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
     - position: Bar position label (e.g. "N1", "N4")
     - shape: "straight", "u_up", "u_down", "l_left_up", "l_right_up", etc.
     - segmentA: Length of main straight segment in cm
-    - hookStart: Length of start hook in cm (if visible)
-    - hookEnd: Length of end hook in cm (if visible)
+    - hookStart: Length of start hook/bend (dobra) in cm. LOOK for vertical numbers at the left end.
+    - hookEnd: Length of end hook/bend (dobra) in cm. LOOK for vertical numbers at the right end.
     
   - supports: Array of support points (pillars/columns represented by vertical lines) if visible:
     - label: Support label/name (e.g. P1, P2)
@@ -137,10 +137,11 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string): Promis
   - endGap: Gap without stirrups at end of beam (cm)
 
   IMPORTANT:
-  1. Extract ALL bars described in the drawing.
-  2. Map "bottom" bars (Principal hooks usually pointing UP) and "top" bars (Porta-estribo hooks usually pointing DOWN).
-  3. Be precise with measurements.
-  4. Return ONLY valid JSON array. No text, no markdown.
+  1. CRITICAL: Extract BENDS/HOOKS (Dobras). Look for vertical lines at bar ends and their dimensions (e.g., "15", "20", "55").
+  2. If a bar looks like a "U", it MUST have hookStart and hookEnd values.
+  3. Extract ALL bars described in the drawing.
+  4. Map "bottom" bars (Principal hooks usually pointing UP) and "top" bars (Porta-estribo hooks usually pointing DOWN).
+  5. Return ONLY valid JSON array. No text, no markdown.
   `;
 
     const body = {
