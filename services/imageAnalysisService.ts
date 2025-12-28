@@ -249,8 +249,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
             temperature: 0.1,
             topK: 1,
             topP: 1,
-            maxOutputTokens: 2048,
-            responseMimeType: "application/json"
+            maxOutputTokens: 3000, // Safe limit
         }
     };
 
