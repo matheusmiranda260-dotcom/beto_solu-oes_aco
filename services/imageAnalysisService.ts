@@ -25,14 +25,22 @@ const fileToBase64 = (file: File): Promise<string> => {
 const parseGeminiResponse = (responseText: string): SteelItem[] => {
     try {
         // Clean up markdown code blocks if present
+        // Clean up markdown code blocks if present
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        // Find the first [ and last ] to ensure valid array extraction
-        const firstBracket = cleanText.indexOf('[');
-        const lastBracket = cleanText.lastIndexOf(']');
+
+        // Try to find Array [...] OR Object {...}
+        let firstBracket = cleanText.indexOf('[');
+        let lastBracket = cleanText.lastIndexOf(']');
+
+        // If no array found, try finding a single object
+        if (firstBracket === -1 || lastBracket === -1) {
+            firstBracket = cleanText.indexOf('{');
+            lastBracket = cleanText.lastIndexOf('}');
+        }
 
         if (firstBracket === -1 || lastBracket === -1) {
-            console.error("AI Response not a valid array:", cleanText);
-            throw new Error("Formato inválido recebido da IA");
+            console.error("AI Response not a valid JSON structure:", cleanText);
+            throw new Error("Formato inválido recebido da IA (esperado JSON)");
         }
 
         const jsonString = cleanText.substring(firstBracket, lastBracket + 1);
