@@ -548,7 +548,9 @@ const BeamElevationView: React.FC<{
       if (isCShape && group.segmentE) d += ` L ${startX + pxLen - inwardH},${yBase + hookH}`;
     }
 
-    const label = `${group.count} ${group.position || (`N${group.originalIdx + 1}`)} ø${group.gauge} C=${C}`;
+    const isNew = group.originalIdx === 'new';
+    const displayPos = group.position || (isNew ? "Novo" : `N${group.originalIdx + 1}`);
+    const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
     return (
       <g
@@ -693,8 +695,8 @@ const BeamElevationView: React.FC<{
         </g>
 
         {/* Draft Bar (New Bar being added) */}
-        {newBar && selectedIdx === undefined && (
-          <g opacity="0.6">
+        {newBar && selectedIdx === undefined && (newBar.segmentA || 0) > 0 && (
+          <g opacity="0.6" strokeDasharray="5 2">
             {renderInteractableBar({ ...newBar, originalIdx: 'new' } as any, beamBotY + 160, false)}
           </g>
         )}
