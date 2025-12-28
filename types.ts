@@ -154,6 +154,13 @@ export interface SteelItem {
     stirrupHeight: number;
     stirrupPosition?: string; // Posição opcional do estribo (N...)
     isConfigured: boolean;
+
+    // Apoios (Pilares/Colunas) - Define zonas sem estribos
+    supports?: {
+        position: number;  // Distância em cm do início da viga
+        width: number;     // Largura do apoio em cm
+        label?: string;    // Ex: "P62", "P54"
+    }[];
 }
 
 export interface Quote {

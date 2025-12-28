@@ -656,12 +656,66 @@ const BeamElevationView: React.FC<{
         {/* Beam Body / Stirrups */}
         <g>
           <rect x={actualPadX} y={beamTopY} width={totalWidthPx} height={50} fill="url(#diagonalHatch)" stroke="#0f172a" strokeWidth="2" rx="4" />
-          {/* Stirrup Lines */}
-          {stirrupX.map((x, i) => (
-            <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
-          ))}
+          {/* Stirrup Lines - Skip support zones */}
+          {stirrupX.map((x, i) => {
+            // Check if this stirrup position falls within a support zone
+            const stirrupCm = i * spacing;
+            const supports = item.supports || [];
+            const inSupportZone = supports.some(s =>
+              stirrupCm >= s.position - s.width / 2 && stirrupCm <= s.position + s.width / 2
+            );
+            if (inSupportZone) return null;
+            return (
+              <line key={i} x1={x} y1={beamTopY} x2={x} y2={beamTopY + 50} stroke="#0f172a" strokeWidth="1" strokeOpacity="0.3" />
+            );
+          })}
           {/* Axis Line */}
           <line x1={actualPadX - 10} y1={beamTopY + 25} x2={actualPadX + totalWidthPx + 10} y2={beamTopY + 25} stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" opacity="0.5" />
+        </g>
+
+        {/* Support Markers (Pink/Magenta Lines) */}
+        <g>
+          {/* Start of Beam */}
+          <line x1={actualPadX} y1={beamTopY - 30} x2={actualPadX} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
+          {/* End of Beam */}
+          <line x1={actualPadX + totalWidthPx} y1={beamTopY - 30} x2={actualPadX + totalWidthPx} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
+
+          {/* Intermediate Supports */}
+          {(item.supports || []).map((support, idx) => {
+            const supportX = actualPadX + (support.position * scaleX);
+            const halfWidth = (support.width / 2) * scaleX;
+
+            return (
+              <g key={idx}>
+                {/* Vertical support line */}
+                <line x1={supportX} y1={beamTopY - 30} x2={supportX} y2={beamBotY + 30} stroke="#db2777" strokeWidth="2" />
+
+                {/* Gap symbol (no stirrups zone) - wave/break pattern */}
+                <path
+                  d={`M${supportX - halfWidth},${beamTopY + 25} 
+                      L${supportX - halfWidth + 5},${beamTopY + 20}
+                      L${supportX},${beamTopY + 30}
+                      L${supportX + halfWidth - 5},${beamTopY + 20}
+                      L${supportX + halfWidth},${beamTopY + 25}`}
+                  fill="none"
+                  stroke="#db2777"
+                  strokeWidth="1.5"
+                />
+
+                {/* Support Label */}
+                <text
+                  x={supportX}
+                  y={beamBotY + 50}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fill="#db2777"
+                >
+                  {support.label || `P${idx + 1}`}
+                </text>
+              </g>
+            );
+          })}
         </g>
 
         {/* Bottom (Positive) Reinforcement Stack */}
@@ -1691,6 +1745,81 @@ const ItemDetailEditor: React.FC<{
             </button>
           </div>
 
+        </div>
+
+        {/* APOIOS (Supports) Section */}
+        <div className="p-4 border-t border-slate-200 bg-gradient-to-b from-pink-50 to-white">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="font-black uppercase text-xs tracking-widest text-pink-600">Apoios (Pilares)</h4>
+            <button
+              onClick={() => {
+                const newSupport = { position: localItem.length * 50, width: 20, label: `P${(localItem.supports?.length || 0) + 1}` };
+                setLocalItem({ ...localItem, supports: [...(localItem.supports || []), newSupport] });
+              }}
+              className="px-3 py-1 rounded-lg bg-pink-500 text-white text-[10px] font-bold hover:bg-pink-600 transition-all"
+            >
+              + Apoio
+            </button>
+          </div>
+
+          {(!localItem.supports || localItem.supports.length === 0) ? (
+            <p className="text-[10px] text-slate-400 text-center py-2">Nenhum apoio intermediário</p>
+          ) : (
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {localItem.supports.map((support, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-pink-200">
+                  <input
+                    type="text"
+                    value={support.label || ''}
+                    onChange={e => {
+                      const supports = [...(localItem.supports || [])];
+                      supports[idx] = { ...supports[idx], label: e.target.value };
+                      setLocalItem({ ...localItem, supports });
+                    }}
+                    placeholder="P1"
+                    className="w-16 p-1 text-xs font-bold text-center border border-pink-300 rounded"
+                  />
+                  <div className="flex-1 flex gap-1">
+                    <div className="flex-1">
+                      <label className="text-[8px] text-pink-600 font-bold">Posição (cm)</label>
+                      <input
+                        type="number"
+                        value={support.position}
+                        onChange={e => {
+                          const supports = [...(localItem.supports || [])];
+                          supports[idx] = { ...supports[idx], position: Number(e.target.value) };
+                          setLocalItem({ ...localItem, supports });
+                        }}
+                        className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
+                      />
+                    </div>
+                    <div className="w-16">
+                      <label className="text-[8px] text-pink-600 font-bold">Larg (cm)</label>
+                      <input
+                        type="number"
+                        value={support.width}
+                        onChange={e => {
+                          const supports = [...(localItem.supports || [])];
+                          supports[idx] = { ...supports[idx], width: Number(e.target.value) };
+                          setLocalItem({ ...localItem, supports });
+                        }}
+                        className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const supports = (localItem.supports || []).filter((_, i) => i !== idx);
+                      setLocalItem({ ...localItem, supports });
+                    }}
+                    className="p-1 text-red-500 hover:bg-red-50 rounded"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
