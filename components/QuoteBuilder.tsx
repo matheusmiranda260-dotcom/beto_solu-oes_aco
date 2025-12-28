@@ -568,14 +568,14 @@ const BeamElevationView: React.FC<{
           d={d}
           fill="none"
           stroke={isBeingDragged || isSelected ? "#3b82f6" : (isTop ? "#ef4444" : "#0f172a")}
-          strokeWidth={isBeingDragged || isSelected ? 6 : 4}
+          strokeWidth={isBeingDragged || isSelected ? 5 : 3}
           className="transition-all shadow-sm"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
         {/* Info Box / Label */}
-        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 32 : -12)} width="140" height="40" style={{ overflow: 'visible' }}>
+        <foreignObject x={startX + pxLen / 2 - 70} y={yBase - (isTop ? 24 : -6)} width="140" height="40" style={{ overflow: 'visible' }}>
           <div className="flex flex-col items-center">
             <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-tight shadow-md border-2 transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-700 scale-110 shadow-indigo-200' : (readOnly ? 'bg-white border-slate-200 text-slate-800' : 'bg-white border-indigo-200 text-indigo-800 group-hover:bg-amber-100 group-hover:text-amber-800 group-hover:border-amber-300 group-hover:scale-110 transition-all')}`}>
               {label}
