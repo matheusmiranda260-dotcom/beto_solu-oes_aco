@@ -686,7 +686,7 @@ const BeamElevationView: React.FC<{
         })}
 
         {/* Ruler (Regua de Medição) */}
-        <g transform={`translate(${actualPadX}, ${beamBotY + 120})`}>
+        <g transform={`translate(${actualPadX}, ${viewH - 80})`}>
           <line x1={0} y1={0} x2={totalWidthPx} y2={0} stroke="#cbd5e1" strokeWidth="2" />
           {Array.from({ length: Math.floor(effectiveLengthCm / 100) + 1 }).map((_, i) => {
             const x = i * 100 * scaleX;
