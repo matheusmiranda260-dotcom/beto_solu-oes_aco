@@ -380,21 +380,23 @@ const BeamElevationView: React.FC<{
 
   const beamTopY = 140;
   const beamBotY = 190;
-  const beamWidthPx = viewW - 2 * padX;
 
-  // Calculate effective length from bars (uses max segmentA)
-  const effectiveLengthCm = item.mainBars.length > 0
-    ? Math.max(...item.mainBars.map(bar => bar.segmentA || 0), item.length * 100)
-    : item.length * 100;
+  // Calculate effective length from all bars extents (including the one being added)
+  const getExtents = () => {
+    const bars = [...item.mainBars];
+    if (newBar) bars.push(newBar);
+    if (bars.length === 0) return Math.max(1, item.length * 100);
+    return Math.max(item.length * 100, ...bars.map(b => (b.offset || 0) + (b.segmentA || 0)));
+  };
 
-  // Limit scale to prevent very long bars from being too large
-  const rawScale = beamWidthPx / effectiveLengthCm;
-  const scaleX = Math.min(rawScale, 1.5);
+  const effectiveLengthCm = getExtents();
 
-  // Calculate real width in pixels based on our scale
+  // Width for scale calculation (available space)
+  const availableWidthPx = viewW - 2 * padX;
+  const scaleX = Math.min(availableWidthPx / (effectiveLengthCm || 1), 1.5);
+
+  // Pixels used by the actual span
   const totalWidthPx = effectiveLengthCm * scaleX;
-
-  // Center it visually in the 1000px viewport
   const actualPadX = (viewW - totalWidthPx) / 2;
 
   const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
@@ -446,11 +448,11 @@ const BeamElevationView: React.FC<{
       const bar = draggingBarIdx === 'new' ? newBar : item.mainBars[draggingBarIdx];
       if (!bar) return;
 
-      const barLen = bar.segmentA || 0;
-      const totalLen = Math.round(item.length * 100);
-      const maxOffset = Math.max(0, totalLen - barLen);
+      // REMOVED: Rigid constraints based on initial length. 
+      // This allows the user to "expand" the beam by dragging bars further.
+      const maxPossibleOffset = 2000; // 20 meters safety limit
 
-      nextOffset = Math.max(0, Math.min(nextOffset, maxOffset));
+      nextOffset = Math.max(0, Math.min(nextOffset, maxPossibleOffset));
 
       if (draggingBarIdx === 'new') {
         onNewBarUpdate?.(nextOffset);
@@ -670,10 +672,30 @@ const BeamElevationView: React.FC<{
           return renderInteractableBar(b, y, false);
         })}
 
+        {/* Ruler (Regua de Medição) */}
+        <g transform={`translate(${actualPadX}, ${beamBotY + 90})`}>
+          <line x1={0} y1={0} x2={totalWidthPx} y2={0} stroke="#94a3b8" strokeWidth="1" strokeDasharray="4 4" />
+          {Array.from({ length: Math.floor(effectiveLengthCm / 100) + 1 }).map((_, i) => {
+            const x = i * 100 * scaleX;
+            return (
+              <g key={i} transform={`translate(${x}, 0)`}>
+                <line x1={0} y1={0} x2={0} y2={10} stroke="#94a3b8" strokeWidth="2" />
+                <text y={25} textAnchor="middle" fontSize="10" className="fill-slate-500 font-black">{i}m</text>
+              </g>
+            );
+          })}
+          {/* Detailed ticks every 20cm */}
+          {Array.from({ length: Math.floor(effectiveLengthCm / 20) + 1 }).map((_, i) => {
+            const x = i * 20 * scaleX;
+            if (i % 5 === 0) return null; // Skip if it's a meter mark
+            return <line key={`t-${i}`} x1={x} y1={0} x2={x} y2={5} stroke="#cbd5e1" strokeWidth="1" />;
+          })}
+        </g>
+
         {/* Draft Bar (New Bar being added) */}
         {newBar && selectedIdx === undefined && (
-          <g opacity="0.6" strokeDasharray="5 2">
-            {renderInteractableBar({ ...newBar, originalIdx: 'new' } as any, 500, false)}
+          <g opacity="0.6">
+            {renderInteractableBar({ ...newBar, originalIdx: 'new' } as any, beamBotY + 160, false)}
           </g>
         )}
 
@@ -1147,6 +1169,23 @@ const ItemDetailEditor: React.FC<{
     hookEnd: defaultHook,
     position: ''
   });
+
+  // Auto-expand item length if bars exceed it
+  useEffect(() => {
+    const bars = [...localItem.mainBars];
+    if (newBar) bars.push(newBar);
+
+    const maxExtent = bars.reduce((max, bar) => {
+      const barLen = bar.segmentA || 0;
+      const offset = bar.offset || 0;
+      return Math.max(max, offset + barLen);
+    }, 0);
+
+    const extentM = maxExtent / 100;
+    if (extentM > localItem.length) {
+      setLocalItem(prev => ({ ...prev, length: extentM }));
+    }
+  }, [localItem.mainBars, newBar]);
 
   const [editingIndex, setEditingIndex] = useState<number | undefined>(barIdx);
   const [visualShape, setVisualShape] = useState<string>('straight');
