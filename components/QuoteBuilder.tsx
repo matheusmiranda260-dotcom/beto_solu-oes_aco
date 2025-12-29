@@ -2805,21 +2805,22 @@ const ItemDetailEditor: React.FC<{
       // Editing existing bar
       bars[editingIndex] = newBar;
     } else {
-      // Adding new bar(s) - multi-position mode
-      if (selectedPositions.length === barsToAdd) {
-        // Add one bar per selected position
-        selectedPositions.forEach((position) => {
+      // Adding new bar(s) - multi-position mode with exact points
+      if (selectedPositions.length === barsToAdd && selectedPositions.length > 0) {
+        // Add one bar per selected point
+        selectedPositions.forEach((pointIndex) => {
           bars.push({
             ...newBar,
             count: newBar.count, // Use the count from the form
-            placement: position
+            pointIndex: pointIndex, // Store exact point index
+            placement: undefined // Deprecated, using pointIndex now
           });
         });
         // Reset multi-position state
         setSelectedPositions([]);
         setBarsToAdd(1);
       } else {
-        // Fallback to old behavior if positions not all selected
+        // Fallback to old behavior if points not all selected (single bar with old placement)
         bars.push(newBar);
       }
     }
@@ -3042,19 +3043,14 @@ const ItemDetailEditor: React.FC<{
                   bars={localItem.mainBars}
                   stirrupPos={localItem.stirrupPosition}
                   stirrupGauge={localItem.stirrupGauge}
-                  onZoneClick={(zone) => {
-                    // Multi-position mode
+                  model={localItem.stirrupModel || 'rect'}
+                  showAvailablePoints={editingIndex === undefined}
+                  selectedPointIndices={selectedPositions}
+                  onPointClick={(pointIndex) => {
                     if (selectedPositions.length < barsToAdd) {
-                      setSelectedPositions([...selectedPositions, zone]);
-                      if (selectedPositions.length === 0) {
-                        // First selection also sets the newBar placement for preview
-                        setNewBar(prev => ({ ...prev, placement: zone }));
-                      }
+                      setSelectedPositions([...selectedPositions, pointIndex]);
                     }
                   }}
-                  selectedZone={newBar.placement}
-                  model={localItem.stirrupModel || 'rect'}
-                  multiPositions={selectedPositions}
                 />
               </div>
             </div>
