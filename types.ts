@@ -158,6 +158,22 @@ export interface SteelItem {
     // Gaps nas extremidades da viga (onde não há estribos)
     startGap?: number;  // Vão sem estribos no início (cm)
     endGap?: number;    // Vão sem estribos no final (cm)
+
+    // Configuration
+    mainBars: MainBarGroup[];
+    hasStirrups: boolean;
+    stirrupGauge: string;
+    stirrupSpacing: number;
+    stirrupWidth: number;
+    stirrupHeight: number;
+    stirrupPosition?: string;
+
+    // Dimensions for specific types (Sapata, Pilar, Broca)
+    width?: number; // Metros
+    height?: number; // Metros or cm depending on usage? In QuoteBuilder it seems to be cm for Sapata height, but width is likely meters?
+    // In confirmNewItem: width is widthM (meters), height is safeHeightCm (cm). 
+    // Wait, width in Sapata corresponds to widthCm (input) / 100 -> meters.
+    // height corresponds to heightCm (input) -> cm (QuoteBuilder 1979).
 }
 
 export interface Quote {

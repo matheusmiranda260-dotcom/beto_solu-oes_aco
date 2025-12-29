@@ -494,7 +494,7 @@ const BeamElevationView: React.FC<{
   }
 
   const renderInteractableBar = (group: MainBarGroup & { originalIdx: number }, yBase: number, isTop: boolean) => {
-    const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
+    const baseLenCm = (typeof group.segmentA === 'number') ? group.segmentA : Math.round(group.usage.includes('Largura') ? (item.width || 0) * 100 : item.length * 100);
 
     // Calculate start X based on offset - using scope scaleX
     const offsetCm = group.offset || 0;
@@ -1258,7 +1258,7 @@ const ColumnElevationView: React.FC<{
   }, [draggingBarIdx, dragStartY, initialOffset, scaleY]); // Removed onBarUpdate to prevent infinite re-renders
 
   const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
-    const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
+    const baseLenCm = (typeof group.segmentA === 'number') ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
     const offsetCm = group.offset || 0;
 
     // Y-Coordinate Logic: 
@@ -1390,8 +1390,8 @@ const ColumnElevationView: React.FC<{
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
-            <circle cx={xPos} cy={(barStartPx + barEndPx) / 2} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
-            <path d={`M${xPos - 3},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 3},${(barStartPx + barEndPx) / 2 + 3} M${xPos + 3},${(barStartPx + barEndPx) / 2 - 3} L${xPos - 3},${(barStartPx + barEndPx) / 2 + 3}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+            <circle cx={xPos} cy={barEndPx + 30} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+            <path d={`M${xPos - 3},${barEndPx + 27} L${xPos + 3},${barEndPx + 33} M${xPos + 3},${barEndPx + 27} L${xPos - 3},${barEndPx + 33}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
           </g>
         )}
       </g>
@@ -1654,12 +1654,19 @@ const ColumnElevationView: React.FC<{
             const stirrupOffset = 1.5 * scale; // offset do estribo
 
             // Count bars by placement
-            const topBars = item.mainBars.filter(b => b.placement === 'top');
-            const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
-            const sideBars = item.mainBars.filter(b => b.placement === 'distributed');
+            // Count bars by placement - Use all bars including the one being added
+            const allBars = [...item.mainBars];
+            if (newBar) allBars.push(newBar);
+
+            const topBars = allBars.filter(b => b.placement === 'top');
+            const botBars = allBars.filter(b => b.placement === 'bottom' || !b.placement);
+            const sideBars = allBars.filter(b => b.placement === 'distributed');
+            const centerBars = allBars.filter(b => b.placement === 'center'); // Add center support
+
             const topCount = topBars.reduce((sum, b) => sum + b.count, 0);
             const botCount = botBars.reduce((sum, b) => sum + b.count, 0);
             const sideCount = sideBars.reduce((sum, b) => sum + b.count, 0);
+            const centerCount = centerBars.reduce((sum, b) => sum + b.count, 0);
 
             return (
               <g transform="translate(0, 0)">
@@ -2401,7 +2408,7 @@ const ItemDetailEditor: React.FC<{
         hookEnd: isSapata ? defaultHook : 0,
         position: '',
         shape: 'straight',
-        segmentA: Math.round(localItem.length * 100), // Force CM for segmentA
+        segmentA: 0, // Inicia sem valor para o usuário digitar
         segmentB: isSapata ? defaultHook : 0,
         segmentC: isSapata ? defaultHook : 0,
         segmentD: 0,
