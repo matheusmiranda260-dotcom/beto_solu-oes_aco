@@ -1330,7 +1330,20 @@ const ColumnElevationView: React.FC<{
 
 
 
-        {/* Label (Vertical, next to bar) */}
+        {/* Main Body Dimension Text (Right side) */}
+        <text
+          x={xPos + 10}
+          y={(barStartPx + barEndPx) / 2}
+          textAnchor="middle"
+          fontSize="10"
+          fontWeight="bold"
+          fill="#0f172a"
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+        >
+          {Math.round(baseLenCm)}
+        </text>
+
+        {/* Label (Vertical, LEFT of bar) */}
         <text
           x={labelX}
           y={(barStartPx + barEndPx) / 2}
