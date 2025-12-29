@@ -539,7 +539,7 @@ const BeamElevationView: React.FC<{
       if (isCShape && group.segmentE) d += ` L ${startX + pxLen - inwardH},${yBase + hookH}`;
     }
 
-    const isNew = group.originalIdx === 'new';
+    const isNew = (group.originalIdx as any) === 'new';
     const displayPos = group.position || (isNew ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
@@ -1110,6 +1110,306 @@ const BeamElevationView: React.FC<{
   );
 };
 
+// Nova Visualização Vertical para Pilares e Brocas
+const ColumnElevationView: React.FC<{
+  item: SteelItem;
+  onEditBar: (idx: number) => void;
+  onRemoveBar: (idx: number) => void;
+  onBarUpdate?: (idx: number, newOffset: number) => void;
+  newBar?: MainBarGroup; // Current draft bar
+  onNewBarUpdate?: (newOffset: number) => void;
+  selectedIdx?: number;
+  readOnly?: boolean;
+}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const viewW = 600;
+  const viewH = 1000;
+  const padY = 80;
+
+  const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
+  const [dragStartY, setDragStartY] = useState<number>(0);
+  const [initialOffset, setInitialOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Layout Constants
+  const outputScale = 1; // Basic scale multiplier
+
+  // Calculate effective length (vertical height)
+  const getExtents = () => {
+    const bars = [...item.mainBars];
+    if (newBar) bars.push(newBar);
+    if (bars.length === 0) return Math.max(1, item.length * 100);
+    return Math.max(item.length * 100, ...bars.map(b => (b.offset || 0) + (b.segmentA || 0)));
+  };
+
+  const effectiveLengthCm = getExtents();
+
+  // Vertical Scale: map effective length to available height
+  const availableHeightPx = viewH - 2 * padY;
+  const scaleY = Math.min(availableHeightPx / (effectiveLengthCm || 1), 2.5);
+
+  const totalHeightPx = effectiveLengthCm * scaleY;
+  const startY = (viewH - totalHeightPx) / 2;
+  const endY = startY + totalHeightPx;
+
+  // Horizontal Positioning (Center column in view)
+  const centerX = viewW / 2;
+  const columnWidthCm = (item.width || 20); // Default 20cm if undefined
+  const displayWidthPx = Math.max(columnWidthCm * 4, 100); // Visual width (not exact scale x)
+  const leftX = centerX - displayWidthPx / 2;
+  const rightX = centerX + displayWidthPx / 2;
+
+  const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
+    if (readOnly) return;
+    if (!svgRef.current) return;
+    svgRef.current.focus();
+
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
+    e.stopPropagation();
+    e.preventDefault();
+    setDraggingBarIdx(idx);
+    setDragStartY(svgPoint.y); // Track Y for vertical movement
+    setInitialOffset(currentOffset);
+    setIsDragging(false);
+    if (typeof idx === 'number') onEditBar(idx);
+  };
+
+  useEffect(() => {
+    if (draggingBarIdx === null) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (draggingBarIdx === null || !svgRef.current) return;
+
+      const pt = svgRef.current.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
+      const deltaSVG = svgPoint.y - dragStartY; // Delta Y
+      if (Math.abs(deltaSVG) > 2) setIsDragging(true);
+
+      // Invert delta because Y grows downwards, but offset usually means "from bottom"? 
+      // Actually standard usually entails offset from start (bottom or top). 
+      // Let's assume offset 0 is at the BOTTOM (standard for columns/construction).
+      // So moving mouse UP (negative delta) should INCREASE offset (move bar up).
+      const deltaCm = -(deltaSVG / scaleY);
+
+      let nextOffset = Math.round(initialOffset + deltaCm);
+      const maxPossibleOffset = 2000;
+      nextOffset = Math.max(0, Math.min(nextOffset, maxPossibleOffset));
+
+      if (draggingBarIdx === 'new') {
+        onNewBarUpdate?.(nextOffset);
+      } else {
+        onBarUpdate?.(draggingBarIdx, nextOffset);
+      }
+    };
+
+    const handleWindowMouseUp = () => {
+      setDraggingBarIdx(null);
+      setTimeout(() => setIsDragging(false), 50);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [draggingBarIdx, dragStartY, initialOffset, scaleY, onBarUpdate]);
+
+  const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
+    const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
+    const offsetCm = group.offset || 0;
+
+    // Y-Coordinate Logic: 
+    // We assume the column base is at `endY` (bottom of visual column).
+    // Offset 0 means starting at `endY` and going up.
+    const barStartPx = endY - (offsetCm * scaleY);
+    const barLenPx = baseLenCm * scaleY;
+    const barEndPx = barStartPx - barLenPx; // Top of the bar
+
+    // Total Cut Length
+    const extraCm = (group.segmentB || (group.hookStartType !== 'none' ? group.hookStart : 0)) +
+      (group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0)) +
+      (group.segmentD || 0) + (group.segmentE || 0);
+    const C = Math.round(baseLenCm + extraCm);
+
+    const checkStart = group.segmentB || (group.hookStartType !== 'none' ? group.hookStart : 0); // Hook at bottom
+    const checkEnd = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);     // Hook at top
+
+    // Hook directions (just visual approximation)
+    const hookSize = 15;
+    const isSelected = selectedIdx === group.originalIdx;
+    const isBeingDragged = draggingBarIdx === group.originalIdx;
+
+    let d = "";
+    // Bottom Hook (Start) - Drawn at barStartPx
+    if (group.hookStartType !== 'none') {
+      d += `M ${xPos + (group.hookStartType === 'up' ? hookSize : -hookSize)},${barStartPx - 10} L ${xPos},${barStartPx} `;
+      // Note: 'up'/'down' names might be confusing in vertical. Let's assume 'up' = inwards/right, 'down' = outwards/left for vertical bars side-view.
+      // Simplified: 'up' -> Right, 'down' -> Left
+    } else {
+      d += `M ${xPos},${barStartPx} `;
+    }
+
+    // Main Vertical Span
+    d += `L ${xPos},${barEndPx} `;
+
+    // Top Hook (End) - Drawn at barEndPx
+    if (group.hookEndType !== 'none') {
+      d += `L ${xPos + (group.hookEndType === 'up' ? hookSize : -hookSize)},${barEndPx + 10}`;
+    }
+
+    const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
+    const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
+
+    return (
+      <g
+        key={group.originalIdx}
+        className={readOnly ? "" : `cursor-grab ${isDragging ? 'cursor-grabbing' : 'group hover:opacity-80'}`}
+        onMouseDown={(e) => handleMouseDown(e, group.originalIdx, offsetCm)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!readOnly && !isDragging && draggingBarIdx === null) onEditBar(group.originalIdx);
+        }}
+      >
+        {/* Hit Area */}
+        <rect x={xPos - 15} y={barEndPx} width={30} height={barLenPx} fill="transparent" />
+
+        {/* Highlight */}
+        {isSelected && (
+          <line x1={xPos} y1={barEndPx} x2={xPos} y2={barStartPx} stroke="#6366f1" strokeWidth="8" strokeOpacity="0.3" strokeLinecap="round" />
+        )}
+
+        {/* Bar Line */}
+        <path d={d} fill="none" stroke={isSelected ? "#3b82f6" : "#0f172a"} strokeWidth={isSelected ? 4 : 3} strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Label (Placed mid-bar, rotated) */}
+        <text
+          x={xPos - 8}
+          y={(barStartPx + barEndPx) / 2}
+          textAnchor="middle"
+          className={`text-[10px] font-black uppercase tracking-tight select-none ${isSelected ? 'fill-indigo-600' : 'fill-slate-600'}`}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center', transform: 'rotate(-90deg) translateY(-10px)' }}
+        >
+          {label}
+        </text>
+
+        {!readOnly && (
+          <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
+            <circle cx={xPos + 15} cy={(barStartPx + barEndPx) / 2} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+            <path d={`M${xPos + 12},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 18},${(barStartPx + barEndPx) / 2 + 3} M${xPos + 18},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 12},${(barStartPx + barEndPx) / 2 + 3}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+          </g>
+        )}
+      </g>
+    );
+  };
+
+  // Stirrups Logic
+  const spacing = item.stirrupSpacing || 20;
+  const numStirrups = Math.floor(effectiveLengthCm / spacing);
+  const stirrupLines: React.ReactNode[] = [];
+
+  for (let i = 0; i <= numStirrups; i++) {
+    const yPlac = endY - (i * spacing * scaleY);
+    stirrupLines.push(
+      <line key={`st-${i}`} x1={leftX} y1={yPlac} x2={rightX} y2={yPlac} stroke="#94a3b8" strokeWidth="1" />
+    );
+  }
+
+  // Group bars by visual placement to avoid overlap
+  // For columns, we usually see 2 layers in 2D: Front/Back or Left/Right. 
+  // Let's distribute them across the width of the column representation.
+  const bars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx }));
+  const numBars = bars.length + (newBar ? 1 : 0);
+
+  return (
+    <div className="bg-slate-50 p-6 rounded-[3rem] border-2 border-slate-200 shadow-xl flex flex-col items-center w-full mx-auto" style={{ width: '100%' }}>
+      <div className="flex justify-between w-full mb-4 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-6 bg-indigo-500 rounded-full" />
+          <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Vista Vertical</span>
+        </div>
+      </div>
+
+      <svg
+        ref={svgRef}
+        width="100%"
+        height={viewH}
+        viewBox={`0 0 ${viewW} ${viewH}`}
+        className={`bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        tabIndex={0}
+      >
+        <defs>
+          <pattern id="concreteHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: '#e2e8f0', strokeWidth: 1 }} />
+          </pattern>
+          <marker id="arrowHead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+        </defs>
+
+        {/* Grid Background */}
+        <rect width="100%" height="100%" fill="#f8fafc" rx="32" />
+
+        {/* Title */}
+        <text x="30" y="50" fontSize="24" fontWeight="900" fill="#0f172a">{item.observation || item.type}</text>
+        <text x="30" y="70" fontSize="12" fill="#64748b" fontWeight="bold">ESC 1:50</text>
+
+        {/* Column Body */}
+        <rect x={leftX} y={startY} width={displayWidthPx} height={totalHeightPx} fill="url(#concreteHatch)" stroke="#334155" strokeWidth="2" />
+
+        {/* Stirrups (Behind bars) */}
+        {stirrupLines}
+
+        {/* Main Bars */}
+        {bars.map((bar, i) => {
+          // Distribute bars across the width
+          // For simplified visual, distribute evenly
+          const xStep = displayWidthPx / (bars.length + 1);
+          const xPos = leftX + ((i + 1) * xStep);
+          return renderVerticalBar(bar, xPos);
+        })}
+
+        {/* New Draft Bar */}
+        {newBar && selectedIdx === undefined && (
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, centerX)
+        )}
+
+        {/* Dimensions (Height) */}
+        <g transform={`translate(${rightX + 40}, 0)`}>
+          <line x1={0} y1={startY} x2={0} y2={endY} stroke="#64748b" strokeWidth="1" markerEnd="url(#arrowHead)" markerStart="url(#arrowHeadReverse)" />
+          <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#64748b" strokeWidth="1" />
+          <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#64748b" strokeWidth="1" />
+          <text x={15} y={(startY + endY) / 2} textAnchor="start" fontSize="14" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            {Math.round(item.length * 100)} cm
+          </text>
+        </g>
+
+        {/* Levels/Notes (Mock) */}
+        <g transform={`translate(${leftX - 60}, ${startY})`}>
+          <text textAnchor="end" fontSize="11" fontWeight="bold" fill="#0f172a">Topo</text>
+          <line x1={5} y1={0} x2={55} y2={0} stroke="#0f172a" strokeWidth="1" />
+        </g>
+        <g transform={`translate(${leftX - 60}, ${endY})`}>
+          <text textAnchor="end" fontSize="11" fontWeight="bold" fill="#0f172a">Base</text>
+          <line x1={5} y1={0} x2={55} y2={0} stroke="#0f172a" strokeWidth="1" />
+        </g>
+
+      </svg>
+      <div className="absolute top-4 right-4 bg-slate-100 rounded-full px-3 py-1 text-[10px] font-bold text-slate-500">
+        Arraste verticalmente para ajustar offset
+      </div>
+    </div>
+  );
+};
+
 const ItemReinforcementPreview: React.FC<{
   item: SteelItem;
   onEditBar: (idx: number) => void;
@@ -1135,15 +1435,24 @@ const ItemReinforcementPreview: React.FC<{
         <div className="flex flex-col gap-4 items-stretch">
           {/* Technical Project View - Elevation + Section */}
           {!isSapata && (
-            <div className="flex flex-wrap gap-6 items-center justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+            <div className={`flex flex-wrap gap-6 items-start justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100 ${item.type === ElementType.PILAR || item.type === ElementType.BROCA ? 'flex-row' : 'flex-col md:flex-row'}`}>
               {/* Elevation */}
               {/* Elevation - Now Interactive */}
-              <BeamElevationView
-                item={item}
-                onEditBar={onEditBar}
-                onRemoveBar={onRemoveBar}
-                onBarUpdate={onBarUpdate}
-              />
+              {item.type !== ElementType.PILAR && item.type !== ElementType.BROCA ? (
+                <BeamElevationView
+                  item={item}
+                  onEditBar={onEditBar}
+                  onRemoveBar={onRemoveBar}
+                  onBarUpdate={onBarUpdate}
+                />
+              ) : (
+                <ColumnElevationView
+                  item={item}
+                  onEditBar={onEditBar}
+                  onRemoveBar={onRemoveBar}
+                  onBarUpdate={onBarUpdate}
+                />
+              )}
 
               {/* Section */}
               <div className="flex flex-col items-center gap-1">
@@ -1509,7 +1818,14 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-8 text-center">Qual o elemento?</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   {Object.values(ElementType).map(t => (
-                    <button key={t} onClick={() => setNewItemBase({ type: t, qty: 1, lengthCm: 100, widthCm: 80, heightCm: 20, obs: '' })} className="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-amber-500 p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all group shadow-sm hover:shadow-xl">
+                    <button key={t} onClick={() => {
+                      // Auto-generate ID based on type
+                      const prefix = t === ElementType.PILAR ? 'P' : t === ElementType.BROCA ? 'B' : t === ElementType.SAPATA ? 'S' : 'V';
+                      const count = items.filter(i => i.type === t).length + 1;
+                      const autoObs = `${prefix}${count}`;
+
+                      setNewItemBase({ type: t, qty: 1, lengthCm: 100, widthCm: 20, heightCm: 20, obs: autoObs })
+                    }} className="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-amber-500 p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all group shadow-sm hover:shadow-xl">
                       <div className="w-14 h-14 bg-slate-900 text-amber-500 rounded-2xl flex items-center justify-center font-black text-xl group-hover:scale-110 transition-transform">{t.charAt(0)}</div>
                       <span className="font-black text-slate-700 text-xs uppercase tracking-widest text-center">{t}</span>
                     </button>
@@ -1846,7 +2162,27 @@ const ItemDetailEditor: React.FC<{
         {/* MAIN DRAWING AREA */}
         <div className="flex-grow overflow-auto custom-scrollbar p-8 relative">
           <div className="bg-white rounded-3xl shadow-2xl shadow-black/20 p-8 min-h-full border border-slate-200">
-            <BeamElevationView item={localItem} newBar={editingIndex === undefined ? newBar : undefined} onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))} onEditBar={(idx) => setEditingIndex(idx)} onRemoveBar={handleRemoveBar} selectedIdx={editingIndex} onBarUpdate={(idx, offset) => { const bars = [...localItem.mainBars]; if (bars[idx]) { bars[idx] = { ...bars[idx], offset }; setLocalItem({ ...localItem, mainBars: bars, isConfigured: true }); if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); } } }} readOnly={false} />
+            {localItem.type === ElementType.PILAR || localItem.type === ElementType.BROCA ?
+              <ColumnElevationView
+                item={localItem}
+                newBar={editingIndex === undefined ? newBar : undefined}
+                onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
+                onEditBar={(idx) => setEditingIndex(idx)}
+                onRemoveBar={handleRemoveBar}
+                selectedIdx={editingIndex}
+                onBarUpdate={(idx, offset) => {
+                  const bars = [...localItem.mainBars];
+                  if (bars[idx]) {
+                    bars[idx] = { ...bars[idx], offset };
+                    setLocalItem({ ...localItem, mainBars: bars, isConfigured: true });
+                    if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); }
+                  }
+                }}
+                readOnly={false}
+              />
+              :
+              <BeamElevationView item={localItem} newBar={editingIndex === undefined ? newBar : undefined} onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))} onEditBar={(idx) => setEditingIndex(idx)} onRemoveBar={handleRemoveBar} selectedIdx={editingIndex} onBarUpdate={(idx, offset) => { const bars = [...localItem.mainBars]; if (bars[idx]) { bars[idx] = { ...bars[idx], offset }; setLocalItem({ ...localItem, mainBars: bars, isConfigured: true }); if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); } } }} readOnly={false} />
+            }
           </div>
         </div>
 
