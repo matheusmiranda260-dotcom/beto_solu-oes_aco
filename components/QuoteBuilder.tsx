@@ -557,18 +557,30 @@ const CompositeCrossSection: React.FC<{
 
           {/* Available Grid Points (when adding bars) */}
           {showAvailablePoints && availablePoints.map(point => {
+            // Check if point is already occupied by ANY existing bar group
+            const isOccupied = bars.some(b =>
+              (b.pointIndices && b.pointIndices.includes(point.id))
+            );
+
             const isSelected = selectedPointIndices.includes(point.id);
+
+            // Interaction logic
+            const handleClick = () => {
+              if (isOccupied) return; // Block click on occupied
+              onPointClick?.(point.id);
+            };
+
             return (
-              <g key={point.id} onClick={() => onPointClick?.(point.id)} className="cursor-pointer">
+              <g key={point.id} onClick={handleClick} className={isOccupied ? "cursor-not-allowed" : "cursor-pointer"}>
                 <circle
                   cx={point.x}
                   cy={point.y}
-                  r={isSelected ? 7 : 5}
-                  fill={isSelected ? "#4f46e5" : "#cbd5e1"}
-                  fillOpacity={isSelected ? 1 : 0.4}
-                  stroke={isSelected ? "#312e81" : "#94a3b8"}
+                  r={isSelected ? 7 : (isOccupied ? 4 : 5)}
+                  fill={isSelected ? "#4f46e5" : (isOccupied ? "#ef4444" : "#cbd5e1")} // Red if occupied, Blue if selected, Gray if free
+                  fillOpacity={isSelected ? 1 : (isOccupied ? 0.5 : 0.4)}
+                  stroke={isSelected ? "#312e81" : (isOccupied ? "#991b1b" : "#94a3b8")}
                   strokeWidth={isSelected ? 2.5 : 1.5}
-                  className="transition-all hover:fill-indigo-400 hover:r-6"
+                  className={`transition-all ${!isOccupied && !isSelected ? 'hover:fill-indigo-400 hover:r-6' : ''}`}
                 />
                 {isSelected && (
                   <text
@@ -582,18 +594,26 @@ const CompositeCrossSection: React.FC<{
                     {selectedPointIndices.indexOf(point.id) + 1}
                   </text>
                 )}
+                {/* Optional: Cross for occupied */}
+                {isOccupied && (
+                  <path
+                    d={`M${point.x - 2},${point.y - 2} L${point.x + 2},${point.y + 2} M${point.x + 2},${point.y - 2} L${point.x - 2},${point.y + 2}`}
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                )}
               </g>
             );
           })}
 
-          {/* Existing Bars (already placed) */}
+          {/* Existing Bars (Rendered underneath grid if showing grid, or normally if not) */}
           {!showAvailablePoints && existingBars.map((bar, i) => (
-            <circle key={i} cx={bar.x} cy={bar.y} r={barRadius} fill={bar.color} stroke="white" strokeWidth="1" />
+            <circle key={i} cx={bar.x} cy={bar.y} r={barRadius * 1.2} fill={bar.color} stroke="white" strokeWidth="1" />
           ))}
 
         </svg>
       </div>
-    </div>
+    </div >
   );
 };
 
