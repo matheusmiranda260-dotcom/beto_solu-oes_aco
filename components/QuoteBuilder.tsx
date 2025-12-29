@@ -1976,11 +1976,12 @@ const ItemReinforcementPreview: React.FC<{
   onEditBar: (idx: number) => void;
   onRemoveBar: (idx: number) => void;
   onBarUpdate?: (idx: number, newOffset: number) => void;
+  onEditStirrups?: () => void;
   newBar?: MainBarGroup;
   onNewBarUpdate?: (newOffset: number) => void;
   selectedIdx?: number;
   readOnly?: boolean;
-}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
+}> = ({ item, onEditBar, onRemoveBar, onBarUpdate, onEditStirrups, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const isPilarOrBroca = item.type === 'Pilar' || item.type === 'Broca';
   const isSapata = item.type === 'Sapata';
 
@@ -2363,6 +2364,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                   const newBars = item.mainBars.filter((_, i) => i !== idx);
                   setItems(items.map(it => it.id === item.id ? { ...it, mainBars: newBars, isConfigured: newBars.length > 0 || it.hasStirrups } : it));
                 }}
+                onEditStirrups={() => setEditingContext({ item, initialTab: 'estribos' })}
                 onBarUpdate={(idx, offset) => {
                   const newBars = [...item.mainBars];
                   if (newBars[idx]) {
