@@ -1169,6 +1169,12 @@ const ColumnElevationView: React.FC<{
   const startY = (viewH - totalHeightPx) / 2;
   const endY = startY + totalHeightPx;
 
+  // Final Paranoid Check to prevent White Screen of Death
+  if (!Number.isFinite(scaleY) || !Number.isFinite(startY) || !Number.isFinite(endY)) {
+    console.error("ColumnElevationView: Invalid layout calculations", { scaleY, startY, endY, effectiveLengthCm, safeLength });
+    return <div className="p-4 text-red-500 text-xs font-mono">Erro de visualização (Layout inválido)</div>;
+  }
+
   // Horizontal Positioning (Center column in view)
   const centerX = viewW / 2;
   const columnWidthCm = (item.width || 20); // Default 20cm if undefined
@@ -1866,22 +1872,25 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
 
   const confirmNewItem = () => {
     if (!newItemBase) return;
-    const lengthM = newItemBase.lengthCm / 100;
-    const widthM = newItemBase.widthCm / 100;
+    const lengthM = Math.max(newItemBase.lengthCm / 100, 0.1); // Min 10cm
+    const widthM = Math.max(newItemBase.widthCm / 100, 0.1);   // Min 10cm
+    const safeWidthCm = Math.max(newItemBase.widthCm, 10);
+    const safeHeightCm = Math.max(newItemBase.heightCm, 10);
+
     const newItem: SteelItem = {
       id: crypto.randomUUID(),
       type: newItemBase.type,
       observation: newItemBase.obs,
-      quantity: newItemBase.qty,
+      quantity: Math.max(newItemBase.qty, 1),
       length: lengthM,
       width: newItemBase.type === ElementType.SAPATA ? widthM : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? widthM : undefined),
-      height: newItemBase.heightCm,
+      height: safeHeightCm,
       mainBars: [],
       hasStirrups: newItemBase.type === ElementType.SAPATA || newItemBase.type === 'Pilar' || newItemBase.type === 'Broca',
       stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0',
       stirrupSpacing: 15,
-      stirrupWidth: newItemBase.type === ElementType.SAPATA ? newItemBase.widthCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? newItemBase.widthCm : 15),
-      stirrupHeight: newItemBase.type === ElementType.SAPATA ? newItemBase.heightCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? newItemBase.heightCm : 20),
+      stirrupWidth: newItemBase.type === ElementType.SAPATA ? safeWidthCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeWidthCm : 15),
+      stirrupHeight: newItemBase.type === ElementType.SAPATA ? safeHeightCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeHeightCm : 20),
       isConfigured: false
     };
     setItems([...items, newItem]);
