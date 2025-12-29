@@ -2073,28 +2073,128 @@ const ColumnElevationView: React.FC<{
                   const sW_val = Math.round(item.stirrupWidth || sW);
                   const sH_val = Math.round(item.stirrupHeight || sH);
                   const model = item.stirrupModel || 'rect';
-                  const detachedScale = 1.0;
-                  const dW = sW_val * detachedScale;
-                  const dH = sH_val * detachedScale;
-                  const cx = dW / 2;
-                  const cy = dH / 2;
+
                   const offsetYSt = pH + 50;
+
+                  // Helper for Hooks (Double Diagonal)
+                  const drawHooks = (startX: number, startY: number) => (
+                    <g>
+                      <line x1={startX + 3} y1={startY} x2={startX + 10} y2={startY + 7} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                      <line x1={startX} y1={startY + 3} x2={startX + 7} y2={startY + 10} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                    </g>
+                  );
+
+                  let sW_use = sW_val;
+                  let sH_use = sH_val;
                   let cutLength = 0;
 
-                  // Simple logic for models to avoid massive duplication here, or just inline it
-                  if (model === 'rect') cutLength = (sW_val + sH_val) * 2 + 10;
-                  else if (model === 'circle') cutLength = Math.round(sW_val * Math.PI + 10);
-                  else if (model === 'triangle') cutLength = Math.round(sW_val + 2 * Math.sqrt(Math.pow(sW_val / 2, 2) + Math.pow(sH_val, 2)) + 10);
-                  else cutLength = (sW_val * (model === 'pentagon' ? 5 : 6)) + 10;
+                  const detachedScale = 1.0;
+                  // Scale up slightly for visibility if tiny
+                  const displayScale = Math.max(detachedScale, 1.5);
+
+                  // Recalculate dimensions based on model logic matching StirrupDetailView
+                  let pW_st = sW_use * displayScale;
+                  let pH_st = sH_use * displayScale;
+
+                  let shapeElement: React.ReactNode = null;
+                  let dimElement: React.ReactNode = null;
+
+                  const cxStr = 0; // Relative to translation
+                  const cyStr = 0;
+
+                  if (model === 'rect') {
+                    cutLength = (sW_use + sH_use) * 2 + 10;
+                    // Center the rect
+                    const x0 = cxStr - pW_st / 2;
+                    const y0 = cyStr - pH_st / 2;
+
+                    shapeElement = (
+                      <g>
+                        <rect x={x0} y={y0} width={pW_st} height={pH_st} fill="none" stroke="#0f172a" strokeWidth="2" />
+                        {drawHooks(x0, y0)}
+                      </g>
+                    );
+                    dimElement = (
+                      <g>
+                        <text x={0} y={y0 - 5} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_use}</text>
+                        <text x={x0 - 5} y={0} textAnchor="end" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_use}</text>
+                      </g>
+                    );
+                  } else if (model === 'circle') {
+                    cutLength = Math.round(sW_use * 3.14 + 10);
+                    const r = pW_st / 2;
+                    shapeElement = (
+                      <g>
+                        <circle cx={0} cy={0} r={r} fill="none" stroke="#0f172a" strokeWidth="2" />
+                        {drawHooks(-r * 0.7, -r * 0.7)}
+                      </g>
+                    );
+                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">Ø{sW_use}</text>;
+                  } else if (model === 'triangle') {
+                    const side = Math.sqrt(Math.pow(sW_use / 2, 2) + Math.pow(sH_use, 2));
+                    cutLength = Math.round(sW_use + 2 * side + 10);
+
+                    const x0 = -pW_st / 2;
+                    const x1 = pW_st / 2;
+                    const yTop = -pH_st / 2;
+                    const yBot = pH_st / 2;
+
+                    shapeElement = (
+                      <g>
+                        <polygon points={`${x0},${yBot} ${x1},${yBot} 0,${yTop}`} fill="none" stroke="#0f172a" strokeWidth="2" />
+                        {drawHooks(-5, yTop + 5)}
+                      </g>
+                    );
+                    dimElement = (
+                      <g>
+                        <text x={0} y={yBot + 10} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_use}</text>
+                        <text x={x0 - 2} y={0} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
+                        <text x={x1 + 2} y={0} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
+                      </g>
+                    );
+                  } else if (model === 'pentagon') {
+                    // Assuming sW_use is Side Length 'B'
+                    cutLength = Math.round(sW_use * 5 + 10);
+                    const R = (sW_use * displayScale) / (2 * Math.sin(Math.PI / 5));
+
+                    const points = [];
+                    for (let i = 0; i < 5; i++) {
+                      const angle = (2 * Math.PI * i) / 5 - Math.PI / 2;
+                      points.push(`${R * Math.cos(angle)},${R * Math.sin(angle)}`);
+                    }
+                    shapeElement = (
+                      <g>
+                        <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2" />
+                        {drawHooks(points[4].split(',')[0] as any + 5, points[4].split(',')[1] as any)} {/* Approx Hook pos */}
+                      </g>
+                    );
+                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{sW_use}</text>;
+                  } else if (model === 'hexagon') {
+                    // Assuming sW_use is Side Length
+                    cutLength = Math.round(sW_use * 6 + 10);
+                    const R = sW_use * displayScale;
+                    const points = [];
+                    for (let i = 0; i < 6; i++) {
+                      const angle = (2 * Math.PI * i) / 6 - Math.PI / 6;
+                      points.push(`${R * Math.cos(angle)},${R * Math.sin(angle)}`);
+                    }
+                    shapeElement = (
+                      <g>
+                        <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2" />
+                        {drawHooks(points[5].split(',')[0] as any + 5, points[5].split(',')[1] as any)}
+                      </g>
+                    );
+                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{sW_use}</text>;
+                  }
 
                   return (
-                    <g transform={`translate(${pW / 2 - dW / 2}, ${offsetYSt})`}>
-                      <text x={-30} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'circle' ? '2' : model === 'triangle' ? '3' : model === 'pentagon' ? '4' : model === 'hexagon' ? '5' : ''}</text>
-                      <rect x={0} y={0} width={dW} height={dH} fill="none" stroke="#0f172a" strokeWidth="2" opacity={model === 'rect' ? 1 : 0.1} />
-                      {/* Note: Hooks and complex shapes can be added here or referenced via StirrupDetailView if we make it a pure SVG component. 
-                          For now, just a simplified box to ensure it compiles. */}
-                      <text x={dW / 2} y={dH / 2} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill="#0f172a" fontWeight="bold">{model.toUpperCase()}</text>
-                      <text x={dW / 2} y={dH + 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
+                    <g transform={`translate(${pW / 2}, ${offsetYSt + pH_st / 2})`}> {/* Center the detached stirrup */}
+                      <text x={-40} y={0} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'pentagon' ? '2' : model === 'triangle' ? '3' : model === 'circle' ? '4' : '5'}</text>
+
+                      {shapeElement}
+                      {dimElement}
+
+                      <text x={0} y={pH_st / 2 + 35} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
                         {numStirrupsVal} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                       </text>
                     </g>
