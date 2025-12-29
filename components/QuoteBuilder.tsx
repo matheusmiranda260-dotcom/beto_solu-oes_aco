@@ -2493,11 +2493,8 @@ const ItemDetailEditor: React.FC<{
             {localItem.type === 'Pilar' || localItem.type === 'Broca' ?
               <ColumnElevationView
                 item={localItem}
-                newBar={editingIndex === undefined ? newBar : undefined}
-                onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
                 onEditBar={(idx) => setEditingIndex(idx)}
                 onRemoveBar={handleRemoveBar}
-                selectedIdx={editingIndex}
                 onBarUpdate={(idx, offset) => {
                   const bars = [...localItem.mainBars];
                   if (bars[idx]) {
@@ -2509,6 +2506,7 @@ const ItemDetailEditor: React.FC<{
                 newBar={editingIndex === undefined ? newBar : undefined}
                 onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
                 selectedIdx={editingIndex}
+                readOnly={false}
               />
               :
               <BeamElevationView item={localItem} newBar={editingIndex === undefined ? newBar : undefined} onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))} onEditBar={(idx) => setEditingIndex(idx)} onRemoveBar={handleRemoveBar} selectedIdx={editingIndex} onBarUpdate={(idx, offset) => { const bars = [...localItem.mainBars]; if (bars[idx]) { bars[idx] = { ...bars[idx], offset }; setLocalItem({ ...localItem, mainBars: bars, isConfigured: true }); if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); } } }} readOnly={false} />
