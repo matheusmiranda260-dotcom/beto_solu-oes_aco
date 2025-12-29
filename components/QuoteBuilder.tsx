@@ -341,19 +341,59 @@ const CompositeCrossSection: React.FC<{
   stirrupPos?: string;
   stirrupGauge?: string;
   stirrupCount?: number;
+  model?: 'rect' | 'circle' | 'triangle' | 'pentagon' | 'hexagon';
   onZoneClick?: (zone: 'top' | 'bottom' | 'distributed' | 'center') => void;
   selectedZone?: 'top' | 'bottom' | 'distributed' | 'center' | null;
-}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, onZoneClick, selectedZone }) => {
+}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, model = 'rect', onZoneClick, selectedZone }) => {
   // Ensure valid dimensions
   const width = (stirrupW && stirrupW > 0) ? stirrupW : 15;
   const height = (stirrupH && stirrupH > 0) ? stirrupH : 20;
 
   const maxDim = Math.max(width, height, 15);
-  const scale = 100 / maxDim;
+  const scale = 180 / maxDim; // Increased scale
   const w = width * scale;
-  const h = height * scale;
-  const padding = 40;
-  const r = 3;
+  const h = (model === 'circle' ? width : height) * scale;
+  const cx = w / 2;
+  const cy = h / 2;
+  const padding = 50;
+  const r = 4; // Bar radius
+
+  // --- Shape Logic ---
+  let shapePath = "";
+  let vertices: { x: number, y: number }[] = [];
+
+  if (model === 'rect') {
+    vertices = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
+    shapePath = `M0,0 L${w},0 L${w},${h} L0,${h} Z`;
+  } else if (model === 'circle') {
+    // Circle treated differently
+    shapePath = ""; // Rendered as <circle>
+    // Vertices for 'corners' don't exist, but we use cardinal points for distribution reference if needed
+  } else if (model === 'triangle') {
+    vertices = [{ x: w / 2, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
+    shapePath = `M${w / 2},0 L${w},${h} L0,${h} Z`;
+  } else if (model === 'pentagon') {
+    // Point Up
+    vertices = [
+      { x: w / 2, y: 0 },
+      { x: w, y: h * 0.38 },
+      { x: w * 0.81, y: h },
+      { x: w * 0.19, y: h },
+      { x: 0, y: h * 0.38 }
+    ];
+    shapePath = `M${w / 2},0 L${w},${h * 0.38} L${w * 0.81},${h} L${w * 0.19},${h} L0,${h * 0.38} Z`;
+  } else if (model === 'hexagon') {
+    // Flat Top/Bottom
+    vertices = [
+      { x: w * 0.25, y: 0 },
+      { x: w * 0.75, y: 0 },
+      { x: w, y: h / 2 },
+      { x: w * 0.75, y: h },
+      { x: w * 0.25, y: h },
+      { x: 0, y: h / 2 }
+    ];
+    shapePath = `M${w * 0.25},0 L${w * 0.75},0 L${w},${h / 2} L${w * 0.75},${h} L${w * 0.25},${h} L0,${h / 2} Z`;
+  }
 
   const allPoints: { x: number, y: number, color: string }[] = [];
   const getEffectivePlacement = (g: MainBarGroup) => {
@@ -362,129 +402,237 @@ const CompositeCrossSection: React.FC<{
     return 'bottom';
   };
 
+  // --- Bar Distribution Helpers ---
+  const interpolateLine = (p1: { x: number, y: number }, p2: { x: number, y: number }, t: number) => ({
+    x: p1.x + (p2.x - p1.x) * t,
+    y: p1.y + (p2.y - p1.y) * t
+  });
+
   bars.forEach(group => {
     const placement = getEffectivePlacement(group);
     let count = group.count || 0;
-    // Safety cap
     if (count > 50) count = 50;
     if (count <= 0) return;
+    const color = group.usage === BarUsage.PRINCIPAL ? '#0f172a' : '#ef4444'; // Darker black
 
-    // Color logic: Principal = Black, Others (Costela/2nd) = Red
-    const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
+    if (model === 'circle') {
+      // Radial Distribution
+      const radius = w / 2;
+      let startAngle = -Math.PI / 2; // Top
+      let sweep = 2 * Math.PI;
 
-    if (placement === 'top') {
-      // Distribute evenly on top face
-      if (count === 1) {
-        allPoints.push({ x: w / 2, y: 0, color }); // Centered
+      if (placement === 'top') { count === 1 ? startAngle = -Math.PI / 2 : (startAngle = -Math.PI, sweep = Math.PI); } // Top Half (approx)
+      else if (placement === 'bottom') { count === 1 ? startAngle = Math.PI / 2 : (startAngle = 0, sweep = Math.PI); } // Bottom Half
+      // For 'distributed', full circle is default
+
+      if (placement === 'center') {
+        allPoints.push({ x: cx, y: cy, color }); // Center of circle
       } else {
+        // Distribute around perimeter
+        // If 'distributed' and count > 1, full circle
+        const step = sweep / (placement === 'distributed' ? count : Math.max(count - 1, 1));
+        // If 'distributed' (full circle), step is sweep/count. If 'top' line (arc), step is sweep/(count-1).
+
         for (let i = 0; i < count; i++) {
-          allPoints.push({ x: (w * i) / (count - 1), y: 0, color });
+          let angle = startAngle + (step * i);
+          if (placement === 'distributed') angle = -Math.PI / 2 + (i * (2 * Math.PI / count));
+
+          // Adjust for single bar centered in zone
+          if (count === 1 && placement === 'top') angle = -Math.PI / 2;
+          if (count === 1 && placement === 'bottom') angle = Math.PI / 2;
+
+          allPoints.push({
+            x: cx + radius * Math.cos(angle),
+            y: cy + radius * Math.sin(angle),
+            color
+          });
         }
       }
-    } else if (placement === 'bottom') {
-      // Distribute evenly on bottom face
-      if (count === 1) {
-        allPoints.push({ x: w / 2, y: h, color });
-      } else {
-        for (let i = 0; i < count; i++) {
-          allPoints.push({ x: (w * i) / (count - 1), y: h, color });
+
+    } else {
+      // Polygon Distribution
+      if (placement === 'center') {
+        // Simply center logic
+        allPoints.push({ x: w / 2, y: h / 2, color });
+        // If multiple center bars, maybe spread strictly horizontally or vertically? keeping it simple single point or horizontal spread
+        if (count > 1) {
+          // Spread horizontally in center
+          for (let i = 1; i < count; i++) {
+            const offsetX = ((i / (count - 1)) - 0.5) * (w * 0.5);
+            allPoints.push({ x: (w / 2) + offsetX, y: h / 2, color });
+          }
+          // Remove first pushed center which handles i=0 for count=1 case effectively? No.
+          // Let's refine: 
+          // If count > 0, just spread
+          // Empty current center push first...
+          allPoints.pop();
+          for (let i = 0; i < count; i++) {
+            const xPos = count === 1 ? w / 2 : (w * 0.25) + ((w * 0.5) * i / (count - 1));
+            allPoints.push({ x: xPos, y: h / 2, color });
+          }
         }
-      }
-    } else if (placement === 'distributed') {
-      // Side bars (Costela)
-      for (let i = 0; i < count; i++) {
-        const side = i % 2 === 0 ? 0 : w;
-        const rows = Math.ceil(count / 2);
-        // Avoid division by zero if rows is weird, though ceil(count/2) >= 1 since count > 0
-        const rowDivisor = Math.max(rows + 1, 2);
-        const rowIdx = Math.floor(i / 2);
-        const yPos = (h * (rowIdx + 1)) / rowDivisor;
-        allPoints.push({ x: side, y: yPos, color });
-      }
-    } else if (placement === 'center') {
-      // Center bars (Inside/Core)
-      for (let i = 0; i < count; i++) {
-        // (i + 1) / (count + 1) gives e.g. 1/2 for 1 bar, 1/3 & 2/3 for 2 bars -> Distinct from sides
-        const colDivisor = Math.max(count + 1, 2);
-        const xPos = (w * (i + 1)) / colDivisor;
-        allPoints.push({ x: xPos, y: h / 2, color });
+      } else if (placement === 'top') {
+        if (model === 'triangle') {
+          // Top is Vertex for Triangle
+          // If 1 bar, top vertex. If > 1, spread down legs? 
+          // Usually Top Bars in Triangle = Top Vertex + maybe nearby?
+          // Let's put 1 at vertex, rest distributed on top half of sides?
+          // Simple: Just Top Vertex if count=1.
+          allPoints.push({ x: w / 2, y: 0, color });
+          // If more bars, maybe spread closely? For now, stick to vertex.
+          for (let i = 1; i < count; i++) { allPoints.push({ x: w / 2 + (i % 2 === 0 ? 5 : -5) * Math.ceil(i / 2), y: 5 * Math.ceil(i / 2), color }); } // Clusters
+        } else if (model === 'pentagon') {
+          // Top Vertex
+          allPoints.push({ x: w / 2, y: 0, color });
+          for (let i = 1; i < count; i++) { allPoints.push({ x: w / 2 + (i % 2 === 0 ? 5 : -5) * Math.ceil(i / 2), y: 5 * Math.ceil(i / 2), color }); }
+        } else if (model === 'hexagon') {
+          // Flat Top Edge (Index 0->1)
+          const p1 = vertices[0], p2 = vertices[1];
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
+          }
+        } else { // Rect (Standard)
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ x: (w * i) / (Math.max(count - 1, 1)) || 0, y: 0, color: color });
+            if (count === 1) allPoints[allPoints.length - 1].x = w / 2;
+          }
+        }
+      } else if (placement === 'bottom') {
+        // Bottom Face
+        if (model === 'triangle') {
+          // Bottom Edge (1->2)
+          const p1 = vertices[2], p2 = vertices[1]; // Left to Right
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
+          }
+        } else if (model === 'pentagon') {
+          // Bottom Edge (3->2) ? Indices: 0(Top), 1(TR), 2(BR), 3(BL), 4(TL)
+          // Bottom Flat is 3->2 (BL to BR)
+          const p1 = vertices[3], p2 = vertices[2];
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
+          }
+        } else if (model === 'hexagon') {
+          // Bottom Flat (4->3) ? Indices: 0(TL), 1(TR), 2(R), 3(BR), 4(BL), 5(L)
+          const p1 = vertices[4], p2 = vertices[3];
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
+          }
+        } else { // Rect
+          for (let i = 0; i < count; i++) {
+            allPoints.push({ x: (w * i) / (Math.max(count - 1, 1)) || 0, y: h, color });
+            if (count === 1) allPoints[allPoints.length - 1].x = w / 2;
+          }
+        }
+      } else if (placement === 'distributed') {
+        // Sides
+        if (model === 'rect') {
+          // Left and Right sides vertically
+          for (let i = 0; i < count; i++) {
+            const side = i % 2 === 0 ? 0 : w; // Left or Right
+            const rows = Math.ceil(count / 2);
+            const rowIdx = Math.floor(i / 2);
+            // Distribute vertically between 0 and h, exclusive of corners usually?
+            // Let's put them nicely spaced
+            const yPos = (h * (rowIdx + 1)) / (rows + 1);
+            allPoints.push({ x: side, y: yPos, color });
+          }
+        } else if (model === 'triangle') {
+          // Legs (2->0 and 0->1)
+          // Distribute alternately on Left Leg and Right Leg
+          for (let i = 0; i < count; i++) {
+            const isRight = i % 2 !== 0;
+            const targetLine = isRight ? [vertices[0], vertices[1]] : [vertices[0], vertices[2]]; // Top->Right or Top->Left
+            const rows = Math.ceil(count / 2);
+            const rowIdx = Math.floor(i / 2);
+            const t = (rowIdx + 1) / (rows + 1); // 0..1 down the leg
+            // Triangle legs go from top (0) down to base.
+            allPoints.push({ ...interpolateLine(targetLine[0], targetLine[1], t), color });
+          }
+        } else if (model === 'pentagon') {
+          // Side Verticalish edges?
+          // Indices: 0(Top), 1(TR), 2(BR), 3(BL), 4(TL)
+          // Left Side: 4->3. Right Side: 1->2. (Ignoring top slopes 0->1/0->4 for "distributed" usually implied vertical sides)
+          for (let i = 0; i < count; i++) {
+            const isRight = i % 2 !== 0;
+            const pStart = isRight ? vertices[1] : vertices[4]; // Top of side
+            const pEnd = isRight ? vertices[2] : vertices[3];   // Bottom of side
+            const rows = Math.ceil(count / 2);
+            const rowIdx = Math.floor(i / 2);
+            const t = (rowIdx + 1) / (rows + 1);
+            allPoints.push({ ...interpolateLine(pStart, pEnd, t), color });
+          }
+        } else if (model === 'hexagon') {
+          // Indicies: 0(TL), 1(TR), 2(R), 3(BR), 4(BL), 5(L)
+          // "Sides" usually means the vertical-ish or pointy sides?
+          // Hexagon distributed usually all around? Or just the explicit sides?
+          // Let's use indices 5->4 (Left) and 2->3 (Right)? Or 5->0?
+          // Let's distribute on the "Corner" vertices for standard hexagon column?
+          // If "distributed", maybe place on all vertices available?
+          // Let's stick to Left (5) and Right (2) vertices if count is small, or edges 5-4 / 1-2?
+          // Simplify: Vertical distribution on the width extremes if possible, or just the points.
+          // Let's place on the "Point" (L/R) if count=2.
+          // For now, distribute on the vertical-ish segments:
+          // P5(L) -> P0(TL) ? NO, Side is usually P4->P5?
+          // Let's assume Middle Vertical line: (0, h/2) and (w, h/2) are vertices 5 and 2.
+
+          for (let i = 0; i < count; i++) {
+            const isRight = i % 2 !== 0;
+            // Place exactly on the vertices 5 and 2?
+            // Or interpolate?
+            // Let's just put them on the Left/Right vertices (5 and 2) if possible, or vertical line in rect
+            const xPos = isRight ? w : 0;
+            const yPos = h / 2; // Center Vertically
+            // If multiple, spread vertically?
+            const rows = Math.ceil(count / 2);
+            const rowIdx = Math.floor(i / 2);
+            const spread = (h * 0.5) * ((rowIdx - (rows - 1) / 2)); // Spread around center
+            allPoints.push({ x: xPos, y: yPos + spread, color });
+          }
+        }
       }
     }
   });
 
-  // Calculate Zones for Interaction
-  const topZoneHeight = h * 0.35;
-  const bottomZoneHeight = h * 0.35;
-  // Side zone is the middle part
-  const sideZoneY = topZoneHeight;
-  const sideZoneH = h - topZoneHeight - bottomZoneHeight;
-
   return (
     <div className="flex flex-col items-center select-none">
-      <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '200px', height: '200px' }}>
+      <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '200px', height: '220px' }}>
         <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
 
-          {/* Interactive Zones (Underlay) */}
+          {/* Interactive Zones (Underlay - Simplified Rects for hit testing) */}
           {onZoneClick && (
             <g className="cursor-pointer">
-              {/* Top Zone */}
-              <rect
-                x={-10} y={-10} width={w + 20} height={topZoneHeight + 10}
-                fill={selectedZone === 'top' ? '#dbeafe' : 'transparent'}
-                className="hover:fill-blue-50 transition-colors"
-                onClick={() => onZoneClick('top')}
-              />
-              {/* Bottom Zone */}
-              <rect
-                x={-10} y={h - bottomZoneHeight} width={w + 20} height={bottomZoneHeight + 10}
-                fill={selectedZone === 'bottom' ? '#dbeafe' : 'transparent'}
-                className="hover:fill-blue-50 transition-colors"
-                onClick={() => onZoneClick('bottom')}
-              />
-              {/* Side Zone (Middle) */}
-              <rect
-                x={-10} y={sideZoneY} width={w + 20} height={sideZoneH}
-                fill={selectedZone === 'distributed' ? '#dbeafe' : 'transparent'}
-                className="hover:fill-blue-50 transition-colors"
-                onClick={() => onZoneClick('distributed')}
-              />
-              {/* Center Zone (Inner Core) */}
-              <rect
-                x={w * 0.25} y={h * 0.25} width={w * 0.5} height={h * 0.5}
-                fill={selectedZone === 'center' ? '#dbeafe' : 'transparent'}
-                className="hover:fill-blue-100 transition-colors"
-                stroke={selectedZone === 'center' ? '#3b82f6' : 'none'}
-                strokeDasharray="2 2"
-                onClick={(e) => { e.stopPropagation(); onZoneClick('center'); }}
-              />
+              <rect x={-10} y={-10} width={w + 20} height={h * 0.3} fill={selectedZone === 'top' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('top')} />
+              <rect x={-10} y={h * 0.7} width={w + 20} height={h * 0.3} fill={selectedZone === 'bottom' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('bottom')} />
+              <rect x={-10} y={h * 0.3} width={w + 20} height={h * 0.4} fill={selectedZone === 'distributed' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('distributed')} />
+              <circle cx={cx} cy={cy} r={Math.min(w, h) * 0.2} fill={selectedZone === 'center' ? '#dbeafe' : 'transparent'} onClick={(e) => { e.stopPropagation(); onZoneClick('center') }} />
             </g>
           )}
 
-          {/* Section Box */}
-          <rect x="0" y="0" width={w} height={h} fill="none" stroke="#000" strokeWidth="2" pointerEvents="none" />
-          {/* Concrete Hatch */}
-          <path d={`M0,${h} L${w},0`} stroke="#000" strokeWidth="0.5" opacity="0.1" pointerEvents="none" />
+          {/* Render Shape */}
+          {model === 'circle' ? (
+            <circle cx={cx} cy={cy} r={w / 2} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+          ) : (
+            <path d={shapePath} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+          )}
 
-          {/* Inner Stirrup */}
-          <rect x="4" y="4" width={w - 8} height={h - 8} fill="none" stroke="#000" strokeWidth="1.5" rx="1" pointerEvents="none" />
+          {/* Concrete / Fill Effect */}
+          {model === 'circle' ? (
+            <circle cx={cx} cy={cy} r={w / 2} fill="#000" fillOpacity="0.03" stroke="none" />
+          ) : (
+            <path d={shapePath} fill="#000" fillOpacity="0.03" stroke="none" />
+          )}
 
           {/* Bars */}
           {allPoints.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={r} fill={p.color} pointerEvents="none" />
+            <circle key={i} cx={p.x} cy={p.y} r={r * 1.2} fill={p.color} stroke="white" strokeWidth="1" />
           ))}
 
           {/* External Dimensions */}
-          <TechnicalDimension x1={0} y1={h} x2={w} y2={h} text={`${Math.round(width)}`} offset={10} />
-          <TechnicalDimension x1={0} y1={0} x2={0} y2={h} text={`${Math.round(height)}`} offset={-10} vertical />
+          {model !== 'circle' && <TechnicalDimension x1={0} y1={h} x2={w} y2={h} text={`${Math.round(width)}`} offset={10} />}
+          {model !== 'circle' && <TechnicalDimension x1={0} y1={0} x2={0} y2={h} text={`${Math.round(height)}`} offset={-10} vertical />}
 
-          {/* Zone Labels (Mock) */}
-          {onZoneClick && (
-            <>
-              <text x={w / 2} y={-15} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">SUPERIOR</text>
-              <text x={w / 2} y={h + 25} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.5">INFERIOR</text>
-              <text x={w / 2} y={h / 2} textAnchor="middle" fontSize="6" fill="#94a3b8" fontWeight="bold" opacity="0.3" pointerEvents="none">CENTRO</text>
-            </>
-          )}
+          {model === 'circle' && <text x={cx} y={h + 15} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">Ø{Math.round(width)}</text>}
 
         </svg>
       </div>
@@ -2041,6 +2189,7 @@ const ItemReinforcementPreview: React.FC<{
                     stirrupPos={item.stirrupPosition}
                     stirrupGauge={item.stirrupGauge}
                     stirrupCount={Math.floor(((item.length || 1) * 100) / (item.stirrupSpacing || 20)) || 0}
+                    model={item.stirrupModel || 'rect'}
                   />
                 </div>
               </div>
@@ -2825,8 +2974,8 @@ const ItemDetailEditor: React.FC<{
               <span className="text-[10px] font-bold text-slate-400">Clique p/ posicionar</span>
             </div>
             <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
-              <div className="transform scale-[1.8]">
-                <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} />
+              <div className="transform scale-[1.5]">
+                <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} model={localItem.stirrupModel || 'rect'} />
               </div>
             </div>
           </div>
@@ -2863,14 +3012,25 @@ const ItemDetailEditor: React.FC<{
                 </div>
                 {!isSapata && (
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Larg.</label>
+                    <div className={localItem.stirrupModel === 'circle' ? "col-span-2" : ""}>
+                      <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">
+                        {localItem.stirrupModel === 'circle' ? 'Diâmetro (A)'
+                          : localItem.stirrupModel === 'triangle' ? 'Base (A)'
+                            : localItem.stirrupModel === 'hexagon' ? 'Largura Total (A)'
+                              : 'Largura (A)'}
+                      </label>
                       <input type="number" value={localItem.stirrupWidth} onChange={e => setLocalItem({ ...localItem, stirrupWidth: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-xl text-base font-black text-center" />
                     </div>
-                    <div>
-                      <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">Alt.</label>
-                      <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-xl text-base font-black text-center" />
-                    </div>
+                    {localItem.stirrupModel !== 'circle' && (
+                      <div>
+                        <label className="text-[10px] font-black text-amber-600 uppercase block mb-1">
+                          {localItem.stirrupModel === 'triangle' ? 'Altura (B)'
+                            : localItem.stirrupModel === 'pentagon' ? 'Altura Total (B)'
+                              : 'Altura (B)'}
+                        </label>
+                        <input type="number" value={localItem.stirrupHeight} onChange={e => setLocalItem({ ...localItem, stirrupHeight: Number(e.target.value) })} className="w-full p-2 bg-white border-2 border-amber-300 rounded-xl text-base font-black text-center" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
