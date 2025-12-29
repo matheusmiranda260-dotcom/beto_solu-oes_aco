@@ -1430,15 +1430,18 @@ const ItemReinforcementPreview: React.FC<{
       */}
 
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
-      {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {(item.hasStirrups || (!isSapata && item.mainBars.length > 0)) && (
         <div className="flex flex-col gap-4 items-stretch">
           {/* Technical Project View - Elevation + Section */}
           {!isSapata && (
-            <div className={`flex flex-wrap gap-6 items-start justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100 ${item.type === ElementType.PILAR || item.type === ElementType.BROCA ? 'flex-row' : 'flex-col md:flex-row'}`}>
+            <div className={`flex flex-wrap gap-6 items-start justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100 ${item.type === 'Pilar' || item.type === 'Broca' ? 'flex-row' : 'flex-col md:flex-row'}`}>
+              {/* DEBUG INFO */}
+              <div className="w-full text-center text-[10px] text-red-500 font-bold hidden">
+                Debug: Type="{item.type}" | IsPilar={item.type === ElementType.PILAR ? 'Yes' : 'No'} | IsBroca={item.type === ElementType.BROCA ? 'Yes' : 'No'}
+              </div>
               {/* Elevation */}
               {/* Elevation - Now Interactive */}
-              {item.type !== ElementType.PILAR && item.type !== ElementType.BROCA ? (
+              {item.type !== 'Pilar' && item.type !== 'Broca' ? (
                 <BeamElevationView
                   item={item}
                   onEditBar={onEditBar}
@@ -1820,7 +1823,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                   {Object.values(ElementType).map(t => (
                     <button key={t} onClick={() => {
                       // Auto-generate ID based on type
-                      const prefix = t === ElementType.PILAR ? 'P' : t === ElementType.BROCA ? 'B' : t === ElementType.SAPATA ? 'S' : 'V';
+                      const prefix = t === 'Pilar' ? 'P' : t === 'Broca' ? 'B' : t === 'Sapata' ? 'S' : 'V';
                       const count = items.filter(i => i.type === t).length + 1;
                       const autoObs = `${prefix}${count}`;
 
@@ -2162,7 +2165,7 @@ const ItemDetailEditor: React.FC<{
         {/* MAIN DRAWING AREA */}
         <div className="flex-grow overflow-auto custom-scrollbar p-8 relative">
           <div className="bg-white rounded-3xl shadow-2xl shadow-black/20 p-8 min-h-full border border-slate-200">
-            {localItem.type === ElementType.PILAR || localItem.type === ElementType.BROCA ?
+            {localItem.type === 'Pilar' || localItem.type === 'Broca' ?
               <ColumnElevationView
                 item={localItem}
                 newBar={editingIndex === undefined ? newBar : undefined}
