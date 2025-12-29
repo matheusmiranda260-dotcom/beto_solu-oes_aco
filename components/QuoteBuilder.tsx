@@ -362,100 +362,115 @@ const CompositeCrossSection: React.FC<{
   const generateGridPoints = (): { x: number, y: number, id: number }[] => {
     const points: { x: number, y: number, id: number }[] = [];
     let id = 0;
+    const margin = 0; // Points sit exactly on the line or grid
 
-    const margin = 10; // Distance from edge
+    if (model === 'rect') {
+      // RECTANGLE: Full dense grid (Interior + Edges) as per image
+      // Visual params are w and h.
+      // We want a grid that covers everything.
+      const cols = 5; // 5 columns of points
+      const rows = 6; // 6 rows of points
 
-    if (model === 'circle') {
-      // Circular arrangement: 3 layers (outer, middle, inner)
-      const layers = [0.85, 0.6, 0.35]; // Radii as fraction of max
-      const radius = w / 2;
-
-      layers.forEach((layerFactor, layerIdx) => {
-        const r = radius * layerFactor;
-        const pointsInLayer = layerIdx === 2 ? 1 : (layerIdx === 1 ? 8 : 12); // Center, middle ring, outer ring
-
-        if (pointsInLayer === 1) {
-          points.push({ x: cx, y: cy, id: id++ });
-        } else {
-          for (let i = 0; i < pointsInLayer; i++) {
-            const angle = (2 * Math.PI * i) / pointsInLayer - Math.PI / 2;
-            points.push({
-              x: cx + r * Math.cos(angle),
-              y: cy + r * Math.sin(angle),
-              id: id++
-            });
-          }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = (w * c) / (cols - 1);
+          const y = (h * r) / (rows - 1);
+          points.push({ x, y, id: id++ });
         }
-      });
-    } else if (model === 'rect') {
-      //Grid: Top edge, bottom edge, left edge, right edge, interior grid
-      const cols = 5; // Interior columns
-      const rows = 5; // Interior rows
+      }
+    } else if (model === 'circle') {
+      // CIRCLE: Perimeter distribution mainly
+      const radius = w / 2;
+      const numPoints = 16; // Good number for a circle perimeter
 
-      // Top edge
-      for (let i = 0; i < cols + 2; i++) {
-        points.push({ x: (w * i) / (cols + 1), y: margin, id: id++ });
+      for (let i = 0; i < numPoints; i++) {
+        const angle = (2 * Math.PI * i) / numPoints - Math.PI / 2;
+        points.push({
+          x: cx + radius * Math.cos(angle),
+          y: cy + radius * Math.sin(angle),
+          id: id++
+        });
+      }
+      // Add center point just in case
+      points.push({ x: cx, y: cy, id: id++ });
+
+    } else if (model === 'triangle') {
+      // TRIANGLE: Perimeter edges only
+      // Vertices: Top(w/2, 0), Right(w, h), Left(0, h)
+      const p1 = { x: w / 2, y: 0 };
+      const p2 = { x: w, y: h };
+      const p3 = { x: 0, y: h };
+
+      const pointsPerEdge = 4; // Points between vertices
+
+      // Edge 1: Top -> Right
+      for (let i = 0; i < pointsPerEdge; i++) {
+        points.push({
+          x: p1.x + (p2.x - p1.x) * (i / pointsPerEdge),
+          y: p1.y + (p2.y - p1.y) * (i / pointsPerEdge),
+          id: id++
+        });
+      }
+      // Edge 2: Right -> Left (Bottom)
+      for (let i = 0; i < pointsPerEdge; i++) {
+        points.push({
+          x: p2.x + (p3.x - p2.x) * (i / pointsPerEdge),
+          y: p2.y + (p3.y - p2.y) * (i / pointsPerEdge),
+          id: id++
+        });
+      }
+      // Edge 3: Left -> Top
+      for (let i = 0; i < pointsPerEdge; i++) {
+        points.push({
+          x: p3.x + (p1.x - p3.x) * (i / pointsPerEdge),
+          y: p3.y + (p1.y - p3.y) * (i / pointsPerEdge),
+          id: id++
+        });
       }
 
-      // Bottom edge
-      for (let i = 0; i < cols + 2; i++) {
-        points.push({ x: (w * i) / (cols + 1), y: h - margin, id: id++ });
-      }
+    } else if (model === 'pentagon') {
+      // PENTAGON: Perimeter edges
+      // Vertices logic (copied from shape path logic roughly for placement)
+      const v = [
+        { x: w / 2, y: 0 },
+        { x: w, y: h * 0.38 },
+        { x: w * 0.81, y: h },
+        { x: w * 0.19, y: h },
+        { x: 0, y: h * 0.38 }
+      ];
 
-      // Left edge (excluding corners)
-      for (let i = 1; i < rows + 1; i++) {
-        points.push({ x: margin, y: (h * i) / (rows + 1), id: id++ });
-      }
-
-      // Right edge (excluding corners)
-      for (let i = 1; i < rows + 1; i++) {
-        points.push({ x: w - margin, y: (h * i) / (rows + 1), id: id++ });
-      }
-
-      // Interior grid (2x2 or 3x3 depending on size)
-      const interiorCols = 3;
-      const interiorRows = 3;
-      for (let row = 1; row <= interiorRows; row++) {
-        for (let col = 1; col <= interiorCols; col++) {
+      const pointsPerEdge = 3;
+      for (let side = 0; side < 5; side++) {
+        const start = v[side];
+        const end = v[(side + 1) % 5];
+        for (let i = 0; i < pointsPerEdge; i++) {
           points.push({
-            x: (w * col) / (interiorCols + 1),
-            y: (h * row) / (interiorRows + 1),
+            x: start.x + (end.x - start.x) * (i / pointsPerEdge),
+            y: start.y + (end.y - start.y) * (i / pointsPerEdge),
             id: id++
           });
         }
       }
-    } else if (model === 'triangle') {
-      // Triangle: points along edges + interior
-      const pointsPerEdge = 4;
 
-      // Top vertex
-      points.push({ x: w / 2, y: margin, id: id++ });
+    } else if (model === 'hexagon') {
+      // HEXAGON: Perimeter edges
+      const v = [
+        { x: w * 0.25, y: 0 },
+        { x: w * 0.75, y: 0 },
+        { x: w, y: h / 2 },
+        { x: w * 0.75, y: h },
+        { x: w * 0.25, y: h },
+        { x: 0, y: h / 2 }
+      ];
 
-      // Bottom edge (left to right)
-      for (let i = 0; i <= pointsPerEdge; i++) {
-        const t = i / pointsPerEdge;
-        points.push({ x: w * t, y: h - margin, id: id++ });
-      }
-
-      // Left edge (bottom to top)
-      for (let i = 1; i < pointsPerEdge; i++) {
-        const t = i / pointsPerEdge;
-        points.push({ x: (w / 2) * (1 - t), y: h - margin - t * (h - margin * 2), id: id++ });
-      }
-
-      // Right edge (top to bottom)
-      for (let i = 1; i < pointsPerEdge; i++) {
-        const t = i / pointsPerEdge;
-        points.push({ x: (w / 2) + (w / 2) * t, y: margin + t * (h - margin * 2), id: id++ });
-      }
-    } else {
-      // Pentagon/Hexagon: simplified grid
-      const gridSize = 4;
-      for (let row = 0; row < gridSize; row++) {
-        for (let col = 0; col < gridSize; col++) {
+      const pointsPerEdge = 3;
+      for (let side = 0; side < 6; side++) {
+        const start = v[side];
+        const end = v[(side + 1) % 6];
+        for (let i = 0; i < pointsPerEdge; i++) {
           points.push({
-            x: margin + (w - margin * 2) * col / (gridSize - 1),
-            y: margin + (h - margin * 2) * row / (gridSize - 1),
+            x: start.x + (end.x - start.x) * (i / pointsPerEdge),
+            y: start.y + (end.y - start.y) * (i / pointsPerEdge),
             id: id++
           });
         }
@@ -479,36 +494,44 @@ const CompositeCrossSection: React.FC<{
     shapePath = `M${w * 0.25},0 L${w * 0.75},0 L${w},${h / 2} L${w * 0.75},${h} L${w * 0.25},${h} L0,${h / 2} Z`;
   }
 
-  // --- Render existing bars based on placement (old logic for display only) ---
+  // --- Render existing bars based on placement or pointIndex ---
   const existingBars: { x: number, y: number, color: string }[] = [];
   bars.forEach(group => {
-    const placement = group.placement || 'bottom';
     let count = group.count || 0;
     if (count > 50) count = 50;
     if (count <= 0) return;
     const color = group.usage === BarUsage.PRINCIPAL ? '#0f172a' : '#ef4444';
 
-    // Simplified placement for existing bars (this will be deprecated as we move to point-based)
-    if (placement === 'top') {
-      for (let i = 0; i < count; i++) {
-        const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
-        existingBars.push({ x: xPos, y: 10, color });
+    // NEW Logic: Check if bar has exact pointIndex
+    if (group.pointIndex !== undefined) {
+      const point = availablePoints.find(p => p.id === group.pointIndex);
+      if (point) {
+        existingBars.push({ x: point.x, y: point.y, color });
       }
-    } else if (placement === 'bottom') {
-      for (let i = 0; i < count; i++) {
-        const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
-        existingBars.push({ x: xPos, y: h - 10, color });
+    } else {
+      // Legacy Fallback for old bars without pointIndex
+      const placement = group.placement || 'bottom';
+      if (placement === 'top') {
+        for (let i = 0; i < count; i++) {
+          const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
+          existingBars.push({ x: xPos, y: 10, color });
+        }
+      } else if (placement === 'bottom') {
+        for (let i = 0; i < count; i++) {
+          const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
+          existingBars.push({ x: xPos, y: h - 10, color });
+        }
+      } else if (placement === 'distributed') {
+        for (let i = 0; i < count; i++) {
+          const side = i % 2 === 0 ? 10 : w - 10;
+          const rows = Math.ceil(count / 2);
+          const rowIdx = Math.floor(i / 2);
+          const yPos = (h * (rowIdx + 1)) / (rows + 1);
+          existingBars.push({ x: side, y: yPos, color });
+        }
+      } else if (placement === 'center') {
+        existingBars.push({ x: w / 2, y: h / 2, color });
       }
-    } else if (placement === 'distributed') {
-      for (let i = 0; i < count; i++) {
-        const side = i % 2 === 0 ? 10 : w - 10;
-        const rows = Math.ceil(count / 2);
-        const rowIdx = Math.floor(i / 2);
-        const yPos = (h * (rowIdx + 1)) / (rows + 1);
-        existingBars.push({ x: side, y: yPos, color });
-      }
-    } else if (placement === 'center') {
-      existingBars.push({ x: w / 2, y: h / 2, color });
     }
   });
 
@@ -2752,7 +2775,7 @@ const ItemDetailEditor: React.FC<{
 
   // Multi-position bar placement system
   const [barsToAdd, setBarsToAdd] = useState<number>(1);
-  const [selectedPositions, setSelectedPositions] = useState<('top' | 'bottom' | 'distributed' | 'center')[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<number[]>([]);
 
   // Sync edits if editingIndex changes
   useEffect(() => {
