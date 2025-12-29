@@ -2150,6 +2150,8 @@ const ItemDetailEditor: React.FC<{
 }> = ({ item, barIdx, initialTab, initialUsage, onSaveBar, onSaveStirrups, onCancel, onUpdateItem }) => {
 
   const isSapata = item.type === ElementType.SAPATA;
+  const isVertical = item.type === 'Pilar' || item.type === 'Broca';
+
   // Local state for the item being edited to support batch changes
   const [localItem, setLocalItem] = useState<SteelItem>(JSON.parse(JSON.stringify(item)));
   const [zoomLevel, setZoomLevel] = useState<number>(1.2);
@@ -2531,13 +2533,23 @@ const ItemDetailEditor: React.FC<{
             <button onClick={() => setNewBar({ ...newBar, segmentA: lastUsedSegmentA })} className="mb-2 w-full py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[10px] font-bold hover:bg-amber-100">↩ Usar último: {lastUsedSegmentA}cm</button>
           )}
 
-          {/* Shapes */}
+// Shapes
           <div className="mb-2">
-            <label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Formato</label>
+            <label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Formato {isVertical ? '(Vertical)' : ''}</label>
             <div className="flex gap-1">
-              {[{ s: 'straight', svg: 'M2,12 L22,12' }, { s: 'l_left_up', svg: 'M4,4 L4,12 L20,12' }, { s: 'l_right_up', svg: 'M4,12 L20,12 L20,4' }, { s: 'u_up', svg: 'M4,4 L4,16 L28,16 L28,4', w: 32 }, { s: 'c_up', svg: 'M8,8 L4,8 L4,16 L28,16 L28,8 L24,8', w: 32 }, { s: 'l_left_down', svg: 'M4,20 L4,12 L20,12' }, { s: 'l_right_down', svg: 'M4,12 L20,12 L20,20' }, { s: 'u_down', svg: 'M4,20 L4,8 L28,8 L28,20', w: 32 }, { s: 'c_down', svg: 'M8,16 L4,16 L4,8 L28,8 L28,16 L24,16', w: 32 }].map(sh => (
+              {[
+                { s: 'straight', svg: 'M2,12 L22,12', svgVert: 'M12,22 L12,2' },
+                { s: 'l_left_up', svg: 'M4,4 L4,12 L20,12', svgVert: 'M18,22 L12,22 L12,2' },
+                { s: 'l_right_up', svg: 'M4,12 L20,12 L20,4', svgVert: 'M12,22 L12,2 L18,2' },
+                { s: 'u_up', svg: 'M4,4 L4,16 L28,16 L28,4', w: 32, svgVert: 'M18,22 L12,22 L12,2 L18,2' },
+                { s: 'c_up', svg: 'M8,8 L4,8 L4,16 L28,16 L28,8 L24,8', w: 32, svgVert: 'M18,18 L18,22 L12,22 L12,2 L18,2 L18,6' },
+                { s: 'l_left_down', svg: 'M4,20 L4,12 L20,12', svgVert: 'M6,22 L12,22 L12,2' },
+                { s: 'l_right_down', svg: 'M4,12 L20,12 L20,20', svgVert: 'M12,22 L12,2 L6,2' },
+                { s: 'u_down', svg: 'M4,20 L4,8 L28,8 L28,20', w: 32, svgVert: 'M6,22 L12,22 L12,2 L6,2' },
+                { s: 'c_down', svg: 'M8,16 L4,16 L4,8 L28,8 L28,16 L24,16', w: 32, svgVert: 'M6,18 L6,22 L12,22 L12,2 L6,2 L6,6' }
+              ].map(sh => (
                 <button key={sh.s} onClick={() => { const hS = newBar.hookStart || 20; const hE = newBar.hookEnd || 20; const isC = sh.s.startsWith('c_'); setNewBar({ ...newBar, hookStartType: sh.s.includes('left') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookEndType: sh.s.includes('right') || sh.s.includes('u_') || isC ? (sh.s.includes('down') ? 'down' : 'up') : 'none', hookStart: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, hookEnd: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, shape: sh.s, segmentB: sh.s.includes('left') || sh.s.includes('u_') || isC ? hS : 0, segmentC: sh.s.includes('right') || sh.s.includes('u_') || isC ? hE : 0, segmentD: isC ? (newBar.segmentD || 10) : 0, segmentE: isC ? (newBar.segmentE || 10) : 0 }); setVisualShape(sh.s); }} className={`flex-1 h-9 rounded-lg border flex items-center justify-center transition-all ${visualShape === sh.s ? 'border-indigo-600 bg-indigo-100 text-indigo-600' : 'border-slate-200 text-slate-400 hover:border-indigo-300'}`}>
-                  <svg width={sh.w ? 16 : 14} height="14" viewBox={`0 0 ${sh.w || 24} 24`} className="stroke-current stroke-2 fill-none"><path d={sh.svg} /></svg>
+                  <svg width={sh.w ? 16 : 14} height="14" viewBox={`0 0 ${sh.w || 24} 24`} className="stroke-current stroke-2 fill-none"><path d={isVertical ? (sh.svgVert || sh.svg) : sh.svg} /></svg>
                 </button>
               ))}
             </div>
@@ -2568,7 +2580,9 @@ const ItemDetailEditor: React.FC<{
                 <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-black">{newBar.count}x Ø{newBar.gauge}</span>
                 {newBar.segmentA && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black">{((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0))}cm</span>}
               </div>
-              <div className="scale-75 origin-right"><BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} /></div>
+              <div className={`scale-75 origin-right transition-transform ${isVertical ? '-rotate-90' : ''}`}>
+                <BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} />
+              </div>
             </div>
 
             <button onClick={handleAddOrUpdateBar} className={`w-full py-3 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${editingIndex !== undefined ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white'}`}>
