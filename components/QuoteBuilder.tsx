@@ -1436,39 +1436,32 @@ const ColumnElevationView: React.FC<{
   }
 
   // Visual Gap Indicators (Dotted Lines or Zones)
+  // Visual Level Indicators (Architectural Style)
   const gapIndicators: React.ReactNode[] = [];
+
+  // Helper for Level Marker (Triangle pointing down)
+  const renderLevelMarker = (x: number, y: number, label: string, subLabel?: string) => (
+    <g>
+      {/* Horizontal Line extending Left */}
+      <line x1={x - 80} y1={y} x2={x} y2={y} stroke="#0f172a" strokeWidth="1" />
+      {/* Triangle Marker */}
+      <path d={`M ${x - 60} ${y - 5} L ${x - 56} ${y - 5} L ${x - 58} ${y} Z`} fill="#0f172a" />
+      {/* Text Labels */}
+      <text x={x - 80} y={y - 8} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a" className="uppercase">{label}</text>
+      {subLabel && <text x={x - 80} y={y + 10} textAnchor="start" fontSize="8" fill="#64748b">{subLabel}</text>}
+    </g>
+  );
+
   if (startGap > 0) {
     const gapHeightPx = startGap * scaleY;
-    const gapTopY = endY - gapHeightPx;
-    // Dotted line indicating the gap zone boundaries
-    // Can assume "startGap" is at the bottom
-    gapIndicators.push(
-      <g key="gap-start">
-        {/* Dotted lines extending/marking the zone */}
-        <line x1={leftX} y1={endY} x2={leftX} y2={gapTopY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
-        <line x1={rightX} y1={endY} x2={rightX} y2={gapTopY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
-        {/* Text indicating gap size */}
-        <text x={(leftX + rightX) / 2} y={endY - (gapHeightPx / 2)} textAnchor="middle" fontSize="9" fill="#94a3b8" transform={`rotate(-90, ${(leftX + rightX) / 2}, ${endY - (gapHeightPx / 2)})`}>
-          VÃO {startGap}
-        </text>
-      </g>
-    );
+    const levelY = endY - gapHeightPx;
+    gapIndicators.push(renderLevelMarker(leftX, levelY, "NÍVEL INFERIOR", `+${startGap}`));
   }
 
   if (endGap > 0) {
     const gapHeightPx = endGap * scaleY;
-    // Top Gap starts from Top (startY) down to startY + gap
-    const gapBottomY = startY + gapHeightPx;
-
-    gapIndicators.push(
-      <g key="gap-end">
-        <line x1={leftX} y1={startY} x2={leftX} y2={gapBottomY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
-        <line x1={rightX} y1={startY} x2={rightX} y2={gapBottomY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
-        <text x={(leftX + rightX) / 2} y={startY + (gapHeightPx / 2)} textAnchor="middle" fontSize="9" fill="#94a3b8" transform={`rotate(-90, ${(leftX + rightX) / 2}, ${startY + (gapHeightPx / 2)})`}>
-          VÃO {endGap}
-        </text>
-      </g>
-    );
+    const levelY = startY + gapHeightPx;
+    gapIndicators.push(renderLevelMarker(leftX, levelY, "NÍVEL SUPERIOR", `-${endGap}`));
   }
 
   // Group bars by visual placement to avoid overlap
