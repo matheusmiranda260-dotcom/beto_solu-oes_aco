@@ -1452,17 +1452,35 @@ const ColumnElevationView: React.FC<{
         <g transform={`translate(${rightX + 40}, 0)`}>
           {/* The Dimension Line */}
           <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
-          <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#0f172a" strokeWidth="1" />
-          <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#0f172a" strokeWidth="1" />
+          <line x1={-3} y1={startY} x2={3} y2={startY} stroke="#0f172a" strokeWidth="1" />
+          <line x1={-3} y1={endY} x2={3} y2={endY} stroke="#0f172a" strokeWidth="1" />
 
-          {/* Height Value (Left of line) */}
-          <text x={-5} y={(startY + endY) / 2} textAnchor="middle" fontSize="12" fontWeight="normal" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+          {/* Height Value (Left of line) - Rotated -90 */}
+          <text
+            x={-5}
+            y={(startY + endY) / 2}
+            textAnchor="middle"
+            fontSize="12"
+            fontWeight="normal"
+            fill="#0f172a"
+            transform={`rotate(-90, -5, ${(startY + endY) / 2})`}
+            dy="-2"
+          >
             {Math.round(item.length * 100)}
           </text>
 
-          {/* Stirrup Info (Right of line) */}
+          {/* Stirrup Info (Right of line) - Rotated -90 */}
           {item.hasStirrups && (
-            <text x={10} y={(startY + endY) / 2} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            <text
+              x={5}
+              y={(startY + endY) / 2}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="normal"
+              fill="#0f172a"
+              transform={`rotate(-90, 5, ${(startY + endY) / 2})`}
+              dy="9"
+            >
               {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
           )}
