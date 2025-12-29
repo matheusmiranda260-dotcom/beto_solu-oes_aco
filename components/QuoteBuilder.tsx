@@ -1352,27 +1352,28 @@ const ColumnElevationView: React.FC<{
         width="100%"
         height={viewH}
         viewBox={`0 0 ${viewW} ${viewH}`}
-        className={`bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
+        className={`bg-white rounded-[2rem] overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
         tabIndex={0}
       >
         <defs>
-          <pattern id="concreteHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: '#e2e8f0', strokeWidth: 1 }} />
-          </pattern>
           <marker id="arrowHead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
           </marker>
         </defs>
 
-        {/* Grid Background */}
-        <rect width="100%" height="100%" fill="#f8fafc" rx="32" />
+        {/* Clean White Background */}
+        <rect width="100%" height="100%" fill="#ffffff" />
 
         {/* Title */}
-        <text x="30" y="50" fontSize="24" fontWeight="900" fill="#0f172a">{item.observation || item.type}</text>
-        <text x="30" y="70" fontSize="12" fill="#64748b" fontWeight="bold">ESC 1:50</text>
+        <text x="30" y="40" fontSize="20" fontWeight="900" fill="#0f172a">{item.observation || item.type}</text>
+        <text x="30" y="58" fontSize="11" fill="#64748b" fontWeight="bold">ESC 1:25</text>
 
-        {/* Column Body */}
-        <rect x={leftX} y={startY} width={displayWidthPx} height={totalHeightPx} fill="url(#concreteHatch)" stroke="#334155" strokeWidth="2" />
+        {/* VISTA H Label */}
+        <text x={centerX - 30} y="40" fontSize="12" fontWeight="900" fill="#0f172a" textAnchor="middle">VISTA H</text>
+        <text x={centerX - 30} y="55" fontSize="9" fill="#64748b" fontWeight="bold" textAnchor="middle">ESC 1:25</text>
+
+        {/* Column Body - Just outline, no fill */}
+        <rect x={leftX} y={startY} width={displayWidthPx} height={totalHeightPx} fill="none" stroke="#0f172a" strokeWidth="2" />
 
         {/* Stirrups (Behind bars) */}
         {stirrupLines}
@@ -1391,24 +1392,116 @@ const ColumnElevationView: React.FC<{
           renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, centerX)
         )}
 
-        {/* Dimensions (Height) */}
-        <g transform={`translate(${rightX + 40}, 0)`}>
-          <line x1={0} y1={startY} x2={0} y2={endY} stroke="#64748b" strokeWidth="1" markerEnd="url(#arrowHead)" markerStart="url(#arrowHeadReverse)" />
-          <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#64748b" strokeWidth="1" />
-          <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#64748b" strokeWidth="1" />
-          <text x={15} y={(startY + endY) / 2} textAnchor="start" fontSize="14" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-            {Math.round(item.length * 100)} cm
+        {/* Dimensions (Height) - Right side */}
+        <g transform={`translate(${rightX + 30}, 0)`}>
+          <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
+          <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#0f172a" strokeWidth="1" />
+          <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#0f172a" strokeWidth="1" />
+          <text x={15} y={(startY + endY) / 2} textAnchor="start" fontSize="12" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            {Math.round(item.length * 100)}
           </text>
         </g>
 
-        {/* Levels/Notes (Mock) */}
-        <g transform={`translate(${leftX - 60}, ${startY})`}>
-          <text textAnchor="end" fontSize="11" fontWeight="bold" fill="#0f172a">Topo</text>
-          <line x1={5} y1={0} x2={55} y2={0} stroke="#0f172a" strokeWidth="1" />
+        {/* Stirrup spacing indicator - Right side */}
+        {item.hasStirrups && (
+          <g transform={`translate(${rightX + 70}, 0)`}>
+            <text x={0} y={(startY + endY) / 2} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
+            </text>
+          </g>
+        )}
+
+        {/* A-A Section Cut Lines */}
+        <line x1={leftX - 20} y1={(startY + endY) / 2} x2={leftX - 10} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
+        <text x={leftX - 30} y={(startY + endY) / 2 + 4} fontSize="10" fontWeight="bold" fill="#0f172a" textAnchor="end">A</text>
+        <line x1={rightX + 10} y1={(startY + endY) / 2} x2={rightX + 20} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
+        <text x={rightX + 30} y={(startY + endY) / 2 + 4} fontSize="10" fontWeight="bold" fill="#0f172a" textAnchor="start">A</text>
+
+        {/* SEÇÃO A-A - Cross Section (Bottom Left) */}
+        <g transform="translate(30, 700)">
+          <text x="0" y="-15" fontSize="12" fontWeight="900" fill="#0f172a">SEÇÃO</text>
+          <text x="0" y="0" fontSize="9" fill="#64748b" fontWeight="bold">ESC 1:20</text>
+
+          {/* Cross Section Box */}
+          {(() => {
+            const sW = item.stirrupWidth || 20;
+            const sH = item.stirrupHeight || 20;
+            const scale = 3;
+            const pW = sW * scale;
+            const pH = sH * scale;
+            const cover = 3 * scale; // 3cm cobrimento
+
+            // Count bars by placement
+            const topBars = item.mainBars.filter(b => b.placement === 'top');
+            const botBars = item.mainBars.filter(b => b.placement === 'bottom' || !b.placement);
+            const sideBars = item.mainBars.filter(b => b.placement === 'distributed');
+            const topCount = topBars.reduce((sum, b) => sum + b.count, 0);
+            const botCount = botBars.reduce((sum, b) => sum + b.count, 0);
+            const sideCount = sideBars.reduce((sum, b) => sum + b.count, 0);
+
+            return (
+              <g transform="translate(0, 20)">
+                {/* Stirrup Rectangle */}
+                <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#0f172a" strokeWidth="2" />
+
+                {/* Dimension lines */}
+                <line x1={0} y1={pH + 10} x2={pW} y2={pH + 10} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={0} y1={pH + 7} x2={0} y2={pH + 13} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW} y1={pH + 7} x2={pW} y2={pH + 13} stroke="#0f172a" strokeWidth="0.5" />
+                <text x={pW / 2} y={pH + 22} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sW)}</text>
+
+                <line x1={pW + 10} y1={0} x2={pW + 10} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW + 7} y1={0} x2={pW + 13} y2={0} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW + 7} y1={pH} x2={pW + 13} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                <text x={pW + 20} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
+
+                {/* Corner bars (4 corners) */}
+                <circle cx={cover} cy={cover} r={4} fill="#0f172a" />
+                <circle cx={pW - cover} cy={cover} r={4} fill="#0f172a" />
+                <circle cx={cover} cy={pH - cover} r={4} fill="#0f172a" />
+                <circle cx={pW - cover} cy={pH - cover} r={4} fill="#0f172a" />
+
+                {/* Top bars */}
+                {topCount > 2 && Array.from({ length: topCount - 2 }).map((_, i) => {
+                  const spacing = (pW - 2 * cover) / (topCount - 1);
+                  return <circle key={`t${i}`} cx={cover + spacing * (i + 1)} cy={cover} r={3} fill="#0f172a" />;
+                })}
+
+                {/* Bottom bars */}
+                {botCount > 2 && Array.from({ length: botCount - 2 }).map((_, i) => {
+                  const spacing = (pW - 2 * cover) / (botCount - 1);
+                  return <circle key={`b${i}`} cx={cover + spacing * (i + 1)} cy={pH - cover} r={3} fill="#0f172a" />;
+                })}
+
+                {/* Side bars */}
+                {sideCount > 0 && (() => {
+                  const perSide = Math.ceil(sideCount / 2);
+                  const nodes: React.ReactNode[] = [];
+                  // Left side
+                  for (let i = 0; i < perSide; i++) {
+                    const ySpacing = (pH - 2 * cover) / (perSide + 1);
+                    nodes.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3} fill="#0f172a" />);
+                  }
+                  // Right side
+                  for (let i = 0; i < sideCount - perSide; i++) {
+                    const ySpacing = (pH - 2 * cover) / (sideCount - perSide + 1);
+                    nodes.push(<circle key={`sr${i}`} cx={pW - cover} cy={cover + ySpacing * (i + 1)} r={3} fill="#0f172a" />);
+                  }
+                  return nodes;
+                })()}
+              </g>
+            );
+          })()}
         </g>
-        <g transform={`translate(${leftX - 60}, ${endY})`}>
-          <text textAnchor="end" fontSize="11" fontWeight="bold" fill="#0f172a">Base</text>
-          <line x1={5} y1={0} x2={55} y2={0} stroke="#0f172a" strokeWidth="1" />
+
+        {/* Top Level Label */}
+        <g transform={`translate(${leftX - 50}, ${startY})`}>
+          <line x1={0} y1={0} x2={45} y2={0} stroke="#0f172a" strokeWidth="1" />
+        </g>
+
+        {/* Bottom Level Label */}
+        <g transform={`translate(${leftX - 50}, ${endY})`}>
+          <line x1={0} y1={0} x2={45} y2={0} stroke="#0f172a" strokeWidth="1" />
         </g>
 
       </svg>
