@@ -1455,34 +1455,36 @@ const ColumnElevationView: React.FC<{
           <line x1={-3} y1={startY} x2={3} y2={startY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-3} y1={endY} x2={3} y2={endY} stroke="#0f172a" strokeWidth="1" />
 
-          {/* Height Value (Left of line) - Rotated -90 */}
-          <text
-            x={-5}
-            y={(startY + endY) / 2}
-            textAnchor="middle"
-            fontSize="12"
-            fontWeight="normal"
-            fill="#0f172a"
-            transform={`rotate(-90, -5, ${(startY + endY) / 2})`}
-            dy="-2"
-          >
-            {Math.round(item.length * 100)}
-          </text>
-
-          {/* Stirrup Info (Right of line) - Rotated -90 */}
-          {item.hasStirrups && (
+          {/* Height Value (Left of line) - Using g wrapper for reliable rotation */}
+          <g transform={`translate(-8, ${(startY + endY) / 2}) rotate(-90)`}>
             <text
-              x={5}
-              y={(startY + endY) / 2}
+              x={0}
+              y={0}
               textAnchor="middle"
-              fontSize="10"
+              dominantBaseline="middle"
+              fontSize="12"
               fontWeight="normal"
               fill="#0f172a"
-              transform={`rotate(-90, 5, ${(startY + endY) / 2})`}
-              dy="9"
             >
-              {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
+              {Math.round(item.length * 100)}
             </text>
+          </g>
+
+          {/* Stirrup Info (Right of line) - Using g wrapper for reliable rotation */}
+          {item.hasStirrups && (
+            <g transform={`translate(8, ${(startY + endY) / 2}) rotate(-90)`}>
+              <text
+                x={0}
+                y={0}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="10"
+                fontWeight="normal"
+                fill="#0f172a"
+              >
+                {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
+              </text>
+            </g>
           )}
         </g>
 
