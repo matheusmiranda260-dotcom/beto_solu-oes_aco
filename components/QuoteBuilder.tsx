@@ -1375,25 +1375,25 @@ const ColumnElevationView: React.FC<{
         {/* Stirrups (Behind bars) */}
         {stirrupLines}
 
-        {/* Main Bars - Rendered OUTSIDE to the RIGHT */}
+        {/* Main Bars - Rendered OUTSIDE to the RIGHT - Adjusted Closer */}
         {bars.map((bar, i) => {
-          // Start drawing bars to the right of the dimensions
+          // Start drawing bars closer to the right side
           // Dimensions are at rightX + 30
           // Stirrup text is at rightX + 70
-          // So lets start bars at rightX + 110
-          const startXBars = rightX + 110;
-          const spacingBars = 40; // Spacing between each bar line
+          // Lets start bars at rightX + 45 to be tighter
+          const startXBars = rightX + 45;
+          const spacingBars = 35; // Tighter spacing
           const xPos = startXBars + (i * spacingBars);
           return renderVerticalBar(bar, xPos);
         })}
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 110 + (bars.length * 40))
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 45 + (bars.length * 35))
         )}
 
         {/* Dimensions (Height) - Right side */}
-        <g transform={`translate(${rightX + 30}, 0)`}>
+        <g transform={`translate(${rightX + 25}, 0)`}>
           <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#0f172a" strokeWidth="1" />
@@ -1402,9 +1402,10 @@ const ColumnElevationView: React.FC<{
           </text>
         </g>
 
-        {/* Stirrup spacing indicator - Right side */}
+        {/* Stirrup spacing indicator - Right side (moved slightly) */}
         {item.hasStirrups && (
-          <g transform={`translate(${rightX + 70}, 0)`}>
+          <g transform={`translate(${rightX + 15}, 0)`}>
+            {/* Adjusted position to avoid overlap with dimension or bars if tight */}
             <text x={0} y={(startY + endY) / 2} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
@@ -1417,8 +1418,9 @@ const ColumnElevationView: React.FC<{
         <line x1={rightX + 10} y1={(startY + endY) / 2} x2={rightX + 20} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
         <text x={rightX + 30} y={(startY + endY) / 2 + 4} fontSize="10" fontWeight="bold" fill="#0f172a" textAnchor="start">A</text>
 
-        {/* SEÇÃO A-A - Cross Section (Right Side, Centered) */}
-        <g transform={`translate(${rightX + 120}, ${(startY + endY) / 2 - 60})`}>
+        {/* SEÇÃO A-A - Cross Section (LEFT Side, Centered) */}
+        {/* leftX is around 250. We want it left of that. Say leftX - 150 */}
+        <g transform={`translate(${leftX - 150}, ${(startY + endY) / 2 - 60})`}>
           <text x="0" y="-25" fontSize="11" fontWeight="900" fill="#0f172a">SEÇÃO</text>
           <text x="0" y="-12" fontSize="9" fill="#64748b" fontWeight="bold">ESC 1:20</text>
 
