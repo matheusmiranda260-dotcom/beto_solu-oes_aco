@@ -1364,36 +1364,73 @@ const ColumnElevationView: React.FC<{
     );
   };
 
-  // Stirrups Logic - Only render if hasStirrups is true
+  // Stirrups logic with visual gaps
   const spacing = item.stirrupSpacing || 20;
-  const numStirrups = item.hasStirrups ? Math.floor(effectiveLengthCm / spacing) : 0;
+  const startGap = item.startGap || 0;
+  const endGap = item.endGap || 0;
+
+  // Calculate total stirrups but filter out those in gaps
+  const maxPossibleStirrups = item.hasStirrups ? Math.floor(effectiveLengthCm / spacing) : 0;
+  let adjustedStirrupCount = 0;
   const stirrupLines: React.ReactNode[] = [];
 
   if (item.hasStirrups) {
-    const startGap = item.startGap || 0;
-    const endGap = item.endGap || 0;
-
-    for (let i = 0; i <= numStirrups; i++) {
+    for (let i = 0; i <= maxPossibleStirrups; i++) {
       const distFromBottom = i * spacing;
-      // Logic: EndY is bottom. Y decreases as we go up.
-      // startGap (bottom gap): distFromBottom < startGap
-      // endGap (top gap): distFromBottom > (effectiveLengthCm - endGap)
 
+      // Skip if inside bottom gap
       if (distFromBottom < startGap) continue;
+
+      // Skip if inside top gap
       if (distFromBottom > (effectiveLengthCm - endGap)) continue;
 
+      adjustedStirrupCount++;
+
       const yPlac = endY - (distFromBottom * scaleY);
-      // Draw stirrup as a horizontal rectangle representing the stirrup loop
       stirrupLines.push(
         <g key={`st-${i}`}>
-          {/* Main stirrup line */}
           <line x1={leftX - 5} y1={yPlac} x2={rightX + 5} y2={yPlac} stroke="#1e293b" strokeWidth="2" />
-          {/* Small hooks at ends */}
           <line x1={leftX - 5} y1={yPlac} x2={leftX - 5} y2={yPlac + 4} stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
           <line x1={rightX + 5} y1={yPlac} x2={rightX + 5} y2={yPlac + 4} stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
         </g>
       );
     }
+  }
+
+  // Visual Gap Indicators (Dotted Lines or Zones)
+  const gapIndicators: React.ReactNode[] = [];
+  if (startGap > 0) {
+    const gapHeightPx = startGap * scaleY;
+    const gapTopY = endY - gapHeightPx;
+    // Dotted line indicating the gap zone boundaries
+    // Can assume "startGap" is at the bottom
+    gapIndicators.push(
+      <g key="gap-start">
+        {/* Dotted lines extending/marking the zone */}
+        <line x1={leftX} y1={endY} x2={leftX} y2={gapTopY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1={rightX} y1={endY} x2={rightX} y2={gapTopY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+        {/* Text indicating gap size */}
+        <text x={(leftX + rightX) / 2} y={endY - (gapHeightPx / 2)} textAnchor="middle" fontSize="9" fill="#94a3b8" transform={`rotate(-90, ${(leftX + rightX) / 2}, ${endY - (gapHeightPx / 2)})`}>
+          VÃO {startGap}
+        </text>
+      </g>
+    );
+  }
+
+  if (endGap > 0) {
+    const gapHeightPx = endGap * scaleY;
+    // Top Gap starts from Top (startY) down to startY + gap
+    const gapBottomY = startY + gapHeightPx;
+
+    gapIndicators.push(
+      <g key="gap-end">
+        <line x1={leftX} y1={startY} x2={leftX} y2={gapBottomY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1={rightX} y1={startY} x2={rightX} y2={gapBottomY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+        <text x={(leftX + rightX) / 2} y={startY + (gapHeightPx / 2)} textAnchor="middle" fontSize="9" fill="#94a3b8" transform={`rotate(-90, ${(leftX + rightX) / 2}, ${startY + (gapHeightPx / 2)})`}>
+          VÃO {endGap}
+        </text>
+      </g>
+    );
   }
 
   // Group bars by visual placement to avoid overlap
@@ -1441,6 +1478,9 @@ const ColumnElevationView: React.FC<{
 
         {/* Stirrups (Behind bars) */}
         {stirrupLines}
+
+        {/* Gap Indicators */}
+        {gapIndicators}
 
         {/* Main Bars - Rendered OUTSIDE to the RIGHT - Adjusted Closer */}
         {bars.map((bar, i) => {
@@ -1491,7 +1531,7 @@ const ColumnElevationView: React.FC<{
               fill="#0f172a"
               transform={`rotate(-90, -6, ${(startY + endY) / 2})`}
             >
-              {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
+              {adjustedStirrupCount} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
           )}
         </g>
