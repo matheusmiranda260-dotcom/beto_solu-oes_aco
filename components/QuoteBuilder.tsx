@@ -1223,7 +1223,7 @@ const ColumnElevationView: React.FC<{
     };
   }, [draggingBarIdx, dragStartY, initialOffset, scaleY, onBarUpdate]);
 
-  const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number, labelXOffset: number = 0) => {
+  const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
     const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
     const offsetCm = group.offset || 0;
 
@@ -1240,18 +1240,14 @@ const ColumnElevationView: React.FC<{
       (group.segmentD || 0) + (group.segmentE || 0);
     const C = Math.round(baseLenCm + extraCm);
 
-    const checkStart = group.segmentB || (group.hookStartType !== 'none' ? group.hookStart : 0); // Hook at bottom
-    const checkEnd = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);     // Hook at top
-
-    // Hook directions (just visual approximation)
+    // Hook directions (visual approximation)
     const hookSize = 15;
     const isSelected = selectedIdx === group.originalIdx;
-    const isBeingDragged = draggingBarIdx === group.originalIdx;
 
     let d = "";
-    // Bottom Hook (Start) - Drawn at barStartPx
+    // Bottom Hook (Start) - Always draw right for exploded view clarity
     if (group.hookStartType !== 'none') {
-      d += `M ${xPos + (group.hookStartType === 'up' ? hookSize : -hookSize)},${barStartPx - 10} L ${xPos},${barStartPx} `;
+      d += `M ${xPos + hookSize},${barStartPx - 10} L ${xPos},${barStartPx} `;
     } else {
       d += `M ${xPos},${barStartPx} `;
     }
@@ -1259,31 +1255,29 @@ const ColumnElevationView: React.FC<{
     // Main Vertical Span
     d += `L ${xPos},${barEndPx} `;
 
-    // Top Hook (End) - Drawn at barEndPx
+    // Top Hook (End) - Always draw right for exploded view clarity
     if (group.hookEndType !== 'none') {
-      d += `L ${xPos + (group.hookEndType === 'up' ? hookSize : -hookSize)},${barEndPx + 10}`;
+      d += `L ${xPos + hookSize},${barEndPx + 10}`;
     }
 
     const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
-    // Place label to the right of the column
-    // Base X for labels is rightX + 60 (to clear dimensions)
-    // We add labelXOffset (increments of 20px) to stack/stagger them
-    const labelX = rightX + 90 + labelXOffset;
+    // Place label immediately to the right of the bar line
+    const labelX = xPos + 10;
 
     return (
       <g
         key={group.originalIdx}
-        className={readOnly ? "" : `cursor-grab ${isDragging ? 'cursor-grabbing' : 'group hover:opacity-80'}`}
+        className={readOnly ? "" : `cursor-grab ${draggingBarIdx !== null ? 'cursor-grabbing' : 'group hover:opacity-80'}`}
         onMouseDown={(e) => handleMouseDown(e, group.originalIdx, offsetCm)}
         onClick={(e) => {
           e.stopPropagation();
-          if (!readOnly && !isDragging && draggingBarIdx === null) onEditBar(group.originalIdx);
+          if (!readOnly && draggingBarIdx === null) onEditBar(group.originalIdx);
         }}
       >
         {/* Hit Area */}
-        <rect x={xPos - 15} y={barEndPx} width={30} height={barLenPx} fill="transparent" />
+        <rect x={xPos - 15} y={barEndPx} width={40} height={barLenPx} fill="transparent" />
 
         {/* Highlight */}
         {isSelected && (
@@ -1293,7 +1287,7 @@ const ColumnElevationView: React.FC<{
         {/* Bar Line */}
         <path d={d} fill="none" stroke={isSelected ? "#3b82f6" : "#0f172a"} strokeWidth={isSelected ? 4 : 3} strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Label (Placed to the right, vertical orientation) */}
+        {/* Label (Vertical, next to bar) */}
         <text
           x={labelX}
           y={(barStartPx + barEndPx) / 2}
@@ -1304,13 +1298,10 @@ const ColumnElevationView: React.FC<{
           {label}
         </text>
 
-        {/* Access line from bar to label (optional, keeps it clean for now) */}
-        {/* <line x1={xPos} y1={(barStartPx + barEndPx)/2} x2={labelX - 10} y2={(barStartPx + barEndPx)/2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" /> */}
-
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
-            <circle cx={xPos + 15} cy={(barStartPx + barEndPx) / 2} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
-            <path d={`M${xPos + 12},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 18},${(barStartPx + barEndPx) / 2 + 3} M${xPos + 18},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 12},${(barStartPx + barEndPx) / 2 + 3}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+            <circle cx={xPos} cy={(barStartPx + barEndPx) / 2} r={8} fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+            <path d={`M${xPos - 3},${(barStartPx + barEndPx) / 2 - 3} L${xPos + 3},${(barStartPx + barEndPx) / 2 + 3} M${xPos + 3},${(barStartPx + barEndPx) / 2 - 3} L${xPos - 3},${(barStartPx + barEndPx) / 2 + 3}`} stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
           </g>
         )}
       </g>
@@ -1384,19 +1375,21 @@ const ColumnElevationView: React.FC<{
         {/* Stirrups (Behind bars) */}
         {stirrupLines}
 
-        {/* Main Bars */}
+        {/* Main Bars - Rendered OUTSIDE to the RIGHT */}
         {bars.map((bar, i) => {
-          // Distribute bars across the width
-          // For simplified visual, distribute evenly
-          const xStep = displayWidthPx / (bars.length + 1);
-          const xPos = leftX + ((i + 1) * xStep);
-          // Pass offset for label (25px per bar to stack them)
-          return renderVerticalBar(bar, xPos, i * 25);
+          // Start drawing bars to the right of the dimensions
+          // Dimensions are at rightX + 30
+          // Stirrup text is at rightX + 70
+          // So lets start bars at rightX + 110
+          const startXBars = rightX + 110;
+          const spacingBars = 40; // Spacing between each bar line
+          const xPos = startXBars + (i * spacingBars);
+          return renderVerticalBar(bar, xPos);
         })}
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, centerX, bars.length * 25)
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 110 + (bars.length * 40))
         )}
 
         {/* Dimensions (Height) - Right side */}
