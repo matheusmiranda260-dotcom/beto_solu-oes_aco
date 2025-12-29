@@ -1370,8 +1370,19 @@ const ColumnElevationView: React.FC<{
   const stirrupLines: React.ReactNode[] = [];
 
   if (item.hasStirrups) {
+    const startGap = item.startGap || 0;
+    const endGap = item.endGap || 0;
+
     for (let i = 0; i <= numStirrups; i++) {
-      const yPlac = endY - (i * spacing * scaleY);
+      const distFromBottom = i * spacing;
+      // Logic: EndY is bottom. Y decreases as we go up.
+      // startGap (bottom gap): distFromBottom < startGap
+      // endGap (top gap): distFromBottom > (effectiveLengthCm - endGap)
+
+      if (distFromBottom < startGap) continue;
+      if (distFromBottom > (effectiveLengthCm - endGap)) continue;
+
+      const yPlac = endY - (distFromBottom * scaleY);
       // Draw stirrup as a horizontal rectangle representing the stirrup loop
       stirrupLines.push(
         <g key={`st-${i}`}>
@@ -2596,12 +2607,16 @@ const ItemDetailEditor: React.FC<{
 
         {/* APOIOS (Supports) Section */}
         <div className="p-4 border-t border-slate-200 bg-gradient-to-b from-blue-50 to-white max-h-64 overflow-y-auto">
-          <h4 className="font-black uppercase text-xs tracking-widest text-blue-600 mb-3">Vãos e Apoios</h4>
+          <h4 className="font-black uppercase text-xs tracking-widest text-blue-600 mb-3">
+            {isVertical ? 'Esperas e Vãos (Estribos)' : 'Vãos e Apoios'}
+          </h4>
 
           {/* Beam Extremity Gaps */}
           <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-white rounded-lg border border-blue-200">
             <div>
-              <label className="text-[8px] text-blue-600 font-bold block">Vão Início (cm)</label>
+              <label className="text-[8px] text-blue-600 font-bold block">
+                {isVertical ? 'Vão Inferior (cm)' : 'Vão Início (cm)'}
+              </label>
               <input
                 type="number"
                 value={localItem.startGap || ''}
@@ -2611,7 +2626,9 @@ const ItemDetailEditor: React.FC<{
               />
             </div>
             <div>
-              <label className="text-[8px] text-blue-600 font-bold block">Vão Final (cm)</label>
+              <label className="text-[8px] text-blue-600 font-bold block">
+                {isVertical ? 'Vão Superior (cm)' : 'Vão Final (cm)'}
+              </label>
               <input
                 type="number"
                 value={localItem.endGap || ''}
@@ -2622,108 +2639,112 @@ const ItemDetailEditor: React.FC<{
             </div>
           </div>
 
-          {/* Support List Header */}
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[9px] font-bold text-pink-600 uppercase">Apoios Intermediários</span>
-            <button
-              onClick={() => {
-                const newSupport = { position: localItem.length * 50, width: 20, leftGap: 20, rightGap: 20, label: `P${(localItem.supports?.length || 0) + 1}` };
-                setLocalItem({ ...localItem, supports: [...(localItem.supports || []), newSupport] });
-              }}
-              className="px-2 py-0.5 rounded bg-pink-500 text-white text-[9px] font-bold hover:bg-pink-600"
-            >
-              + Apoio
-            </button>
-          </div>
+          {/* Support List Header - Only for Non-Vertical (Beams) */}
+          {!isVertical && (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[9px] font-bold text-pink-600 uppercase">Apoios Intermediários</span>
+                <button
+                  onClick={() => {
+                    const newSupport = { position: localItem.length * 50, width: 20, leftGap: 20, rightGap: 20, label: `P${(localItem.supports?.length || 0) + 1}` };
+                    setLocalItem({ ...localItem, supports: [...(localItem.supports || []), newSupport] });
+                  }}
+                  className="px-2 py-0.5 rounded bg-pink-500 text-white text-[9px] font-bold hover:bg-pink-600"
+                >
+                  + Apoio
+                </button>
+              </div>
 
-          {(!localItem.supports || localItem.supports.length === 0) ? (
-            <p className="text-[10px] text-slate-400 text-center py-2 bg-slate-50 rounded border border-dashed border-slate-200">Nenhum apoio intermediário</p>
-          ) : (
-            <div className="space-y-2">
-              {localItem.supports.map((support, idx) => (
-                <div key={idx} className="bg-white p-2 rounded-lg border border-pink-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={support.label || ''}
-                      onChange={e => {
-                        const supports = [...(localItem.supports || [])];
-                        supports[idx] = { ...supports[idx], label: e.target.value };
-                        setLocalItem({ ...localItem, supports });
-                      }}
-                      placeholder="P1"
-                      className="w-14 p-1 text-xs font-bold text-center border border-pink-300 rounded bg-pink-50"
-                    />
-                    <div className="flex-1">
-                      <label className="text-[7px] text-pink-600 font-bold">Posição (cm)</label>
-                      <input
-                        type="number"
-                        value={support.position}
-                        onChange={e => {
-                          const supports = [...(localItem.supports || [])];
-                          supports[idx] = { ...supports[idx], position: Number(e.target.value) };
-                          setLocalItem({ ...localItem, supports });
-                        }}
-                        className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
-                      />
+              {(!localItem.supports || localItem.supports.length === 0) ? (
+                <p className="text-[10px] text-slate-400 text-center py-2 bg-slate-50 rounded border border-dashed border-slate-200">Nenhum apoio intermediário</p>
+              ) : (
+                <div className="space-y-2">
+                  {localItem.supports.map((support, idx) => (
+                    <div key={idx} className="bg-white p-2 rounded-lg border border-pink-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={support.label || ''}
+                          onChange={e => {
+                            const supports = [...(localItem.supports || [])];
+                            supports[idx] = { ...supports[idx], label: e.target.value };
+                            setLocalItem({ ...localItem, supports });
+                          }}
+                          placeholder="P1"
+                          className="w-14 p-1 text-xs font-bold text-center border border-pink-300 rounded bg-pink-50"
+                        />
+                        <div className="flex-1">
+                          <label className="text-[7px] text-pink-600 font-bold">Posição (cm)</label>
+                          <input
+                            type="number"
+                            value={support.position}
+                            onChange={e => {
+                              const supports = [...(localItem.supports || [])];
+                              supports[idx] = { ...supports[idx], position: Number(e.target.value) };
+                              setLocalItem({ ...localItem, supports });
+                            }}
+                            className="w-full p-1 text-xs font-bold text-center border border-pink-300 rounded"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const supports = (localItem.supports || []).filter((_, i) => i !== idx);
+                            setLocalItem({ ...localItem, supports });
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                      {/* Gap fields */}
+                      <div className="grid grid-cols-3 gap-1">
+                        <div>
+                          <label className="text-[7px] text-blue-600 font-bold">Vão ← (cm)</label>
+                          <input
+                            type="number"
+                            value={support.leftGap || ''}
+                            onChange={e => {
+                              const supports = [...(localItem.supports || [])];
+                              supports[idx] = { ...supports[idx], leftGap: Number(e.target.value) };
+                              setLocalItem({ ...localItem, supports });
+                            }}
+                            placeholder="20"
+                            className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[7px] text-gray-500 font-bold">Largura (cm)</label>
+                          <input
+                            type="number"
+                            value={support.width}
+                            onChange={e => {
+                              const supports = [...(localItem.supports || [])];
+                              supports[idx] = { ...supports[idx], width: Number(e.target.value) };
+                              setLocalItem({ ...localItem, supports });
+                            }}
+                            className="w-full p-1 text-xs font-bold text-center border border-gray-300 rounded bg-gray-50"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[7px] text-blue-600 font-bold">Vão → (cm)</label>
+                          <input
+                            type="number"
+                            value={support.rightGap || ''}
+                            onChange={e => {
+                              const supports = [...(localItem.supports || [])];
+                              supports[idx] = { ...supports[idx], rightGap: Number(e.target.value) };
+                              setLocalItem({ ...localItem, supports });
+                            }}
+                            placeholder="20"
+                            className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        const supports = (localItem.supports || []).filter((_, i) => i !== idx);
-                        setLocalItem({ ...localItem, supports });
-                      }}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                  {/* Gap fields */}
-                  <div className="grid grid-cols-3 gap-1">
-                    <div>
-                      <label className="text-[7px] text-blue-600 font-bold">Vão ← (cm)</label>
-                      <input
-                        type="number"
-                        value={support.leftGap || ''}
-                        onChange={e => {
-                          const supports = [...(localItem.supports || [])];
-                          supports[idx] = { ...supports[idx], leftGap: Number(e.target.value) };
-                          setLocalItem({ ...localItem, supports });
-                        }}
-                        placeholder="20"
-                        className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[7px] text-gray-500 font-bold">Largura (cm)</label>
-                      <input
-                        type="number"
-                        value={support.width}
-                        onChange={e => {
-                          const supports = [...(localItem.supports || [])];
-                          supports[idx] = { ...supports[idx], width: Number(e.target.value) };
-                          setLocalItem({ ...localItem, supports });
-                        }}
-                        className="w-full p-1 text-xs font-bold text-center border border-gray-300 rounded bg-gray-50"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[7px] text-blue-600 font-bold">Vão → (cm)</label>
-                      <input
-                        type="number"
-                        value={support.rightGap || ''}
-                        onChange={e => {
-                          const supports = [...(localItem.supports || [])];
-                          supports[idx] = { ...supports[idx], rightGap: Number(e.target.value) };
-                          setLocalItem({ ...localItem, supports });
-                        }}
-                        placeholder="20"
-                        className="w-full p-1 text-xs font-bold text-center border border-blue-300 rounded"
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
 
