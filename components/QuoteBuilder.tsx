@@ -2580,8 +2580,10 @@ const ItemDetailEditor: React.FC<{
                 <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-black">{newBar.count}x Ø{newBar.gauge}</span>
                 {newBar.segmentA && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black">{((newBar.segmentA || 0) + (newBar.segmentB || 0) + (newBar.segmentC || 0))}cm</span>}
               </div>
-              <div className={`scale-75 origin-right transition-transform ${isVertical ? '-rotate-90' : ''}`}>
-                <BarDrawing length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} />
+              <div className={`flex items-center justify-center ${isVertical ? 'w-[40px] h-[100px]' : 'w-[100px] h-[40px]'}`}>
+                <div className={`transform scale-75 transition-transform ${isVertical ? '-rotate-90' : ''}`}>
+                  <BarDrawing compact length={(newBar.segmentA || 0) / 100} hookStart={newBar.segmentB || newBar.hookStart || 0} hookEnd={newBar.segmentC || newBar.hookEnd || 0} startType={newBar.hookStartType} endType={newBar.hookEndType} shape={visualShape} segmentD={newBar.segmentD} segmentE={newBar.segmentE} />
+                </div>
               </div>
             </div>
 
