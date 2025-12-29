@@ -1365,12 +1365,15 @@ const ColumnElevationView: React.FC<{
   };
 
   // Stirrups logic with visual gaps
-  const spacing = item.stirrupSpacing || 20;
+  let spacing = item.stirrupSpacing || 20;
+  if (spacing <= 0) spacing = 20; // Safety guard against 0/infinite loop
+
   const startGap = item.startGap || 0;
   const endGap = item.endGap || 0;
 
   // Calculate total stirrups but filter out those in gaps
-  const maxPossibleStirrups = item.hasStirrups ? Math.floor(effectiveLengthCm / spacing) : 0;
+  // Safety cap at 500 to prevent browser freeze if length is huge or spacing tiny
+  const maxPossibleStirrups = item.hasStirrups ? Math.min(Math.floor(effectiveLengthCm / spacing), 500) : 0;
   let adjustedStirrupCount = 0;
   const stirrupLines: React.ReactNode[] = [];
 
