@@ -1417,10 +1417,10 @@ const ColumnElevationView: React.FC<{
         <line x1={rightX + 10} y1={(startY + endY) / 2} x2={rightX + 20} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
         <text x={rightX + 30} y={(startY + endY) / 2 + 4} fontSize="10" fontWeight="bold" fill="#0f172a" textAnchor="start">A</text>
 
-        {/* SEÇÃO A-A - Cross Section (Bottom Left) */}
-        <g transform="translate(30, 700)">
-          <text x="0" y="-15" fontSize="12" fontWeight="900" fill="#0f172a">SEÇÃO</text>
-          <text x="0" y="0" fontSize="9" fill="#64748b" fontWeight="bold">ESC 1:20</text>
+        {/* SEÇÃO A-A - Cross Section (Right Side, Centered) */}
+        <g transform={`translate(${rightX + 120}, ${(startY + endY) / 2 - 60})`}>
+          <text x="0" y="-25" fontSize="11" fontWeight="900" fill="#0f172a">SEÇÃO</text>
+          <text x="0" y="-12" fontSize="9" fill="#64748b" fontWeight="bold">ESC 1:20</text>
 
           {/* Cross Section Box */}
           {(() => {
@@ -1429,7 +1429,8 @@ const ColumnElevationView: React.FC<{
             const scale = 3;
             const pW = sW * scale;
             const pH = sH * scale;
-            const cover = 3 * scale; // 3cm cobrimento
+            const cover = 2.5 * scale; // 2.5cm cobrimento
+            const stirrupOffset = 1.5 * scale; // offset do estribo
 
             // Count bars by placement
             const topBars = item.mainBars.filter(b => b.placement === 'top');
@@ -1440,20 +1441,20 @@ const ColumnElevationView: React.FC<{
             const sideCount = sideBars.reduce((sum, b) => sum + b.count, 0);
 
             return (
-              <g transform="translate(0, 20)">
-                {/* Stirrup Rectangle */}
-                <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#0f172a" strokeWidth="2" />
+              <g transform="translate(0, 0)">
+                {/* Concrete Outline (outer rectangle) */}
+                <rect x={0} y={0} width={pW} height={pH} fill="#f1f5f9" stroke="#0f172a" strokeWidth="2" />
 
-                {/* Dimension lines */}
-                <line x1={0} y1={pH + 10} x2={pW} y2={pH + 10} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={0} y1={pH + 7} x2={0} y2={pH + 13} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={pW} y1={pH + 7} x2={pW} y2={pH + 13} stroke="#0f172a" strokeWidth="0.5" />
-                <text x={pW / 2} y={pH + 22} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sW)}</text>
-
-                <line x1={pW + 10} y1={0} x2={pW + 10} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={pW + 7} y1={0} x2={pW + 13} y2={0} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={pW + 7} y1={pH} x2={pW + 13} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
-                <text x={pW + 20} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
+                {/* Stirrup Rectangle (inside concrete) */}
+                <rect
+                  x={stirrupOffset}
+                  y={stirrupOffset}
+                  width={pW - 2 * stirrupOffset}
+                  height={pH - 2 * stirrupOffset}
+                  fill="none"
+                  stroke="#0f172a"
+                  strokeWidth="1.5"
+                />
 
                 {/* Corner bars (4 corners) */}
                 <circle cx={cover} cy={cover} r={4} fill="#0f172a" />
@@ -1461,16 +1462,16 @@ const ColumnElevationView: React.FC<{
                 <circle cx={cover} cy={pH - cover} r={4} fill="#0f172a" />
                 <circle cx={pW - cover} cy={pH - cover} r={4} fill="#0f172a" />
 
-                {/* Top bars */}
+                {/* Top bars (extras beyond corners) */}
                 {topCount > 2 && Array.from({ length: topCount - 2 }).map((_, i) => {
-                  const spacing = (pW - 2 * cover) / (topCount - 1);
-                  return <circle key={`t${i}`} cx={cover + spacing * (i + 1)} cy={cover} r={3} fill="#0f172a" />;
+                  const barSpacing = (pW - 2 * cover) / (topCount - 1);
+                  return <circle key={`t${i}`} cx={cover + barSpacing * (i + 1)} cy={cover} r={3} fill="#0f172a" />;
                 })}
 
-                {/* Bottom bars */}
+                {/* Bottom bars (extras beyond corners) */}
                 {botCount > 2 && Array.from({ length: botCount - 2 }).map((_, i) => {
-                  const spacing = (pW - 2 * cover) / (botCount - 1);
-                  return <circle key={`b${i}`} cx={cover + spacing * (i + 1)} cy={pH - cover} r={3} fill="#0f172a" />;
+                  const barSpacing = (pW - 2 * cover) / (botCount - 1);
+                  return <circle key={`b${i}`} cx={cover + barSpacing * (i + 1)} cy={pH - cover} r={3} fill="#0f172a" />;
                 })}
 
                 {/* Side bars */}
@@ -1489,6 +1490,47 @@ const ColumnElevationView: React.FC<{
                   }
                   return nodes;
                 })()}
+
+                {/* Dimension lines - Width (bottom) */}
+                <line x1={0} y1={pH + 8} x2={pW} y2={pH + 8} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={0} y1={pH + 5} x2={0} y2={pH + 11} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW} y1={pH + 5} x2={pW} y2={pH + 11} stroke="#0f172a" strokeWidth="0.5" />
+                <text x={pW / 2} y={pH + 20} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sW)}</text>
+
+                {/* Dimension lines - Height (right) */}
+                <line x1={pW + 8} y1={0} x2={pW + 8} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW + 5} y1={0} x2={pW + 11} y2={0} stroke="#0f172a" strokeWidth="0.5" />
+                <line x1={pW + 5} y1={pH} x2={pW + 11} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                <text x={pW + 18} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
+
+                {/* NEW: DETACHED STIRRUP (Estribo Avulso) */}
+                {item.hasStirrups && (() => {
+                  const detachedScale = 1.2;
+                  const dW = (item.stirrupWidth || sW) * detachedScale;
+                  const dH = (item.stirrupHeight || sH) * detachedScale;
+                  const offsetY = pH + 60; // Position below cross-section
+                  const cutLength = Math.round(((item.stirrupWidth + item.stirrupHeight) * 2 + 10)); // Perimeter + hooks
+
+                  return (
+                    <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
+                      {/* Shape */}
+                      <rect x={0} y={0} width={dW} height={dH} fill="none" stroke="#0f172a" strokeWidth="1.5" />
+                      {/* Hooks at top left */}
+                      <line x1={2} y1={2} x2={10} y2={10} stroke="#0f172a" strokeWidth="1.5" />
+                      <line x1={2} y1={2} x2={0} y2={10} stroke="#0f172a" strokeWidth="1.5" />
+
+                      {/* Dimensions */}
+                      <text x={-10} y={dH / 2} textAnchor="end" fontSize="9" fill="#0f172a">{Math.round(item.stirrupHeight)}</text>
+                      <text x={dW / 2} y={dH + 12} textAnchor="middle" fontSize="9" fill="#0f172a">{Math.round(item.stirrupWidth)}</text>
+
+                      {/* Label Description */}
+                      <text x={dW / 2} y={dH + 30} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
+                        {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
+                      </text>
+                    </g>
+                  );
+                })()}
+
               </g>
             );
           })()}
@@ -1685,14 +1727,14 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
       observation: newItemBase.obs,
       quantity: newItemBase.qty,
       length: lengthM,
-      width: newItemBase.type === ElementType.SAPATA ? widthM : undefined,
+      width: newItemBase.type === ElementType.SAPATA ? widthM : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? widthM : undefined),
       height: newItemBase.heightCm,
       mainBars: [],
-      hasStirrups: newItemBase.type === ElementType.SAPATA,
+      hasStirrups: newItemBase.type === ElementType.SAPATA || newItemBase.type === 'Pilar' || newItemBase.type === 'Broca',
       stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0',
       stirrupSpacing: 15,
-      stirrupWidth: newItemBase.type === ElementType.SAPATA ? (newItemBase.widthCm) : 15,
-      stirrupHeight: newItemBase.type === ElementType.SAPATA ? (newItemBase.heightCm) : 20,
+      stirrupWidth: newItemBase.type === ElementType.SAPATA ? newItemBase.widthCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? newItemBase.widthCm : 15),
+      stirrupHeight: newItemBase.type === ElementType.SAPATA ? newItemBase.heightCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? newItemBase.heightCm : 20),
       isConfigured: false
     };
     setItems([...items, newItem]);
