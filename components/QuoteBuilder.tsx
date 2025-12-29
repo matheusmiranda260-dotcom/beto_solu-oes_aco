@@ -1437,7 +1437,7 @@ const ColumnElevationView: React.FC<{
           // Dimensions are at rightX + 30
           // Stirrup text is at rightX + 70
           // Lets start bars with more separation
-          const startXBars = rightX + 70;
+          const startXBars = rightX + 100;
           const spacingBars = 60; // Much wider spacing to avoid overlap
           const xPos = startXBars + (i * spacingBars);
           return renderVerticalBar(bar, xPos);
@@ -1445,7 +1445,7 @@ const ColumnElevationView: React.FC<{
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 70 + (bars.length * 60))
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 100 + (bars.length * 60))
         )}
 
         {/* Dimensions & Stirrup Info - Right side grouped around the dimension line */}
