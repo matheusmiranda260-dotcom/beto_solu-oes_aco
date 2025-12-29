@@ -1173,20 +1173,30 @@ const ColumnElevationView: React.FC<{
 
   // Horizontal Positioning (Center column in view)
   const centerX = viewW / 2;
-  const columnWidthCm = (item.width || 20); // Default 20cm if undefined
-  const displayWidthPx = Math.max(columnWidthCm * 4, 100); // Visual width (not exact scale x)
+  // Ensure we treat width consistently. item.width is in Meters.
+  // Fallback to 0.2m (20cm) if undefined.
+  const widthM = (item.width && item.width > 0) ? item.width : 0.2;
+  const columnWidthCm = widthM * 100;
+
+  const displayWidthPx = Math.max(columnWidthCm * 3, 120); // Scale width for visibility
   const leftX = centerX - displayWidthPx / 2;
   const rightX = centerX + displayWidthPx / 2;
 
   const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
     if (readOnly) return;
     if (!svgRef.current) return;
-    svgRef.current.focus();
+    // ... Focus might not be needed and can cause scroll jumps
+    // svgRef.current.focus(); 
 
     const pt = svgRef.current.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
-    const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+
+    // Safety check for CTM
+    const ctm = svgRef.current.getScreenCTM();
+    if (!ctm) return;
+
+    const svgPoint = pt.matrixTransform(ctm.inverse());
 
     e.stopPropagation();
     e.preventDefault();
@@ -1197,8 +1207,10 @@ const ColumnElevationView: React.FC<{
     if (typeof idx === 'number') onEditBar(idx);
   };
 
+  // Effect for Dragging - Removing onBarUpdate from deps to avoid infinite loops if generic function
   useEffect(() => {
     if (draggingBarIdx === null) return;
+    // ... (rest of logic same)
 
     const handleWindowMouseMove = (e: MouseEvent) => {
       if (draggingBarIdx === null || !svgRef.current) return;
@@ -1240,7 +1252,7 @@ const ColumnElevationView: React.FC<{
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [draggingBarIdx, dragStartY, initialOffset, scaleY, onBarUpdate]);
+  }, [draggingBarIdx, dragStartY, initialOffset, scaleY]); // Removed onBarUpdate to prevent infinite re-renders
 
   const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
     const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
