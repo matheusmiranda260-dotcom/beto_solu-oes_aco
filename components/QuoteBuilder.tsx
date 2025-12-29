@@ -2773,8 +2773,7 @@ const ItemDetailEditor: React.FC<{
   const [visualShape, setVisualShape] = useState<string>('straight');
   const [lastUsedSegmentA, setLastUsedSegmentA] = useState<number>(localItem.length);
 
-  // Multi-position bar placement system
-  const [barsToAdd, setBarsToAdd] = useState<number>(1);
+  // Multi-position bar placement system - driven by newBar.count
   const [selectedPositions, setSelectedPositions] = useState<number[]>([]);
 
   // Sync edits if editingIndex changes
@@ -2798,28 +2797,28 @@ const ItemDetailEditor: React.FC<{
         else setVisualShape('custom');
       }
     } else {
-      // Reset to default
+      // RESET FORM FOR NEW BAR
       setNewBar({
-        count: 2,
+        count: 0, // Force user input
         gauge: '10.0',
-        usage: initialUsage || BarUsage.PRINCIPAL,
-        placement: (initialUsage === BarUsage.COSTELA) ? 'distributed' : 'bottom',
-        hookStartType: isSapata ? 'up' : 'none',
-        hookEndType: isSapata ? 'up' : 'none',
-        hookStart: isSapata ? defaultHook : 0,
-        hookEnd: isSapata ? defaultHook : 0,
-        position: '',
-        shape: 'straight',
-        segmentA: 0, // Inicia sem valor para o usuário digitar
-        segmentB: isSapata ? defaultHook : 0,
-        segmentC: isSapata ? defaultHook : 0,
+        usage: BarUsage.PRINCIPAL,
+        hookStartType: 'none',
+        hookEndType: 'none',
+        hookStart: 0,
+        hookEnd: 0,
+        placement: 'bottom',
+        segmentA: 0, // Force user input
+        segmentB: 0,
+        segmentC: 0,
         segmentD: 0,
         segmentE: 0,
-        offset: 0
+        offset: 0,
+        shape: 'straight'
       });
       setVisualShape('straight');
+      setSelectedPositions([]);
     }
-  }, [editingIndex, localItem.mainBars, defaultHook, initialUsage, isSapata]);
+  }, [editingIndex, localItem.mainBars]);
 
 
   const handleAddOrUpdateBar = () => {
@@ -2829,22 +2828,25 @@ const ItemDetailEditor: React.FC<{
       bars[editingIndex] = newBar;
     } else {
       // Adding new bar(s) - multi-position mode with exact points
-      if (selectedPositions.length === barsToAdd && selectedPositions.length > 0) {
+      // Logic: newBar.count dictates expected positions
+      const count = newBar.count || 0;
+      if (count > 0 && selectedPositions.length === count) {
         // Add one bar per selected point
         selectedPositions.forEach((pointIndex) => {
           bars.push({
             ...newBar,
-            count: newBar.count, // Use the count from the form
+            count: 1, // Each added bar is a single unit at a specific point
             pointIndex: pointIndex, // Store exact point index
-            placement: undefined // Deprecated, using pointIndex now
+            placement: undefined
           });
         });
-        // Reset multi-position state
+
+        // Reset form for next entry
+        setNewBar({ ...newBar, count: 0, segmentA: 0, position: '' });
         setSelectedPositions([]);
-        setBarsToAdd(1);
       } else {
-        // Fallback to old behavior if points not all selected (single bar with old placement)
-        bars.push(newBar);
+        // Should not happen due to button validation, but fallback
+        console.warn("Attempted to add bars without matching positions");
       }
     }
     const updated = { ...localItem, mainBars: bars, isConfigured: true };
@@ -2853,7 +2855,8 @@ const ItemDetailEditor: React.FC<{
     if (newBar.segmentA && newBar.segmentA > 0) {
       setLastUsedSegmentA(newBar.segmentA);
     }
-    setEditingIndex(undefined); // Reset interaction to "Add New" mode
+    // Close edit mode if applicable
+    if (editingIndex !== undefined) setEditingIndex(undefined);
   };
 
   const handleRemoveBar = (idx: number) => {
@@ -3056,7 +3059,7 @@ const ItemDetailEditor: React.FC<{
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {selectedPositions.length} de {barsToAdd} posicionados
+                  {selectedPositions.length} de {newBar.count || 0} posicionados
                 </div>
               )}
               <div className="transform scale-[1.5]">
@@ -3067,10 +3070,11 @@ const ItemDetailEditor: React.FC<{
                   stirrupPos={localItem.stirrupPosition}
                   stirrupGauge={localItem.stirrupGauge}
                   model={localItem.stirrupModel || 'rect'}
-                  showAvailablePoints={editingIndex === undefined}
+                  showAvailablePoints={editingIndex === undefined && (newBar.count || 0) > 0}
                   selectedPointIndices={selectedPositions}
                   onPointClick={(pointIndex) => {
-                    if (selectedPositions.length < barsToAdd) {
+                    const max = newBar.count || 0;
+                    if (selectedPositions.length < max) {
                       setSelectedPositions([...selectedPositions, pointIndex]);
                     }
                   }}
@@ -3157,7 +3161,19 @@ const ItemDetailEditor: React.FC<{
           <div className="grid grid-cols-5 gap-3 mb-3">
             <div>
               <label className="text-[10px] font-black text-slate-600 uppercase block">Qtd</label>
-              <input type="number" value={newBar.count} onChange={e => setNewBar({ ...newBar, count: Number(e.target.value) })} className="w-full p-3 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-2xl text-center outline-none focus:border-indigo-500" />
+              <input
+                type="number"
+                min="1"
+                value={newBar.count || ''}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setNewBar({ ...newBar, count: val });
+                  // Reset positions when count changes to enforce precise selection
+                  setSelectedPositions([]);
+                }}
+                placeholder="0"
+                className={`w-full p-3 border-2 rounded-xl font-black text-2xl text-center outline-none transition-all ${!newBar.count ? 'border-amber-300 bg-amber-50 focus:border-amber-500' : 'bg-slate-50 border-slate-300 focus:border-indigo-500'}`}
+              />
             </div>
             <div>
               <label className="text-[10px] font-black text-slate-600 uppercase block">Bitola</label>
@@ -3171,57 +3187,15 @@ const ItemDetailEditor: React.FC<{
             </div>
             <div className="col-span-2">
               <label className="text-[10px] font-black text-indigo-600 uppercase block">Comp. A (cm)</label>
-              <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-3 bg-indigo-50 border-2 border-indigo-400 rounded-xl font-black text-2xl text-indigo-700 text-center outline-none focus:border-indigo-500" />
+              <input
+                type="number"
+                value={newBar.segmentA || ''}
+                onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })}
+                placeholder="0"
+                className={`w-full p-3 border-2 rounded-xl font-black text-2xl text-center outline-none transition-all ${!newBar.segmentA ? 'border-amber-300 bg-amber-50 text-slate-400 focus:border-amber-500' : 'bg-indigo-50 border-indigo-400 text-indigo-700 focus:border-indigo-500'}`}
+              />
             </div>
           </div>
-
-          {/* Multi-Position Bar System - Only show when adding new bars */}
-          {editingIndex === undefined && (
-            <div className="mb-3 p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl">
-              <label className="text-[10px] font-black text-indigo-700 uppercase block mb-2 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Ferros a Adicionar (Clique na seção para posicionar cada um)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={barsToAdd}
-                  onChange={e => {
-                    const newCount = Math.max(1, Number(e.target.value));
-                    setBarsToAdd(newCount);
-                    setSelectedPositions([]);
-                  }}
-                  className="w-24 p-3 bg-white border-2 border-indigo-300 rounded-xl text-lg font-black text-center focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                />
-                <div className="flex-grow flex items-center gap-2">
-                  {selectedPositions.length > 0 && (
-                    <button
-                      onClick={() => setSelectedPositions([])}
-                      className="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors"
-                    >
-                      Limpar Posições
-                    </button>
-                  )}
-                  {selectedPositions.length === barsToAdd ? (
-                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Posicionamento completo!
-                    </div>
-                  ) : (
-                    <div className="text-xs font-bold text-indigo-600">
-                      {selectedPositions.length} de {barsToAdd} posicionados
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Quick Reuse */}
           {lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (
@@ -3282,8 +3256,15 @@ const ItemDetailEditor: React.FC<{
               </div>
             </div>
 
-            <button onClick={handleAddOrUpdateBar} className={`w-full py-3 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${editingIndex !== undefined ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white'}`}>
-              {editingIndex !== undefined ? '✓ Atualizar' : '+ Adicionar Ferro'}
+            <button
+              onClick={handleAddOrUpdateBar}
+              disabled={(!newBar.segmentA || newBar.segmentA <= 0) || (!newBar.count || newBar.count <= 0) || (editingIndex === undefined && selectedPositions.length !== (newBar.count || 0))}
+              className={`w-full py-3 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${(!newBar.segmentA || newBar.segmentA <= 0 || !newBar.count || newBar.count <= 0 || (editingIndex === undefined && selectedPositions.length !== (newBar.count || 0))) ? 'bg-slate-300 cursor-not-allowed opacity-70 text-slate-500' : (editingIndex !== undefined ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white')}`}
+            >
+              {editingIndex !== undefined ? '✓ Atualizar' : (
+                (!newBar.count || newBar.count <= 0) ? 'Defina Qtd > 0' :
+                  (selectedPositions.length !== (newBar.count || 0) ? `Selecione Pontos (${selectedPositions.length}/${newBar.count})` : '+ Adicionar Ferro')
+              )}
             </button>
           </div>
 
