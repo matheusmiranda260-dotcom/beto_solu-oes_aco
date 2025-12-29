@@ -333,7 +333,6 @@ const TechnicalDimension: React.FC<{ x1: number; y1: number; x2: number; y2: num
 };
 
 // Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
-// Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
 const CompositeCrossSection: React.FC<{
   stirrupW: number;
   stirrupH: number;
@@ -342,256 +341,174 @@ const CompositeCrossSection: React.FC<{
   stirrupGauge?: string;
   stirrupCount?: number;
   model?: 'rect' | 'circle' | 'triangle' | 'pentagon' | 'hexagon';
-  onZoneClick?: (zone: 'top' | 'bottom' | 'distributed' | 'center') => void;
-  selectedZone?: 'top' | 'bottom' | 'distributed' | 'center' | null;
-  multiPositions?: ('top' | 'bottom' | 'distributed' | 'center')[];
-}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, model = 'rect', onZoneClick, selectedZone, multiPositions }) => {
+  onPointClick?: (pointIndex: number) => void; // NEW: Click on specific grid point
+  selectedPointIndices?: number[]; // NEW: Which points are selected
+  showAvailablePoints?: boolean; // NEW: Show clickable grid
+}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, model = 'rect', onPointClick, selectedPointIndices = [], showAvailablePoints = false }) => {
   // Ensure valid dimensions
   const width = (stirrupW && stirrupW > 0) ? stirrupW : 15;
   const height = (stirrupH && stirrupH > 0) ? stirrupH : 20;
 
   const maxDim = Math.max(width, height, 15);
-  const scale = 180 / maxDim; // Increased scale
+  const scale = 180 / maxDim;
   const w = width * scale;
   const h = (model === 'circle' ? width : height) * scale;
   const cx = w / 2;
   const cy = h / 2;
   const padding = 50;
-  const r = 4; // Bar radius
+  const barRadius = 4.5;
 
-  // --- Shape Logic ---
-  let shapePath = "";
-  let vertices: { x: number, y: number }[] = [];
+  // --- Generate Grid of Available Points ---
+  const generateGridPoints = (): { x: number, y: number, id: number }[] => {
+    const points: { x: number, y: number, id: number }[] = [];
+    let id = 0;
 
-  if (model === 'rect') {
-    vertices = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
-    shapePath = `M0,0 L${w},0 L${w},${h} L0,${h} Z`;
-  } else if (model === 'circle') {
-    // Circle treated differently
-    shapePath = ""; // Rendered as <circle>
-    // Vertices for 'corners' don't exist, but we use cardinal points for distribution reference if needed
-  } else if (model === 'triangle') {
-    vertices = [{ x: w / 2, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
-    shapePath = `M${w / 2},0 L${w},${h} L0,${h} Z`;
-  } else if (model === 'pentagon') {
-    // Point Up
-    vertices = [
-      { x: w / 2, y: 0 },
-      { x: w, y: h * 0.38 },
-      { x: w * 0.81, y: h },
-      { x: w * 0.19, y: h },
-      { x: 0, y: h * 0.38 }
-    ];
-    shapePath = `M${w / 2},0 L${w},${h * 0.38} L${w * 0.81},${h} L${w * 0.19},${h} L0,${h * 0.38} Z`;
-  } else if (model === 'hexagon') {
-    // Flat Top/Bottom
-    vertices = [
-      { x: w * 0.25, y: 0 },
-      { x: w * 0.75, y: 0 },
-      { x: w, y: h / 2 },
-      { x: w * 0.75, y: h },
-      { x: w * 0.25, y: h },
-      { x: 0, y: h / 2 }
-    ];
-    shapePath = `M${w * 0.25},0 L${w * 0.75},0 L${w},${h / 2} L${w * 0.75},${h} L${w * 0.25},${h} L0,${h / 2} Z`;
-  }
-
-  const allPoints: { x: number, y: number, color: string }[] = [];
-  const getEffectivePlacement = (g: MainBarGroup) => {
-    if (g.placement) return g.placement;
-    if (g.usage === BarUsage.COSTELA) return 'distributed';
-    return 'bottom';
-  };
-
-  // --- Bar Distribution Helpers ---
-  const interpolateLine = (p1: { x: number, y: number }, p2: { x: number, y: number }, t: number) => ({
-    x: p1.x + (p2.x - p1.x) * t,
-    y: p1.y + (p2.y - p1.y) * t
-  });
-
-  bars.forEach(group => {
-    const placement = getEffectivePlacement(group);
-    let count = group.count || 0;
-    if (count > 50) count = 50;
-    if (count <= 0) return;
-    const color = group.usage === BarUsage.PRINCIPAL ? '#0f172a' : '#ef4444'; // Darker black
+    const margin = 10; // Distance from edge
 
     if (model === 'circle') {
-      // Radial Distribution
+      // Circular arrangement: 3 layers (outer, middle, inner)
+      const layers = [0.85, 0.6, 0.35]; // Radii as fraction of max
       const radius = w / 2;
-      let startAngle = -Math.PI / 2; // Top
-      let sweep = 2 * Math.PI;
 
-      if (placement === 'top') { count === 1 ? startAngle = -Math.PI / 2 : (startAngle = -Math.PI, sweep = Math.PI); } // Top Half (approx)
-      else if (placement === 'bottom') { count === 1 ? startAngle = Math.PI / 2 : (startAngle = 0, sweep = Math.PI); } // Bottom Half
-      // For 'distributed', full circle is default
+      layers.forEach((layerFactor, layerIdx) => {
+        const r = radius * layerFactor;
+        const pointsInLayer = layerIdx === 2 ? 1 : (layerIdx === 1 ? 8 : 12); // Center, middle ring, outer ring
 
-      if (placement === 'center') {
-        allPoints.push({ x: cx, y: cy, color }); // Center of circle
-      } else {
-        // Distribute around perimeter
-        // If 'distributed' and count > 1, full circle
-        const step = sweep / (placement === 'distributed' ? count : Math.max(count - 1, 1));
-        // If 'distributed' (full circle), step is sweep/count. If 'top' line (arc), step is sweep/(count-1).
+        if (pointsInLayer === 1) {
+          points.push({ x: cx, y: cy, id: id++ });
+        } else {
+          for (let i = 0; i < pointsInLayer; i++) {
+            const angle = (2 * Math.PI * i) / pointsInLayer - Math.PI / 2;
+            points.push({
+              x: cx + r * Math.cos(angle),
+              y: cy + r * Math.sin(angle),
+              id: id++
+            });
+          }
+        }
+      });
+    } else if (model === 'rect') {
+      //Grid: Top edge, bottom edge, left edge, right edge, interior grid
+      const cols = 5; // Interior columns
+      const rows = 5; // Interior rows
 
-        for (let i = 0; i < count; i++) {
-          let angle = startAngle + (step * i);
-          if (placement === 'distributed') angle = -Math.PI / 2 + (i * (2 * Math.PI / count));
+      // Top edge
+      for (let i = 0; i < cols + 2; i++) {
+        points.push({ x: (w * i) / (cols + 1), y: margin, id: id++ });
+      }
 
-          // Adjust for single bar centered in zone
-          if (count === 1 && placement === 'top') angle = -Math.PI / 2;
-          if (count === 1 && placement === 'bottom') angle = Math.PI / 2;
+      // Bottom edge
+      for (let i = 0; i < cols + 2; i++) {
+        points.push({ x: (w * i) / (cols + 1), y: h - margin, id: id++ });
+      }
 
-          allPoints.push({
-            x: cx + radius * Math.cos(angle),
-            y: cy + radius * Math.sin(angle),
-            color
+      // Left edge (excluding corners)
+      for (let i = 1; i < rows + 1; i++) {
+        points.push({ x: margin, y: (h * i) / (rows + 1), id: id++ });
+      }
+
+      // Right edge (excluding corners)
+      for (let i = 1; i < rows + 1; i++) {
+        points.push({ x: w - margin, y: (h * i) / (rows + 1), id: id++ });
+      }
+
+      // Interior grid (2x2 or 3x3 depending on size)
+      const interiorCols = 3;
+      const interiorRows = 3;
+      for (let row = 1; row <= interiorRows; row++) {
+        for (let col = 1; col <= interiorCols; col++) {
+          points.push({
+            x: (w * col) / (interiorCols + 1),
+            y: (h * row) / (interiorRows + 1),
+            id: id++
           });
         }
       }
+    } else if (model === 'triangle') {
+      // Triangle: points along edges + interior
+      const pointsPerEdge = 4;
 
+      // Top vertex
+      points.push({ x: w / 2, y: margin, id: id++ });
+
+      // Bottom edge (left to right)
+      for (let i = 0; i <= pointsPerEdge; i++) {
+        const t = i / pointsPerEdge;
+        points.push({ x: w * t, y: h - margin, id: id++ });
+      }
+
+      // Left edge (bottom to top)
+      for (let i = 1; i < pointsPerEdge; i++) {
+        const t = i / pointsPerEdge;
+        points.push({ x: (w / 2) * (1 - t), y: h - margin - t * (h - margin * 2), id: id++ });
+      }
+
+      // Right edge (top to bottom)
+      for (let i = 1; i < pointsPerEdge; i++) {
+        const t = i / pointsPerEdge;
+        points.push({ x: (w / 2) + (w / 2) * t, y: margin + t * (h - margin * 2), id: id++ });
+      }
     } else {
-      // Polygon Distribution
-      if (placement === 'center') {
-        // Simply center logic
-        allPoints.push({ x: w / 2, y: h / 2, color });
-        // If multiple center bars, maybe spread strictly horizontally or vertically? keeping it simple single point or horizontal spread
-        if (count > 1) {
-          // Spread horizontally in center
-          for (let i = 1; i < count; i++) {
-            const offsetX = ((i / (count - 1)) - 0.5) * (w * 0.5);
-            allPoints.push({ x: (w / 2) + offsetX, y: h / 2, color });
-          }
-          // Remove first pushed center which handles i=0 for count=1 case effectively? No.
-          // Let's refine: 
-          // If count > 0, just spread
-          // Empty current center push first...
-          allPoints.pop();
-          for (let i = 0; i < count; i++) {
-            const xPos = count === 1 ? w / 2 : (w * 0.25) + ((w * 0.5) * i / (count - 1));
-            allPoints.push({ x: xPos, y: h / 2, color });
-          }
-        }
-      } else if (placement === 'top') {
-        if (model === 'triangle') {
-          // Top is Vertex for Triangle
-          // If 1 bar, top vertex. If > 1, spread down legs? 
-          // Usually Top Bars in Triangle = Top Vertex + maybe nearby?
-          // Let's put 1 at vertex, rest distributed on top half of sides?
-          // Simple: Just Top Vertex if count=1.
-          allPoints.push({ x: w / 2, y: 0, color });
-          // If more bars, maybe spread closely? For now, stick to vertex.
-          for (let i = 1; i < count; i++) { allPoints.push({ x: w / 2 + (i % 2 === 0 ? 5 : -5) * Math.ceil(i / 2), y: 5 * Math.ceil(i / 2), color }); } // Clusters
-        } else if (model === 'pentagon') {
-          // Top Vertex
-          allPoints.push({ x: w / 2, y: 0, color });
-          for (let i = 1; i < count; i++) { allPoints.push({ x: w / 2 + (i % 2 === 0 ? 5 : -5) * Math.ceil(i / 2), y: 5 * Math.ceil(i / 2), color }); }
-        } else if (model === 'hexagon') {
-          // Flat Top Edge (Index 0->1)
-          const p1 = vertices[0], p2 = vertices[1];
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
-          }
-        } else { // Rect (Standard)
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ x: (w * i) / (Math.max(count - 1, 1)) || 0, y: 0, color: color });
-            if (count === 1) allPoints[allPoints.length - 1].x = w / 2;
-          }
-        }
-      } else if (placement === 'bottom') {
-        // Bottom Face
-        if (model === 'triangle') {
-          // Bottom Edge (1->2)
-          const p1 = vertices[2], p2 = vertices[1]; // Left to Right
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
-          }
-        } else if (model === 'pentagon') {
-          // Bottom Edge (3->2) ? Indices: 0(Top), 1(TR), 2(BR), 3(BL), 4(TL)
-          // Bottom Flat is 3->2 (BL to BR)
-          const p1 = vertices[3], p2 = vertices[2];
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
-          }
-        } else if (model === 'hexagon') {
-          // Bottom Flat (4->3) ? Indices: 0(TL), 1(TR), 2(R), 3(BR), 4(BL), 5(L)
-          const p1 = vertices[4], p2 = vertices[3];
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ ...interpolateLine(p1, p2, count === 1 ? 0.5 : i / (count - 1)), color });
-          }
-        } else { // Rect
-          for (let i = 0; i < count; i++) {
-            allPoints.push({ x: (w * i) / (Math.max(count - 1, 1)) || 0, y: h, color });
-            if (count === 1) allPoints[allPoints.length - 1].x = w / 2;
-          }
-        }
-      } else if (placement === 'distributed') {
-        // Sides
-        if (model === 'rect') {
-          // Left and Right sides vertically
-          for (let i = 0; i < count; i++) {
-            const side = i % 2 === 0 ? 0 : w; // Left or Right
-            const rows = Math.ceil(count / 2);
-            const rowIdx = Math.floor(i / 2);
-            // Distribute vertically between 0 and h, exclusive of corners usually?
-            // Let's put them nicely spaced
-            const yPos = (h * (rowIdx + 1)) / (rows + 1);
-            allPoints.push({ x: side, y: yPos, color });
-          }
-        } else if (model === 'triangle') {
-          // Legs (2->0 and 0->1)
-          // Distribute alternately on Left Leg and Right Leg
-          for (let i = 0; i < count; i++) {
-            const isRight = i % 2 !== 0;
-            const targetLine = isRight ? [vertices[0], vertices[1]] : [vertices[0], vertices[2]]; // Top->Right or Top->Left
-            const rows = Math.ceil(count / 2);
-            const rowIdx = Math.floor(i / 2);
-            const t = (rowIdx + 1) / (rows + 1); // 0..1 down the leg
-            // Triangle legs go from top (0) down to base.
-            allPoints.push({ ...interpolateLine(targetLine[0], targetLine[1], t), color });
-          }
-        } else if (model === 'pentagon') {
-          // Side Verticalish edges?
-          // Indices: 0(Top), 1(TR), 2(BR), 3(BL), 4(TL)
-          // Left Side: 4->3. Right Side: 1->2. (Ignoring top slopes 0->1/0->4 for "distributed" usually implied vertical sides)
-          for (let i = 0; i < count; i++) {
-            const isRight = i % 2 !== 0;
-            const pStart = isRight ? vertices[1] : vertices[4]; // Top of side
-            const pEnd = isRight ? vertices[2] : vertices[3];   // Bottom of side
-            const rows = Math.ceil(count / 2);
-            const rowIdx = Math.floor(i / 2);
-            const t = (rowIdx + 1) / (rows + 1);
-            allPoints.push({ ...interpolateLine(pStart, pEnd, t), color });
-          }
-        } else if (model === 'hexagon') {
-          // Indicies: 0(TL), 1(TR), 2(R), 3(BR), 4(BL), 5(L)
-          // "Sides" usually means the vertical-ish or pointy sides?
-          // Hexagon distributed usually all around? Or just the explicit sides?
-          // Let's use indices 5->4 (Left) and 2->3 (Right)? Or 5->0?
-          // Let's distribute on the "Corner" vertices for standard hexagon column?
-          // If "distributed", maybe place on all vertices available?
-          // Let's stick to Left (5) and Right (2) vertices if count is small, or edges 5-4 / 1-2?
-          // Simplify: Vertical distribution on the width extremes if possible, or just the points.
-          // Let's place on the "Point" (L/R) if count=2.
-          // For now, distribute on the vertical-ish segments:
-          // P5(L) -> P0(TL) ? NO, Side is usually P4->P5?
-          // Let's assume Middle Vertical line: (0, h/2) and (w, h/2) are vertices 5 and 2.
-
-          for (let i = 0; i < count; i++) {
-            const isRight = i % 2 !== 0;
-            // Place exactly on the vertices 5 and 2?
-            // Or interpolate?
-            // Let's just put them on the Left/Right vertices (5 and 2) if possible, or vertical line in rect
-            const xPos = isRight ? w : 0;
-            const yPos = h / 2; // Center Vertically
-            // If multiple, spread vertically?
-            const rows = Math.ceil(count / 2);
-            const rowIdx = Math.floor(i / 2);
-            const spread = (h * 0.5) * ((rowIdx - (rows - 1) / 2)); // Spread around center
-            allPoints.push({ x: xPos, y: yPos + spread, color });
-          }
+      // Pentagon/Hexagon: simplified grid
+      const gridSize = 4;
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          points.push({
+            x: margin + (w - margin * 2) * col / (gridSize - 1),
+            y: margin + (h - margin * 2) * row / (gridSize - 1),
+            id: id++
+          });
         }
       }
+    }
+
+    return points;
+  };
+
+  const availablePoints = generateGridPoints();
+
+  // --- Render Shape ---
+  let shapePath = "";
+  if (model === 'rect') {
+    shapePath = `M0,0 L${w},0 L${w},${h} L0,${h} Z`;
+  } else if (model === 'triangle') {
+    shapePath = `M${w / 2},0 L${w},${h} L0,${h} Z`;
+  } else if (model === 'pentagon') {
+    shapePath = `M${w / 2},0 L${w},${h * 0.38} L${w * 0.81},${h} L${w * 0.19},${h} L0,${h * 0.38} Z`;
+  } else if (model === 'hexagon') {
+    shapePath = `M${w * 0.25},0 L${w * 0.75},0 L${w},${h / 2} L${w * 0.75},${h} L${w * 0.25},${h} L0,${h / 2} Z`;
+  }
+
+  // --- Render existing bars based on placement (old logic for display only) ---
+  const existingBars: { x: number, y: number, color: string }[] = [];
+  bars.forEach(group => {
+    const placement = group.placement || 'bottom';
+    let count = group.count || 0;
+    if (count > 50) count = 50;
+    if (count <= 0) return;
+    const color = group.usage === BarUsage.PRINCIPAL ? '#0f172a' : '#ef4444';
+
+    // Simplified placement for existing bars (this will be deprecated as we move to point-based)
+    if (placement === 'top') {
+      for (let i = 0; i < count; i++) {
+        const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
+        existingBars.push({ x: xPos, y: 10, color });
+      }
+    } else if (placement === 'bottom') {
+      for (let i = 0; i < count; i++) {
+        const xPos = count === 1 ? w / 2 : (w * i) / (count - 1);
+        existingBars.push({ x: xPos, y: h - 10, color });
+      }
+    } else if (placement === 'distributed') {
+      for (let i = 0; i < count; i++) {
+        const side = i % 2 === 0 ? 10 : w - 10;
+        const rows = Math.ceil(count / 2);
+        const rowIdx = Math.floor(i / 2);
+        const yPos = (h * (rowIdx + 1)) / (rows + 1);
+        existingBars.push({ x: side, y: yPos, color });
+      }
+    } else if (placement === 'center') {
+      existingBars.push({ x: w / 2, y: h / 2, color });
     }
   });
 
@@ -600,40 +517,54 @@ const CompositeCrossSection: React.FC<{
       <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '200px', height: '220px' }}>
         <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
 
-          {/* Interactive Zones (Underlay - Simplified Rects for hit testing) */}
-          {onZoneClick && (
-            <g className="cursor-pointer">
-              <rect x={-10} y={-10} width={w + 20} height={h * 0.3} fill={selectedZone === 'top' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('top')} />
-              <rect x={-10} y={h * 0.7} width={w + 20} height={h * 0.3} fill={selectedZone === 'bottom' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('bottom')} />
-              <rect x={-10} y={h * 0.3} width={w + 20} height={h * 0.4} fill={selectedZone === 'distributed' ? '#dbeafe' : 'transparent'} onClick={() => onZoneClick('distributed')} />
-              <circle cx={cx} cy={cy} r={Math.min(w, h) * 0.2} fill={selectedZone === 'center' ? '#dbeafe' : 'transparent'} onClick={(e) => { e.stopPropagation(); onZoneClick('center') }} />
-            </g>
-          )}
-
           {/* Render Shape */}
           {model === 'circle' ? (
-            <circle cx={cx} cy={cy} r={w / 2} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+            <>
+              <circle cx={cx} cy={cy} r={w / 2} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+              <circle cx={cx} cy={cy} r={w / 2} fill="#000" fillOpacity="0.02" stroke="none" />
+            </>
           ) : (
-            <path d={shapePath} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+            <>
+              <path d={shapePath} fill="none" stroke="#0f172a" strokeWidth="2.5" />
+              <path d={shapePath} fill="#000" fillOpacity="0.02" stroke="none" />
+            </>
           )}
 
-          {/* Concrete / Fill Effect */}
-          {model === 'circle' ? (
-            <circle cx={cx} cy={cy} r={w / 2} fill="#000" fillOpacity="0.03" stroke="none" />
-          ) : (
-            <path d={shapePath} fill="#000" fillOpacity="0.03" stroke="none" />
-          )}
+          {/* Available Grid Points (when adding bars) */}
+          {showAvailablePoints && availablePoints.map(point => {
+            const isSelected = selectedPointIndices.includes(point.id);
+            return (
+              <g key={point.id} onClick={() => onPointClick?.(point.id)} className="cursor-pointer">
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isSelected ? 7 : 5}
+                  fill={isSelected ? "#4f46e5" : "#cbd5e1"}
+                  fillOpacity={isSelected ? 1 : 0.4}
+                  stroke={isSelected ? "#312e81" : "#94a3b8"}
+                  strokeWidth={isSelected ? 2.5 : 1.5}
+                  className="transition-all hover:fill-indigo-400 hover:r-6"
+                />
+                {isSelected && (
+                  <text
+                    x={point.x}
+                    y={point.y - 12}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fontWeight="bold"
+                    fill="#4f46e5"
+                  >
+                    {selectedPointIndices.indexOf(point.id) + 1}
+                  </text>
+                )}
+              </g>
+            );
+          })}
 
-          {/* Bars */}
-          {allPoints.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={r * 1.2} fill={p.color} stroke="white" strokeWidth="1" />
+          {/* Existing Bars (already placed) */}
+          {!showAvailablePoints && existingBars.map((bar, i) => (
+            <circle key={i} cx={bar.x} cy={bar.y} r={barRadius} fill={bar.color} stroke="white" strokeWidth="1" />
           ))}
-
-          {/* External Dimensions */}
-          {model !== 'circle' && <TechnicalDimension x1={0} y1={h} x2={w} y2={h} text={`${Math.round(width)}`} offset={10} />}
-          {model !== 'circle' && <TechnicalDimension x1={0} y1={0} x2={0} y2={h} text={`${Math.round(height)}`} offset={-10} vertical />}
-
-          {model === 'circle' && <text x={cx} y={h + 15} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">Ø{Math.round(width)}</text>}
 
         </svg>
       </div>
