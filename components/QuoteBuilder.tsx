@@ -1449,7 +1449,7 @@ const ColumnElevationView: React.FC<{
         )}
 
         {/* Dimensions (Height) - Right side */}
-        <g transform={`translate(${rightX + 25}, 0)`}>
+        <g transform={`translate(${rightX + 40}, 0)`}>
           <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#0f172a" strokeWidth="1" />
@@ -1458,11 +1458,11 @@ const ColumnElevationView: React.FC<{
           </text>
         </g>
 
-        {/* Stirrup spacing indicator - Right side (moved slightly) */}
+        {/* Stirrup spacing indicator - Left side */}
         {item.hasStirrups && (
-          <g transform={`translate(${rightX + 50}, 0)`}>
+          <g transform={`translate(${leftX - 30}, 0)`}>
             {/* Adjusted position to avoid overlap with dimension or bars if tight */}
-            <text x={0} y={(startY + endY) / 2} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            <text x={0} y={(startY + endY) / 2} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
           </g>
