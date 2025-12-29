@@ -1454,15 +1454,14 @@ const ColumnElevationView: React.FC<{
 
   if (startGap > 0) {
     const gapHeightPx = startGap * scaleY;
-    const levelY = endY - gapHeightPx;
-    gapIndicators.push(renderLevelMarker(leftX, levelY, "NÍVEL INFERIOR", `+${startGap}`));
+    // const levelY = endY - gapHeightPx; // Old logic
   }
 
-  if (endGap > 0) {
-    const gapHeightPx = endGap * scaleY;
-    const levelY = startY + gapHeightPx;
-    gapIndicators.push(renderLevelMarker(leftX, levelY, "NÍVEL SUPERIOR", `-${endGap}`));
-  }
+  // Always draw Bottom Level (Nível Inferior) at the absolute bottom of the element
+  gapIndicators.push(renderLevelMarker(leftX, endY, "NÍVEL INFERIOR", startGap > 0 ? `LE +${startGap}` : undefined));
+
+  // Always draw Top Level (Nível Superior) at the absolute top of the element
+  gapIndicators.push(renderLevelMarker(leftX, startY, "NÍVEL SUPERIOR", endGap > 0 ? `LE -${endGap}` : undefined));
 
   // Group bars by visual placement to avoid overlap
   // For columns, we usually see 2 layers in 2D: Front/Back or Left/Right. 
