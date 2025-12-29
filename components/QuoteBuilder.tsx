@@ -1895,32 +1895,40 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   };
 
   const confirmNewItem = () => {
-    if (!newItemBase) return;
-    const lengthM = Math.max(newItemBase.lengthCm / 100, 0.1); // Min 10cm
-    const widthM = Math.max(newItemBase.widthCm / 100, 0.1);   // Min 10cm
-    const safeWidthCm = Math.max(newItemBase.widthCm, 10);
-    const safeHeightCm = Math.max(newItemBase.heightCm, 10);
+    try {
+      if (!newItemBase) return;
+      const lengthM = Math.max((Number(newItemBase.lengthCm) || 0) / 100, 0.1);
+      const widthM = Math.max((Number(newItemBase.widthCm) || 0) / 100, 0.1);
+      const safeWidthCm = Math.max(Number(newItemBase.widthCm) || 0, 10);
+      const safeHeightCm = Math.max(Number(newItemBase.heightCm) || 0, 10);
 
-    const newItem: SteelItem = {
-      id: crypto.randomUUID(),
-      type: newItemBase.type,
-      observation: newItemBase.obs,
-      quantity: Math.max(newItemBase.qty, 1),
-      length: lengthM,
-      width: newItemBase.type === ElementType.SAPATA ? widthM : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? widthM : undefined),
-      height: safeHeightCm,
-      mainBars: [],
-      hasStirrups: newItemBase.type === ElementType.SAPATA || newItemBase.type === 'Pilar' || newItemBase.type === 'Broca',
-      stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0',
-      stirrupSpacing: 15,
-      stirrupWidth: newItemBase.type === ElementType.SAPATA ? safeWidthCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeWidthCm : 15),
-      stirrupHeight: newItemBase.type === ElementType.SAPATA ? safeHeightCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeHeightCm : 20),
-      isConfigured: false
-    };
-    setItems([...items, newItem]);
-    setNewItemBase(null);
-    setShowTypeSelector(false);
-    // Don't open editor automatically. User selects from the list.
+      // Safe ID generation (crypto.randomUUID can fail in non-secure contexts)
+      const safeId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+
+      const newItem: SteelItem = {
+        id: safeId,
+        type: newItemBase.type,
+        observation: newItemBase.obs || `${newItemBase.type.charAt(0)}${items.length + 1}`,
+        quantity: Math.max(Number(newItemBase.qty) || 1, 1),
+        length: lengthM,
+        width: newItemBase.type === ElementType.SAPATA ? widthM : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? widthM : undefined),
+        height: safeHeightCm,
+        mainBars: [],
+        hasStirrups: newItemBase.type === ElementType.SAPATA || newItemBase.type === 'Pilar' || newItemBase.type === 'Broca',
+        stirrupGauge: newItemBase.type === ElementType.SAPATA ? '10.0' : '5.0',
+        stirrupSpacing: 15,
+        stirrupWidth: newItemBase.type === ElementType.SAPATA ? safeWidthCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeWidthCm : 15),
+        stirrupHeight: newItemBase.type === ElementType.SAPATA ? safeHeightCm : (newItemBase.type === 'Pilar' || newItemBase.type === 'Broca' ? safeHeightCm : 20),
+        isConfigured: false
+      };
+      setItems([...items, newItem]);
+      setEditingContext({ item: newItem, initialTab: 'ferros', initialUsage: BarUsage.PRINCIPAL });
+      setNewItemBase(null);
+      setShowTypeSelector(false);
+    } catch (err) {
+      console.error("Erro ao confirmar novo item:", err);
+      alert("Ocorreu um erro ao criar o elemento. Verifique os dados e tente novamente.");
+    }
   };
 
   const saveBarConfig = (updatedItem: SteelItem, barData: MainBarGroup, barIdx?: number) => {
