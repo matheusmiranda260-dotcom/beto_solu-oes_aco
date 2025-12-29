@@ -1449,6 +1449,7 @@ const ColumnElevationView: React.FC<{
         )}
 
         {/* Dimensions & Stirrup Info - Right side grouped around the dimension line */}
+        {/* Updated: 2025-12-29 Force Deploy */}
         <g transform={`translate(${rightX + 40}, 0)`}>
           {/* The Dimension Line */}
           <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
