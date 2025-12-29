@@ -1457,13 +1457,13 @@ const ColumnElevationView: React.FC<{
 
           {/* Height Value (Left of line) */}
           <text
-            x={-12} // Ajustado visualmente (estava -25 no debug, vou deixar -12 que é razoável)
+            x={-6} // Closer to line
             y={(startY + endY) / 2}
             textAnchor="middle"
             fontSize="12"
             fontWeight="normal"
             fill="#0f172a"
-            transform={`rotate(-90, -12, ${(startY + endY) / 2})`}
+            transform={`rotate(-90, -6, ${(startY + endY) / 2})`}
           >
             {Math.round(item.length * 100)}
           </text>
