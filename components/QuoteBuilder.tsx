@@ -1423,16 +1423,16 @@ const ColumnElevationView: React.FC<{
           // Start drawing bars closer to the right side
           // Dimensions are at rightX + 30
           // Stirrup text is at rightX + 70
-          // Lets start bars at rightX + 45 to be tighter
-          const startXBars = rightX + 45;
-          const spacingBars = 45; // Wider spacing to avoid hook overlap
+          // Lets start bars with more separation
+          const startXBars = rightX + 70;
+          const spacingBars = 60; // Much wider spacing to avoid overlap
           const xPos = startXBars + (i * spacingBars);
           return renderVerticalBar(bar, xPos);
         })}
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 45 + (bars.length * 45))
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 70 + (bars.length * 60))
         )}
 
         {/* Dimensions (Height) - Right side */}
