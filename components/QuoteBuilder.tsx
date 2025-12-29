@@ -1142,14 +1142,12 @@ const ColumnElevationView: React.FC<{
   // Layout Constants
   const outputScale = 1;
 
-  // Sanity check for item
-  if (!item || (typeof item.length !== 'number') || item.length <= 0) {
-    // Return a safe placeholder or null to prevent crash
-    return <div className="p-4 text-red-500 font-bold">Dimensões inválidas para visualização</div>;
-  }
+  // Sanity check for item (Non-blocking for hooks)
+  const isItemValid = item && (typeof item.length === 'number') && item.length > 0;
 
   // Calculate effective length (vertical height)
   const getExtents = () => {
+    if (!isItemValid) return 100; // Fallback
     const bars = [...item.mainBars];
     if (newBar) bars.push(newBar);
     if (bars.length === 0) return Math.max(1, item.length * 100);
@@ -1163,17 +1161,15 @@ const ColumnElevationView: React.FC<{
   const availableHeightPx = viewH - 2 * padY;
   // Protect against Division by Zero or NaN
   const safeLength = (effectiveLengthCm && effectiveLengthCm > 0) ? effectiveLengthCm : 100;
-  const scaleY = Math.min(availableHeightPx / safeLength, 2.5);
 
+  // Calculate layout variables unconditionally (using safe values)
+  const scaleY = Math.min(availableHeightPx / safeLength, 2.5);
   const totalHeightPx = safeLength * scaleY;
   const startY = (viewH - totalHeightPx) / 2;
   const endY = startY + totalHeightPx;
 
-  // Final Paranoid Check to prevent White Screen of Death
-  if (!Number.isFinite(scaleY) || !Number.isFinite(startY) || !Number.isFinite(endY)) {
-    console.error("ColumnElevationView: Invalid layout calculations", { scaleY, startY, endY, effectiveLengthCm, safeLength });
-    return <div className="p-4 text-red-500 text-xs font-mono">Erro de visualização (Layout inválido)</div>;
-  }
+  // Final Layout Check Flag
+  const isLayoutValid = Number.isFinite(scaleY) && Number.isFinite(startY) && Number.isFinite(endY);
 
   // Horizontal Positioning (Center column in view)
   const centerX = viewW / 2;
@@ -1464,6 +1460,14 @@ const ColumnElevationView: React.FC<{
   // Let's distribute them across the width of the column representation.
   const bars = item.mainBars.flatMap((b, idx) => ({ ...b, originalIdx: idx }));
   const numBars = bars.length + (newBar ? 1 : 0);
+
+  // Return Error View if invalid (after all hooks ran)
+  if (!isItemValid || !isLayoutValid) {
+    return <div className="p-10 text-center text-red-500 font-bold bg-white rounded-xl border border-red-200">
+      <p>Erro de visualização</p>
+      <small className="text-xs text-slate-400">Verifique as dimensões do elemento.</small>
+    </div>;
+  }
 
   return (
     <div className="bg-slate-50 p-6 rounded-[3rem] border-2 border-slate-200 shadow-xl flex flex-col items-center w-full mx-auto" style={{ width: '100%' }}>
