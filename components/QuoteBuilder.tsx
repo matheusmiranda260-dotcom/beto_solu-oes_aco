@@ -1470,9 +1470,9 @@ const ColumnElevationView: React.FC<{
             </text>
           </g>
 
-          {/* Stirrup Info (Right of line) - Using g wrapper for reliable rotation */}
+          {/* Stirrup Info (Right of line) - Rotated opposite direction */}
           {item.hasStirrups && (
-            <g transform={`translate(8, ${(startY + endY) / 2}) rotate(-90)`}>
+            <g transform={`translate(8, ${(startY + endY) / 2}) rotate(90)`}>
               <text
                 x={0}
                 y={0}
