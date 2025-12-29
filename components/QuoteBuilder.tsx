@@ -1783,7 +1783,11 @@ const ItemReinforcementPreview: React.FC<{
                 {isSapata ? (
                   <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
                 ) : (
-                  <StirrupDrawing width={item.stirrupWidth} height={item.stirrupHeight} compact />
+                  <StirrupDrawing
+                    width={(item.stirrupWidth && Number.isFinite(item.stirrupWidth)) ? item.stirrupWidth : 15}
+                    height={(item.stirrupHeight && Number.isFinite(item.stirrupHeight)) ? item.stirrupHeight : 20}
+                    compact
+                  />
                 )}
 
                 <div className="flex flex-col">
