@@ -1278,8 +1278,8 @@ const ColumnElevationView: React.FC<{
     const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
-    // Place label strictly close to the bar
-    const labelX = xPos + 12;
+    // Place label strictly close to the bar (LEFT side)
+    const labelX = xPos - 12;
 
     return (
       <g
@@ -1292,7 +1292,7 @@ const ColumnElevationView: React.FC<{
         }}
       >
         {/* Hit Area */}
-        <rect x={xPos - 15} y={barEndPx} width={40} height={barLenPx} fill="transparent" />
+        <rect x={xPos - 30} y={barEndPx} width={60} height={barLenPx} fill="transparent" />
 
         {/* Highlight */}
         {isSelected && (
