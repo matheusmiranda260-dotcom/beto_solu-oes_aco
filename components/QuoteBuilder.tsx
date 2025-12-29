@@ -1458,13 +1458,13 @@ const ColumnElevationView: React.FC<{
 
           {/* Height Value (Now RIGHT of line) */}
           <text
-            x={6}
+            x={10} // Increased from 6 to avoid overlap
             y={(startY + endY) / 2}
             textAnchor="middle"
             fontSize="12"
             fontWeight="normal"
             fill="#0f172a"
-            transform={`rotate(-90, 6, ${(startY + endY) / 2})`}
+            transform={`rotate(-90, 10, ${(startY + endY) / 2})`}
           >
             {Math.round(item.length * 100)}
           </text>
