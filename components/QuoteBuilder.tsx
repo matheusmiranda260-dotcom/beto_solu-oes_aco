@@ -1311,16 +1311,25 @@ const ColumnElevationView: React.FC<{
     );
   };
 
-  // Stirrups Logic
+  // Stirrups Logic - Only render if hasStirrups is true
   const spacing = item.stirrupSpacing || 20;
-  const numStirrups = Math.floor(effectiveLengthCm / spacing);
+  const numStirrups = item.hasStirrups ? Math.floor(effectiveLengthCm / spacing) : 0;
   const stirrupLines: React.ReactNode[] = [];
 
-  for (let i = 0; i <= numStirrups; i++) {
-    const yPlac = endY - (i * spacing * scaleY);
-    stirrupLines.push(
-      <line key={`st-${i}`} x1={leftX} y1={yPlac} x2={rightX} y2={yPlac} stroke="#94a3b8" strokeWidth="1" />
-    );
+  if (item.hasStirrups) {
+    for (let i = 0; i <= numStirrups; i++) {
+      const yPlac = endY - (i * spacing * scaleY);
+      // Draw stirrup as a horizontal rectangle representing the stirrup loop
+      stirrupLines.push(
+        <g key={`st-${i}`}>
+          {/* Main stirrup line */}
+          <line x1={leftX - 5} y1={yPlac} x2={rightX + 5} y2={yPlac} stroke="#1e293b" strokeWidth="2" />
+          {/* Small hooks at ends */}
+          <line x1={leftX - 5} y1={yPlac} x2={leftX - 5} y2={yPlac + 4} stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+          <line x1={rightX + 5} y1={yPlac} x2={rightX + 5} y2={yPlac + 4} stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+        </g>
+      );
+    }
   }
 
   // Group bars by visual placement to avoid overlap
