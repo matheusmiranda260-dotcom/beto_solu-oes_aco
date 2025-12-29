@@ -1455,29 +1455,29 @@ const ColumnElevationView: React.FC<{
           <line x1={-3} y1={startY} x2={3} y2={startY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-3} y1={endY} x2={3} y2={endY} stroke="#0f172a" strokeWidth="1" />
 
-          {/* Height Value (Left of line) */}
+          {/* Height Value (Now RIGHT of line) */}
           <text
-            x={-6} // Closer to line
+            x={6}
             y={(startY + endY) / 2}
             textAnchor="middle"
             fontSize="12"
             fontWeight="normal"
             fill="#0f172a"
-            transform={`rotate(-90, -6, ${(startY + endY) / 2})`}
+            transform={`rotate(-90, 6, ${(startY + endY) / 2})`}
           >
             {Math.round(item.length * 100)}
           </text>
 
-          {/* Stirrup Info (Right of line) */}
+          {/* Stirrup Info (Now LEFT of line) */}
           {item.hasStirrups && (
             <text
-              x={12} // Ajustado visualmente
+              x={-6}
               y={(startY + endY) / 2}
               textAnchor="middle"
               fontSize="10"
               fontWeight="normal"
               fill="#0f172a"
-              transform={`rotate(-90, 12, ${(startY + endY) / 2})`}
+              transform={`rotate(-90, -6, ${(startY + endY) / 2})`}
             >
               {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
