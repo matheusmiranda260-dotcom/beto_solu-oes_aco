@@ -1463,6 +1463,65 @@ const ColumnElevationView: React.FC<{
   // Always draw Top Level (Nível Superior) at the absolute top of the element
   gapIndicators.push(renderLevelMarker(leftX, startY, "NÍVEL SUPERIOR", endGap > 0 ? `LE -${endGap}` : undefined));
 
+  // Visual Gap Demarcation (Dotted Lines + Dimensions)
+  if (startGap > 0) {
+    const gapH = startGap * scaleY;
+    const limitY = endY - gapH;
+    gapIndicators.push(
+      <g key="gap-start-visual">
+        {/* Dotted Line at the limit of the bottom gap */}
+        <line x1={leftX - 20} y1={limitY} x2={rightX + 20} y2={limitY} stroke="#64748b" strokeWidth="1.5" strokeDasharray="5 3" />
+
+        {/* Dimension Line for Gap */}
+        <line x1={rightX + 15} y1={endY} x2={rightX + 15} y2={limitY} stroke="#64748b" strokeWidth="1" />
+        <line x1={rightX + 12} y1={limitY} x2={rightX + 18} y2={limitY} stroke="#64748b" strokeWidth="1" />
+        <line x1={rightX + 12} y1={endY} x2={rightX + 18} y2={endY} stroke="#64748b" strokeWidth="1" />
+
+        {/* Text */}
+        <text
+          x={rightX + 25}
+          y={(endY + limitY) / 2}
+          textAnchor="middle"
+          fontSize="9"
+          fontWeight="bold"
+          fill="#64748b"
+          transform={`rotate(-90, ${rightX + 25}, ${(endY + limitY) / 2})`}
+        >
+          VÃO {Math.round(startGap)}
+        </text>
+      </g>
+    );
+  }
+
+  if (endGap > 0) {
+    const gapH = endGap * scaleY;
+    const limitY = startY + gapH;
+    gapIndicators.push(
+      <g key="gap-end-visual">
+        {/* Dotted Line at the limit of the top gap */}
+        <line x1={leftX - 20} y1={limitY} x2={rightX + 20} y2={limitY} stroke="#64748b" strokeWidth="1.5" strokeDasharray="5 3" />
+
+        {/* Dimension Line for Gap */}
+        <line x1={rightX + 15} y1={startY} x2={rightX + 15} y2={limitY} stroke="#64748b" strokeWidth="1" />
+        <line x1={rightX + 12} y1={limitY} x2={rightX + 18} y2={limitY} stroke="#64748b" strokeWidth="1" />
+        <line x1={rightX + 12} y1={startY} x2={rightX + 18} y2={startY} stroke="#64748b" strokeWidth="1" />
+
+        {/* Text */}
+        <text
+          x={rightX + 25}
+          y={(startY + limitY) / 2}
+          textAnchor="middle"
+          fontSize="9"
+          fontWeight="bold"
+          fill="#64748b"
+          transform={`rotate(-90, ${rightX + 25}, ${(startY + limitY) / 2})`}
+        >
+          VÃO {Math.round(endGap)}
+        </text>
+      </g>
+    );
+  }
+
   // Group bars by visual placement to avoid overlap
   // For columns, we usually see 2 layers in 2D: Front/Back or Left/Right. 
   // Let's distribute them across the width of the column representation.
