@@ -80,22 +80,13 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
             });
 
             // SANITY CHECK: Concrete Length vs Bar Length
-            // Find longest bar (segmentA + hooks is Total Cut, but 'concrete coverage' is mostly roughly segmentA)
-            // Actually, segmentA is the straight part. Concrete should be roughly SegmentA + cover.
-            // If item.length (from AI) is 300 (3m) but max SegmentA is 200cm, then AI is wrong about concrete length.
-
             let rawLength = Number(item.length) || 3;
             const maxBarSegment = Math.max(...parsedBars.map((b: any) => b.segmentA || 0), 0);
 
             if (maxBarSegment > 0) {
                 const minConcreteNeeded = (maxBarSegment / 100); // meters
-                // If AI says length is much larger (> 20% diff) than the bar, clamp it down.
-                // Or if AI says length is smaller than bar? Correct it up.
-
-                // Heuristic: Concrete usually is roughly equal to max straight bar length.
                 const diff = Math.abs(rawLength - minConcreteNeeded);
                 if (diff > 0.5 || rawLength < minConcreteNeeded) {
-                    // console.log(`Auto-correcting length from ${rawLength} to ${minConcreteNeeded} based on bars`);
                     rawLength = Number((minConcreteNeeded).toFixed(2)); // Exact fit, no margin
                 }
             }
@@ -127,6 +118,8 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                     leftGap: Number(sup.leftGap) || 0,
                     rightGap: Number(sup.rightGap) || 0
                 })),
+
+                // Gaps
                 startGap: Number(item.startGap) || 0,
                 endGap: Number(item.endGap) || 0,
 
@@ -167,43 +160,50 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
     const base64Image = await fileToBase64(file);
 
     const prompt = `
-  You are an expert Structural Engineer assistant. Analyze this reinforcement drawing following this STRICT SEQUENCE.
-  IGNORE COLORS. READ TEXT LABELS.
+  You are an expert Structural Engineer assistant. Analyze this reinforcement drawing (Rebar Detailing) following this STRICT SEQUENCE.
+  IGNORE COLORS. READ TEXT LABELS, DIMENSIONS, AND POSITIONS CAREFULLY.
   
   ${learningContext}
 
   --- EXECUTION SEQUENCE ---
 
   ### STEP 1: READ MAIN LONGITUDINAL BARS (Ferros Longitudinais)
-  - Look for long horizontal lines representing the beam bars.
-  - Find their labels, usually format: "2 N1 ø 8.0 c=237" or similar.
+  - Look for long horizontal lines representing the beam/column bars.
+  - Find their labels, usually format: "2 N1 ø 8.0 c=237" (or "2 N1 f 8.0 c=237").
     - "2" = Quantity (Count).
-    - "N1" = Position.
-    - "ø 8.0" or "f 8mm" = Gauge.
+    - "N1" = Position ID.
+    - "ø 8.0" or "f 8mm" = Gauge (Diameter).
     - "c=237" = Total Cut Length (Comprimento Total).
-  - **Top vs Bottom**: If the bar is drawn at the top of the beam, it is Top. If at bottom, it is Bottom.
-  - **Hooks (Dobras)**: Check the ends of these lines for vertical segments limits (e.g. "15").
+  - **Top vs Bottom**: If the bar is drawn at the top of the element, it is Top. If at bottom, it is Bottom.
+  - **Side Bars (Costelas/Pele)**: If bars are distributed along the height (middle), label them as 'distributed'.
+  - **Hooks (Dobras)**: Check the ends of these lines. If they turn up or down, note the dimension (e.g. "15").
 
-  ### STEP 2: READ STIRRUPS (Estribos) - LOOK AT THE RIGHT SIDE OR SECTION A-A
-  - Locate the Cross-Section (rectangle with dots) or the callout typically on the RIGHT SIDE of the drawing.
-  - **READ THE LABEL EXACTLY** (e.g., "13 N3 ø 5.0 c/81" or "13 N3 c/15").
-    - **QUANTITY IS LAW**: If it says "13 N3", then quantity is 13. DO NOT CALCULATE using spans.
-    - "c=81" means Total Length of the stirrup wire.
-    - "c/15" means Spacing.
-  - **DIMENSIONS**: Look at the small rectangle (Section A-A). The numbers on its sides are Width and Height.
+  ### STEP 2: READ STIRRUPS (Estribos) - LOOK AT THE CROSS-SECTION
+  - **MANDATORY**: Locate the Cross-Section (rectangle with dots) or the callout typically on the RIGHT.
+  - **READ THE LABEL EXACTLY** (e.g., "13 N3 ø 5.0 c/15").
+    - **Quantity**: "13" is the absolute count. USE THIS VALUE. Do NOT recalculate.
+    - **Position**: "N3" (or similar).
+    - **Gauge**: "5.0".
+    - **Spacing**: "15" (c/15).
+  - **DIMENSIONS (VITAL)**: Look at the small rectangle (Section A-A). The numbers on its sides are Width and Height.
     - Example: "15" and "35". Width=15, Height=35.
+    - **Shape**: Usually rectangular. If unique (circular, polygonal), note it.
 
-  ### STEP 3: SPANS (Vãos) - SYMBOLIC ONLY
-  - Spans are secondary information.
-  - Only record a span if you see explicit horizontal dimension lines between supports (P1, P2..).
-  - DO NOT override the Stirrup Quantity found in Step 2 based on span calculations.
+  ### STEP 3: GAPS & SPANS (Vãos e Esperas) - NEW CRITICAL STEP
+  - **Start Gap (Vão Inicial/Espera)**: Look for the distance from the bottom/start of the element to the *first* stirrup.
+    - Look for text like "LE" (Limite Estribo), "Início", "1º Estribo a X", or a dimension line at the start.
+    - If you see a segment marked "5", "10", or "50" before the stirrups start, that is the Start Gap.
+    - **Columns**: Often denoted at the bottom as "Espera" or "Arranca".
+  - **End Gap (Vão Final)**: Look for the distance from the last stirrup to the top/end of the element.
+    - Common in columns as "Espera Superior", "Vão Superior", or "Topo".
+  - **Span (Vão Livre)**: If there is a massive gap in the middle with NO stirrups (e.g. crossing a beam), note it.
 
   ========================================
-  OUTPUT JSON FORMAT:
+  OUTPUT JSON FORMAT (STRICT):
   For each structural element found:
   {
-    "type": "Viga",
-    "observation": "Label (e.g. V1)",
+    "type": "Pilar" | "Viga" | "Sapata",
+    "observation": "Label (e.g. P1)",
     "quantity": 1,
     "length": Total concrete length (m),
     "width": Concrete Section Width (m),
@@ -211,33 +211,33 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
 
     "hasStirrups": true,
     "stirrupGauge": "5.0",
-    "stirrupSpacing": 15,
-    "stirrupWidth": 15,    // FROM SECTION A-A
-    "stirrupHeight": 35,   // FROM SECTION A-A
+    "stirrupSpacing": 15, // cm
+    "stirrupWidth": 15,    // cm (FROM SECTION A-A)
+    "stirrupHeight": 35,   // cm (FROM SECTION A-A)
     "stirrupPosition": "N3", // FROM LABEL
+
+    "startGap": 0, // Gap in CM at the start/bottom
+    "endGap": 0,   // Gap in CM at the end/top
 
     "mainBars": [
       {
-        "count": 2,
+        "count": 2, // integer
         "position": "N1",
         "gauge": "10.0",
-        "placement": "top" or "bottom",
-        "shape": "u_up" | "u_down" | "straight",
-        "segmentA": 237, // Straight part
+        "placement": "top" | "bottom" | "distributed",
+        "shape": "u_up" | "u_down" | "straight" | "l_left_up" | "l_right_up",
+        "segmentA": 237, // Straight part in CM
         "hookStart": 0,
         "hookEnd": 0
       }
     ],
 
-    "supports": [
-       { "label": "P1", "position": 0, "width": 20 }
-    ]
+    "supports": [] // Optional
   }
 
   Return ONLY valid JSON.
   `;
 
-    // Configuration for Robustness (Reverted to working state)
     const body = {
         contents: [{
             parts: [
@@ -249,12 +249,11 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
             temperature: 0.1,
             topK: 1,
             topP: 1,
-            maxOutputTokens: 3000, // Safe limit
+            maxOutputTokens: 3000,
         }
     };
 
     // Lista de modelos conhecidos para visão (ordem de prioridade)
-    // Revertendo para lista completa para garantir compatibilidade
     const knownModels = [
         "gemini-1.5-flash",
         "gemini-1.5-flash-latest",
@@ -283,7 +282,6 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
                 if (availableVision.length > 0) {
                     const others = candidateModels.filter(m => !availableVision.includes(m));
                     candidateModels = [...availableVision, ...others];
-                    // console.log("Modelos detectados:", availableVision);
                 }
             }
         }
@@ -334,21 +332,13 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
                     return result;
 
                 } catch (error) {
-                    // Se for erro de sintaxe JSON, queremos tentar de novo (retry loop externo)
-                    // Se for erro de rede/modelo, continuamos o loop interno
                     console.warn(`Erro na tentativa ${attempt + 1}/${model}:`, error);
                     lastError = error;
-
-                    // Se o erro foi no parseGeminiResponse (Sintaxe), podemos tentar o mesmo modelo de novo?
-                    // Ou melhor, continuar o loop de modelos.
-                    // Se acabarem os modelos desta tentativa, o loop externo tenta tudo de novo.
                     continue;
                 }
             }
         }
 
-        // Se teve sucesso, já retornou. Se chegou aqui, falhou com todos modelos nesta tentativa.
-        // Espera um pouco antes de tentar de novo (exponential backoff light)
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
     }
 
