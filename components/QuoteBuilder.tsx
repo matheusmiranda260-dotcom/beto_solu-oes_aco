@@ -502,12 +502,14 @@ const CompositeCrossSection: React.FC<{
     if (count <= 0) return;
     const color = group.usage === BarUsage.PRINCIPAL ? '#0f172a' : '#ef4444';
 
-    // NEW Logic: Check if bar has exact pointIndex
-    if (group.pointIndex !== undefined) {
-      const point = availablePoints.find(p => p.id === group.pointIndex);
-      if (point) {
-        existingBars.push({ x: point.x, y: point.y, color });
-      }
+    // NEW Logic: Check if bar has exact pointIndices (Array)
+    if (group.pointIndices && group.pointIndices.length > 0) {
+      group.pointIndices.forEach(idx => {
+        const point = availablePoints.find(p => p.id === idx);
+        if (point) {
+          existingBars.push({ x: point.x, y: point.y, color });
+        }
+      });
     } else {
       // Legacy Fallback for old bars without pointIndex
       const placement = group.placement || 'bottom';
@@ -2831,14 +2833,12 @@ const ItemDetailEditor: React.FC<{
       // Logic: newBar.count dictates expected positions
       const count = newBar.count || 0;
       if (count > 0 && selectedPositions.length === count) {
-        // Add one bar per selected point
-        selectedPositions.forEach((pointIndex) => {
-          bars.push({
-            ...newBar,
-            count: 1, // Each added bar is a single unit at a specific point
-            pointIndex: pointIndex, // Store exact point index
-            placement: undefined
-          });
+        // Add ONE ENTRY for the group of bars
+        bars.push({
+          ...newBar,
+          count: count, // Total count (e.g., 2)
+          pointIndices: [...selectedPositions], // Store ALL selected points
+          placement: undefined
         });
 
         // Reset form for next entry

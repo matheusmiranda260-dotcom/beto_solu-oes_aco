@@ -126,7 +126,7 @@ export interface MainBarGroup {
     hookEnd: number;         // Medida em cm
     position?: string;       // Posição opcional (N...)
     placement?: 'top' | 'bottom' | 'distributed' | 'center'; // Posição na seção (Superior/Inferior/Lateral/Centro) - DEPRECATED
-    pointIndex?: number;     // NEW: Index do ponto na grade pré-definida da seção transversal
+    pointIndices?: number[]; // NEW: Lista de indexes dos pontos na grade (substitui pointIndex único)
     shape?: string; // Formato visual (ex: 'straight', 'u_up', 'c_up')
 
     // New Segment Model (A-B-C-D-E)
