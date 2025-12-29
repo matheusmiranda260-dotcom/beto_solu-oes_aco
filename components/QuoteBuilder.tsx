@@ -1240,14 +1240,29 @@ const ColumnElevationView: React.FC<{
       (group.segmentD || 0) + (group.segmentE || 0);
     const C = Math.round(baseLenCm + extraCm);
 
-    // Hook directions (visual approximation)
-    const hookSize = 15;
+    // Hook directions
+    // In vertical view: 'minus' -> Left (-1), right (1)
+    const defaultHookSize = 20;
+
+    // Calculate visual lengths for hooks
+    const startLenVal = group.segmentB || (group.hookStartType !== 'none' ? group.hookStart : 0);
+    const endLenVal = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);
+
+    // Scale for visualization (clamp between 15 and 40 px)
+    const visualizeLen = (val: number) => Math.max(15, Math.min(40, val * scaleY));
+
+    const startHookPx = startLenVal > 0 ? visualizeLen(startLenVal) : defaultHookSize;
+    const endHookPx = endLenVal > 0 ? visualizeLen(endLenVal) : defaultHookSize;
+
+    const startDir = group.hookStartType === 'down' ? -1 : 1;
+    const endDir = group.hookEndType === 'down' ? -1 : 1;
+
     const isSelected = selectedIdx === group.originalIdx;
 
     let d = "";
-    // Bottom Hook (Start) - Always draw right for exploded view clarity
-    if (group.hookStartType !== 'none') {
-      d += `M ${xPos + hookSize},${barStartPx - 10} L ${xPos},${barStartPx} `;
+    // Bottom Hook (Start)
+    if (group.hookStartType !== 'none' || group.segmentB > 0) {
+      d += `M ${xPos + (startDir * startHookPx)},${barStartPx - 5} L ${xPos},${barStartPx} `;
     } else {
       d += `M ${xPos},${barStartPx} `;
     }
@@ -1255,16 +1270,21 @@ const ColumnElevationView: React.FC<{
     // Main Vertical Span
     d += `L ${xPos},${barEndPx} `;
 
-    // Top Hook (End) - Always draw right for exploded view clarity
-    if (group.hookEndType !== 'none') {
-      d += `L ${xPos + hookSize},${barEndPx + 10}`;
+    // Top Hook (End)
+    if (group.hookEndType !== 'none' || group.segmentC > 0) {
+      d += `L ${xPos + (endDir * endHookPx)},${barEndPx + 5}`;
     }
 
     const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
     // Place label immediately to the right of the bar line
-    const labelX = xPos + 10;
+    // If hooks go right, push label further right to avoid overlap
+    let labelOffset = 15;
+    if (startDir === 1 && (group.hookStartType !== 'none' || group.segmentB > 0)) labelOffset = Math.max(labelOffset, startHookPx + 5);
+    if (endDir === 1 && (group.hookEndType !== 'none' || group.segmentC > 0)) labelOffset = Math.max(labelOffset, endHookPx + 5);
+
+    const labelX = xPos + labelOffset;
 
     return (
       <g
@@ -1286,6 +1306,34 @@ const ColumnElevationView: React.FC<{
 
         {/* Bar Line */}
         <path d={d} fill="none" stroke={isSelected ? "#3b82f6" : "#0f172a"} strokeWidth={isSelected ? 4 : 3} strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Hook Dimensions Text */}
+        {(group.hookStartType !== 'none' || group.segmentB > 0) && (
+          <text
+            x={xPos + (startDir * startHookPx / 2)}
+            y={barStartPx + 15}
+            textAnchor="middle"
+            fontSize="9"
+            fontWeight="bold"
+            fill="#0f172a"
+          >
+            {Math.round(startLenVal)}
+          </text>
+        )}
+        {(group.hookEndType !== 'none' || group.segmentC > 0) && (
+          <text
+            x={xPos + (endDir * endHookPx / 2)}
+            y={barEndPx - 8}
+            textAnchor="middle"
+            fontSize="9"
+            fontWeight="bold"
+            fill="#0f172a"
+          >
+            {Math.round(endLenVal)}
+          </text>
+        )}
+
+
 
         {/* Label (Vertical, next to bar) */}
         <text
