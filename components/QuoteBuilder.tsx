@@ -1242,14 +1242,14 @@ const ColumnElevationView: React.FC<{
 
     // Hook directions
     // In vertical view: 'minus' -> Left (-1), right (1)
-    const defaultHookSize = 20;
+    const defaultHookSize = 12;
 
     // Calculate visual lengths for hooks
     const startLenVal = group.segmentB || (group.hookStartType !== 'none' ? group.hookStart : 0);
     const endLenVal = group.segmentC || (group.hookEndType !== 'none' ? group.hookEnd : 0);
 
-    // Scale for visualization (clamp between 15 and 40 px)
-    const visualizeLen = (val: number) => Math.max(15, Math.min(40, val * scaleY));
+    // Scale for visualization (clamp between 10 and 25 px)
+    const visualizeLen = (val: number) => Math.max(10, Math.min(25, val * scaleY));
 
     const startHookPx = startLenVal > 0 ? visualizeLen(startLenVal) : defaultHookSize;
     const endHookPx = endLenVal > 0 ? visualizeLen(endLenVal) : defaultHookSize;
@@ -1425,14 +1425,14 @@ const ColumnElevationView: React.FC<{
           // Stirrup text is at rightX + 70
           // Lets start bars at rightX + 45 to be tighter
           const startXBars = rightX + 45;
-          const spacingBars = 35; // Tighter spacing
+          const spacingBars = 45; // Wider spacing to avoid hook overlap
           const xPos = startXBars + (i * spacingBars);
           return renderVerticalBar(bar, xPos);
         })}
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 45 + (bars.length * 35))
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 45 + (bars.length * 45))
         )}
 
         {/* Dimensions (Height) - Right side */}
