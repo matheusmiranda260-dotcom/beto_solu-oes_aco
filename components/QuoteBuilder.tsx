@@ -1448,25 +1448,25 @@ const ColumnElevationView: React.FC<{
           renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, rightX + 70 + (bars.length * 60))
         )}
 
-        {/* Dimensions (Height) - Right side */}
+        {/* Dimensions & Stirrup Info - Right side grouped around the dimension line */}
         <g transform={`translate(${rightX + 40}, 0)`}>
+          {/* The Dimension Line */}
           <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={startY} x2={5} y2={startY} stroke="#0f172a" strokeWidth="1" />
           <line x1={-5} y1={endY} x2={5} y2={endY} stroke="#0f172a" strokeWidth="1" />
-          <text x={15} y={(startY + endY) / 2} textAnchor="start" fontSize="12" fontWeight="normal" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+
+          {/* Height Value (Left of line) */}
+          <text x={-5} y={(startY + endY) / 2} textAnchor="middle" fontSize="12" fontWeight="normal" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
             {Math.round(item.length * 100)}
           </text>
-        </g>
 
-        {/* Stirrup spacing indicator - Left side */}
-        {item.hasStirrups && (
-          <g transform={`translate(${leftX - 30}, 0)`}>
-            {/* Adjusted position to avoid overlap with dimension or bars if tight */}
-            <text x={0} y={(startY + endY) / 2} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+          {/* Stirrup Info (Right of line) */}
+          {item.hasStirrups && (
+            <text x={10} y={(startY + endY) / 2} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               {numStirrups} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
             </text>
-          </g>
-        )}
+          )}
+        </g>
 
         {/* A-A Section Cut Lines (Labels 'A' removed) */}
         <line x1={leftX - 20} y1={(startY + endY) / 2} x2={leftX - 10} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
