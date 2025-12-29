@@ -167,6 +167,7 @@ export interface SteelItem {
     stirrupWidth: number;
     stirrupHeight: number;
     stirrupPosition?: string;
+    stirrupModel?: 'rect' | 'circle' | 'triangle' | 'pentagon' | 'hexagon';
 
     // Dimensions for specific types (Sapata, Pilar, Broca)
     width?: number; // Metros
