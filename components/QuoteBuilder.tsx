@@ -1150,9 +1150,12 @@ const ColumnElevationView: React.FC<{
     if (!isItemValid) return 100; // Fallback
     const bars = [...item.mainBars];
     if (newBar) bars.push(newBar);
-    if (bars.length === 0) return Math.max(1, item.length * 100);
-    const calculated = Math.max(item.length * 100, ...bars.map(b => (b.offset || 0) + (b.segmentA || 0)));
-    return isNaN(calculated) ? 100 : calculated;
+    const baseLen = (item.length || 1) * 100;
+    if (bars.length === 0) return baseLen;
+
+    const lengths = bars.map(b => (b.offset || 0) + (b.segmentA || 0)).filter(n => Number.isFinite(n));
+    const calculated = Math.max(baseLen, ...lengths);
+    return isNaN(calculated) ? baseLen : calculated;
   };
 
   const effectiveLengthCm = getExtents();
@@ -1783,7 +1786,7 @@ const ItemReinforcementPreview: React.FC<{
                     bars={item.mainBars}
                     stirrupPos={item.stirrupPosition}
                     stirrupGauge={item.stirrupGauge}
-                    stirrupCount={Math.floor(item.length * 100 / (item.stirrupSpacing || 20))}
+                    stirrupCount={Math.floor(((item.length || 1) * 100) / (item.stirrupSpacing || 20)) || 0}
                   />
                 </div>
               </div>
@@ -2326,7 +2329,7 @@ const ItemDetailEditor: React.FC<{
         hookEnd: isSapata ? defaultHook : 0,
         position: '',
         shape: 'straight',
-        segmentA: localItem.length,
+        segmentA: Math.round(localItem.length * 100), // Force CM for segmentA
         segmentB: isSapata ? defaultHook : 0,
         segmentC: isSapata ? defaultHook : 0,
         segmentD: 0,
