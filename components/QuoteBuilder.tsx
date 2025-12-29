@@ -185,8 +185,10 @@ const CompositeCrossSection: React.FC<{
   onZoneClick?: (zone: 'top' | 'bottom' | 'distributed' | 'center') => void;
   selectedZone?: 'top' | 'bottom' | 'distributed' | 'center' | null;
 }> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, onZoneClick, selectedZone }) => {
-  const width = stirrupW || 15;
-  const height = stirrupH || 20;
+  // Ensure valid dimensions
+  const width = (stirrupW && stirrupW > 0) ? stirrupW : 15;
+  const height = (stirrupH && stirrupH > 0) ? stirrupH : 20;
+
   const maxDim = Math.max(width, height, 15);
   const scale = 100 / maxDim;
   const w = width * scale;
@@ -203,7 +205,11 @@ const CompositeCrossSection: React.FC<{
 
   bars.forEach(group => {
     const placement = getEffectivePlacement(group);
-    const count = group.count;
+    let count = group.count || 0;
+    // Safety cap
+    if (count > 50) count = 50;
+    if (count <= 0) return;
+
     // Color logic: Principal = Black, Others (Costela/2nd) = Red
     const color = group.usage === BarUsage.PRINCIPAL ? '#000000' : '#ef4444';
 
@@ -230,16 +236,18 @@ const CompositeCrossSection: React.FC<{
       for (let i = 0; i < count; i++) {
         const side = i % 2 === 0 ? 0 : w;
         const rows = Math.ceil(count / 2);
+        // Avoid division by zero if rows is weird, though ceil(count/2) >= 1 since count > 0
+        const rowDivisor = Math.max(rows + 1, 2);
         const rowIdx = Math.floor(i / 2);
-        const yPos = (h * (rowIdx + 1)) / (rows + 1);
+        const yPos = (h * (rowIdx + 1)) / rowDivisor;
         allPoints.push({ x: side, y: yPos, color });
       }
     } else if (placement === 'center') {
       // Center bars (Inside/Core)
-      // Distribute horizontally at h/2, avoiding edges to prevent overlap with Costela
       for (let i = 0; i < count; i++) {
         // (i + 1) / (count + 1) gives e.g. 1/2 for 1 bar, 1/3 & 2/3 for 2 bars -> Distinct from sides
-        const xPos = (w * (i + 1)) / (count + 1);
+        const colDivisor = Math.max(count + 1, 2);
+        const xPos = (w * (i + 1)) / colDivisor;
         allPoints.push({ x: xPos, y: h / 2, color });
       }
     }
