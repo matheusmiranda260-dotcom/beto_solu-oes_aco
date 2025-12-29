@@ -1260,9 +1260,9 @@ const ColumnElevationView: React.FC<{
     const isSelected = selectedIdx === group.originalIdx;
 
     let d = "";
-    // Bottom Hook (Start)
+    // Bottom Hook (Start) - Orthogonal 90 deg
     if (group.hookStartType !== 'none' || group.segmentB > 0) {
-      d += `M ${xPos + (startDir * startHookPx)},${barStartPx - 5} L ${xPos},${barStartPx} `;
+      d += `M ${xPos + (startDir * startHookPx)},${barStartPx} L ${xPos},${barStartPx} `;
     } else {
       d += `M ${xPos},${barStartPx} `;
     }
@@ -1270,21 +1270,16 @@ const ColumnElevationView: React.FC<{
     // Main Vertical Span
     d += `L ${xPos},${barEndPx} `;
 
-    // Top Hook (End)
+    // Top Hook (End) - Orthogonal 90 deg
     if (group.hookEndType !== 'none' || group.segmentC > 0) {
-      d += `L ${xPos + (endDir * endHookPx)},${barEndPx + 5}`;
+      d += `L ${xPos + (endDir * endHookPx)},${barEndPx}`;
     }
 
     const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
 
-    // Place label immediately to the right of the bar line
-    // If hooks go right, push label further right to avoid overlap
-    let labelOffset = 15;
-    if (startDir === 1 && (group.hookStartType !== 'none' || group.segmentB > 0)) labelOffset = Math.max(labelOffset, startHookPx + 5);
-    if (endDir === 1 && (group.hookEndType !== 'none' || group.segmentC > 0)) labelOffset = Math.max(labelOffset, endHookPx + 5);
-
-    const labelX = xPos + labelOffset;
+    // Place label strictly close to the bar
+    const labelX = xPos + 12;
 
     return (
       <g
