@@ -1132,23 +1132,32 @@ const ColumnElevationView: React.FC<{
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Layout Constants
-  const outputScale = 1; // Basic scale multiplier
+  const outputScale = 1;
+
+  // Sanity check for item
+  if (!item || (typeof item.length !== 'number') || item.length <= 0) {
+    // Return a safe placeholder or null to prevent crash
+    return <div className="p-4 text-red-500 font-bold">Dimensões inválidas para visualização</div>;
+  }
 
   // Calculate effective length (vertical height)
   const getExtents = () => {
     const bars = [...item.mainBars];
     if (newBar) bars.push(newBar);
     if (bars.length === 0) return Math.max(1, item.length * 100);
-    return Math.max(item.length * 100, ...bars.map(b => (b.offset || 0) + (b.segmentA || 0)));
+    const calculated = Math.max(item.length * 100, ...bars.map(b => (b.offset || 0) + (b.segmentA || 0)));
+    return isNaN(calculated) ? 100 : calculated;
   };
 
   const effectiveLengthCm = getExtents();
 
   // Vertical Scale: map effective length to available height
   const availableHeightPx = viewH - 2 * padY;
-  const scaleY = Math.min(availableHeightPx / (effectiveLengthCm || 1), 2.5);
+  // Protect against Division by Zero or NaN
+  const safeLength = (effectiveLengthCm && effectiveLengthCm > 0) ? effectiveLengthCm : 100;
+  const scaleY = Math.min(availableHeightPx / safeLength, 2.5);
 
-  const totalHeightPx = effectiveLengthCm * scaleY;
+  const totalHeightPx = safeLength * scaleY;
   const startY = (viewH - totalHeightPx) / 2;
   const endY = startY + totalHeightPx;
 
