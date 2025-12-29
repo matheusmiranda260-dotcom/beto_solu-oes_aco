@@ -1223,7 +1223,7 @@ const ColumnElevationView: React.FC<{
     };
   }, [draggingBarIdx, dragStartY, initialOffset, scaleY, onBarUpdate]);
 
-  const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
+  const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number, labelXOffset: number = 0) => {
     const baseLenCm = (group.segmentA && group.segmentA > 0) ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
     const offsetCm = group.offset || 0;
 
@@ -1252,8 +1252,6 @@ const ColumnElevationView: React.FC<{
     // Bottom Hook (Start) - Drawn at barStartPx
     if (group.hookStartType !== 'none') {
       d += `M ${xPos + (group.hookStartType === 'up' ? hookSize : -hookSize)},${barStartPx - 10} L ${xPos},${barStartPx} `;
-      // Note: 'up'/'down' names might be confusing in vertical. Let's assume 'up' = inwards/right, 'down' = outwards/left for vertical bars side-view.
-      // Simplified: 'up' -> Right, 'down' -> Left
     } else {
       d += `M ${xPos},${barStartPx} `;
     }
@@ -1268,6 +1266,11 @@ const ColumnElevationView: React.FC<{
 
     const displayPos = group.position || ((group.originalIdx as any) === 'new' ? "Novo" : `N${group.originalIdx + 1}`);
     const label = `${group.count} ${displayPos} ø${group.gauge} C=${C}`;
+
+    // Place label to the right of the column
+    // Base X for labels is rightX + 60 (to clear dimensions)
+    // We add labelXOffset (increments of 20px) to stack/stagger them
+    const labelX = rightX + 90 + labelXOffset;
 
     return (
       <g
@@ -1290,16 +1293,19 @@ const ColumnElevationView: React.FC<{
         {/* Bar Line */}
         <path d={d} fill="none" stroke={isSelected ? "#3b82f6" : "#0f172a"} strokeWidth={isSelected ? 4 : 3} strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Label (Placed mid-bar, rotated) */}
+        {/* Label (Placed to the right, vertical orientation) */}
         <text
-          x={xPos - 8}
+          x={labelX}
           y={(barStartPx + barEndPx) / 2}
           textAnchor="middle"
           className={`text-[10px] font-black uppercase tracking-tight select-none ${isSelected ? 'fill-indigo-600' : 'fill-slate-600'}`}
-          style={{ transformBox: 'fill-box', transformOrigin: 'center', transform: 'rotate(-90deg) translateY(-10px)' }}
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
         >
           {label}
         </text>
+
+        {/* Access line from bar to label (optional, keeps it clean for now) */}
+        {/* <line x1={xPos} y1={(barStartPx + barEndPx)/2} x2={labelX - 10} y2={(barStartPx + barEndPx)/2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" /> */}
 
         {!readOnly && (
           <g className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); onRemoveBar(group.originalIdx); }}>
@@ -1384,12 +1390,13 @@ const ColumnElevationView: React.FC<{
           // For simplified visual, distribute evenly
           const xStep = displayWidthPx / (bars.length + 1);
           const xPos = leftX + ((i + 1) * xStep);
-          return renderVerticalBar(bar, xPos);
+          // Pass offset for label (25px per bar to stack them)
+          return renderVerticalBar(bar, xPos, i * 25);
         })}
 
         {/* New Draft Bar */}
         {newBar && selectedIdx === undefined && (
-          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, centerX)
+          renderVerticalBar({ ...newBar, originalIdx: 'new' as any } as any, centerX, bars.length * 25)
         )}
 
         {/* Dimensions (Height) - Right side */}
