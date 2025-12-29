@@ -1698,7 +1698,7 @@ const ColumnElevationView: React.FC<{
 
                       {/* Label Description */}
                       <text x={dW / 2} y={dH + 30} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
-                        {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
+                        {adjustedStirrupCount} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                       </text>
                     </g>
                   );
@@ -1840,6 +1840,19 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false); // State for AI Analysis loading
+
+  // Global Error Handler for debugging White Screen
+  useEffect(() => {
+    const errorHandler = (event: ErrorEvent) => {
+      console.error("Global Error Caught:", event.error);
+      alert(`ERRO CRÍTICO: ${event.message}\n\nPor favor tire um print e envie.\nEm: ${event.filename}:${event.lineno}\n\nStack: ${event.error?.stack}`);
+    };
+    window.addEventListener('error', errorHandler);
+    return () => window.removeEventListener('error', errorHandler);
+  }, []);
+
+  // State to control visibility of "Visualizar Orçamento"
+  const [showInvoice, setShowInvoice] = useState(false);
 
   // Helper function to get effective length from bars (uses max segmentA)
   const getEffectiveLength = (item: SteelItem): number => {

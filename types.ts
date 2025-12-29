@@ -144,15 +144,6 @@ export interface SteelItem {
     observation?: string; // Campo de observação individual (ex: "fundo", "sala", "pilar P1")
     quantity: number;
     length: number;
-    width?: number;       // Largura (específico para sapatas)
-    height?: number;      // Altura (específico para sapatas)
-    mainBars: MainBarGroup[];
-    hasStirrups: boolean;
-    stirrupGauge: string;
-    stirrupSpacing: number;
-    stirrupWidth: number;
-    stirrupHeight: number;
-    stirrupPosition?: string; // Posição opcional do estribo (N...)
     isConfigured: boolean;
 
     // Apoios (Pilares/Colunas) - Define zonas sem estribos
