@@ -1456,37 +1456,40 @@ const ColumnElevationView: React.FC<{
                   strokeWidth="1.5"
                 />
 
-                {/* Corner bars (4 corners) */}
-                <circle cx={cover} cy={cover} r={4} fill="#0f172a" />
-                <circle cx={pW - cover} cy={cover} r={4} fill="#0f172a" />
-                <circle cx={cover} cy={pH - cover} r={4} fill="#0f172a" />
-                <circle cx={pW - cover} cy={pH - cover} r={4} fill="#0f172a" />
+                {/* Dynamic Bar Rendering based on actual counts */}
 
-                {/* Top bars (extras beyond corners) */}
-                {topCount > 2 && Array.from({ length: topCount - 2 }).map((_, i) => {
-                  const barSpacing = (pW - 2 * cover) / (topCount - 1);
-                  return <circle key={`t${i}`} cx={cover + barSpacing * (i + 1)} cy={cover} r={3} fill="#0f172a" />;
+                {/* Top Bars */}
+                {topCount > 0 && Array.from({ length: topCount }).map((_, i) => {
+                  const xPos = topCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (topCount - 1)));
+                  return <circle key={`t${i}`} cx={xPos} cy={cover} r={3.5} fill="#0f172a" />;
                 })}
 
-                {/* Bottom bars (extras beyond corners) */}
-                {botCount > 2 && Array.from({ length: botCount - 2 }).map((_, i) => {
-                  const barSpacing = (pW - 2 * cover) / (botCount - 1);
-                  return <circle key={`b${i}`} cx={cover + barSpacing * (i + 1)} cy={pH - cover} r={3} fill="#0f172a" />;
+                {/* Bottom Bars */}
+                {botCount > 0 && Array.from({ length: botCount }).map((_, i) => {
+                  const xPos = botCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (botCount - 1)));
+                  return <circle key={`b${i}`} cx={xPos} cy={pH - cover} r={3.5} fill="#0f172a" />;
                 })}
 
-                {/* Side bars */}
+                {/* Side Bars (Distributed) */}
                 {sideCount > 0 && (() => {
-                  const perSide = Math.ceil(sideCount / 2);
+                  // Distribute evenly on left and right sides
+                  const perSide = Math.ceil(sideCount / 2); // Split count usually
                   const nodes: React.ReactNode[] = [];
-                  // Left side
+
+                  // If we have top/bottom bars, side bars should be strictly BETWEEN them (avoid corners)
+                  // If top/bottom are empty, side bars might take corners? sticking to "between" for safer render
+
+                  // Left Side
                   for (let i = 0; i < perSide; i++) {
                     const ySpacing = (pH - 2 * cover) / (perSide + 1);
-                    nodes.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3} fill="#0f172a" />);
+                    nodes.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
                   }
-                  // Right side
-                  for (let i = 0; i < sideCount - perSide; i++) {
-                    const ySpacing = (pH - 2 * cover) / (sideCount - perSide + 1);
-                    nodes.push(<circle key={`sr${i}`} cx={pW - cover} cy={cover + ySpacing * (i + 1)} r={3} fill="#0f172a" />);
+
+                  // Right Side (remaining bars)
+                  const rightBars = sideCount - perSide;
+                  for (let i = 0; i < rightBars; i++) {
+                    const ySpacing = (pH - 2 * cover) / (rightBars + 1);
+                    nodes.push(<circle key={`sr${i}`} cx={pW - cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
                   }
                   return nodes;
                 })()}
