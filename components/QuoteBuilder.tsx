@@ -2505,6 +2505,9 @@ const ItemDetailEditor: React.FC<{
                     if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); }
                   }
                 }}
+                newBar={editingIndex === undefined ? newBar : undefined}
+                onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
+                selectedIdx={editingIndex}
                 readOnly={false}
               />
               :
