@@ -106,7 +106,10 @@ const StirrupDrawing: React.FC<{ width: number; height: number; compact?: boolea
     <div className={`flex items-center justify-center rounded-xl transition-all ${compact ? 'bg-transparent' : 'p-6 bg-white border border-slate-100 shadow-inner'}`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <rect x={pad} y={pad} width={drawW} height={drawH} fill="none" stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} rx={compact ? "2" : "4"} />
-        <path d={`M ${pad},${pad} L ${pad - hook},${pad - hook} M ${pad},${pad} L ${pad + hook},${pad - hook}`} fill="none" stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} strokeLinecap="round" />
+        {/* Double Diagonal Hooks - Modelo 1 Style */}
+        <line x1={pad + (compact ? 2 : 4)} y1={pad} x2={pad + (compact ? 6 : 12)} y2={pad + (compact ? 4 : 8)} stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} strokeLinecap="round" />
+        <line x1={pad} y1={pad + (compact ? 2 : 4)} x2={pad + (compact ? 4 : 8)} y2={pad + (compact ? 6 : 12)} stroke="#f59e0b" strokeWidth={compact ? "1.5" : "3"} strokeLinecap="round" />
+
         <text x={pad + drawW / 2} y={pad - (compact ? 2 : 6)} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize }}>{width}</text>
         <text x={pad - (compact ? 2 : 6)} y={pad + drawH / 2} textAnchor="middle" className="font-black fill-amber-600" style={{ fontSize, transform: 'rotate(-90deg)', transformOrigin: `${pad - (compact ? 2 : 6)}px ${pad + drawH / 2}px` }}>{height}</text>
       </svg>
@@ -1077,30 +1080,48 @@ const BeamElevationView: React.FC<{
           {/* Stirrup Detail - Below */}
           <g transform="translate(40, 240)">
             {(() => {
-              const sW = item.stirrupWidth || 20;
-              const sH = item.stirrupHeight || 40;
-              const scale = Math.min(80 / sW, 100 / sH);
-              const pW = sW * scale;
-              const pH = sH * scale;
+              const numStirrups = Math.floor(numStirrups);
+              const sW_val = Math.round(item.stirrupWidth || 20);
+              const sH_val = Math.round(item.stirrupHeight || 40);
+              const cutLength = Math.round(((sW_val + sH_val) * 2 + 10)); // Perimeter + hooks
+
+              const scale = Math.min(80 / sW_val, 100 / sH_val); // Keep original scale logic or adapt to new standard?
+              // The new standard uses detachedScale = 1.2 relative to px size
+              // Let's adapt closer to the Column view for consistency but fit in the view
+              // Beam view has different available space. 
+              const pW = sW_val * scale;
+              const pH = sH_val * scale;
+
+              const hookLen = 6; // slightly smaller due to scale?
+              const hookGap = 2;
 
               return (
                 <g>
-                  {/* Stirrup Shape - Full Rectangle */}
-                  <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#000" strokeWidth="2" />
+                  {/* 'Modelo 1' label on top or left? Left seems standard */}
+                  <text x={-30} y={pH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo 1</text>
 
-                  {/* Hook Cross Detail (Top Left) */}
-                  {/* Hooks crossing inwards at top-left corner */}
-                  <path d="M4,4 L12,4" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M4,4 L4,12" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M4,4 L8,8" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* Stirrup Shape - Full Rectangle */}
+                  <rect x={0} y={0} width={pW} height={pH} fill="none" stroke="#0f172a" strokeWidth="2" />
+
+                  {/* Hooks: Double Diagonal Top-Left */}
+                  <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                  <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
 
                   {/* Dimensions */}
-                  <text x={pW + 10} y={pH / 2} dominantBaseline="middle" fontSize="14" fill="#000">{Math.round(sH)}</text>
-                  <text x={pW / 2} y={pH + 18} textAnchor="middle" fontSize="14" fill="#000">{Math.round(sW)}</text>
+                  {/* B (Height) Left & Right */}
+                  <text x={-5} y={pH / 2} textAnchor="end" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+                  <text x={pW + 5} y={pH / 2} textAnchor="start" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+
+                  {/* A (Width) Top & Bottom */}
+                  <text x={pW / 2} y={-8} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+                  <text x={pW / 2} y={pH + 16} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>
 
                   {/* Info Text */}
-                  <text x={0} y={pH + 45} textAnchor="start" fontSize="12" fontWeight="bold" fill="#0f172a" style={{ whiteSpace: 'pre' }}>
-                    {Math.floor(numStirrups)} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge || '5.0'} C={Math.round((sW + sH) * 2 + 10)}
+                  <text x={pW / 2} y={pH + 40} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a" style={{ whiteSpace: 'pre' }}>
+                    {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge || '5.0'} C={cutLength}
+                  </text>
+                  <text x={pW / 2} y={pH + 54} textAnchor="middle" fontSize="9" fill="#64748b">
+                    (2x{sW_val} + 2x{sH_val} + 10) = {cutLength}
                   </text>
                 </g>
               );
@@ -1734,30 +1755,65 @@ const ColumnElevationView: React.FC<{
                 <line x1={pW + 5} y1={pH} x2={pW + 11} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
                 <text x={pW + 18} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
 
-                {/* NEW: DETACHED STIRRUP (Estribo Avulso) */}
+                {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Standardized inspired by 'Modelo 1' */}
                 {item.hasStirrups && (() => {
+                  const numStirrups = adjustedStirrupCount || Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20))); // Fallback for safety
+                  const sW_val = Math.round(item.stirrupWidth || sW);
+                  const sH_val = Math.round(item.stirrupHeight || sH);
+
                   const detachedScale = 1.2;
-                  const dW = (item.stirrupWidth || sW) * detachedScale;
-                  const dH = (item.stirrupHeight || sH) * detachedScale;
-                  const offsetY = pH + 60; // Position below cross-section
-                  const cutLength = Math.round(((item.stirrupWidth + item.stirrupHeight) * 2 + 10)); // Perimeter + hooks
+                  const dW = sW_val * detachedScale;
+                  const dH = sH_val * detachedScale;
+
+                  // Move it down further to make space
+                  const offsetY = pH + 80;
+                  const cutLength = Math.round(((sW_val + sH_val) * 2 + 10)); // Perimeter + hooks
+
+                  // Hooks: Two diagonal lines at top-left corner inward
+                  // Start at (0,0) -> go roughly (8,8)
+                  // Start at (0,0) typically means top-left of the rect?
+                  // Yes.
+                  const hookLen = 8;
+                  const hookGap = 3;
 
                   return (
                     <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
-                      {/* Shape */}
-                      <rect x={0} y={0} width={dW} height={dH} fill="none" stroke="#0f172a" strokeWidth="1.5" />
-                      {/* Hooks at top left */}
-                      <line x1={2} y1={2} x2={10} y2={10} stroke="#0f172a" strokeWidth="1.5" />
-                      <line x1={2} y1={2} x2={0} y2={10} stroke="#0f172a" strokeWidth="1.5" />
 
-                      {/* Dimensions */}
-                      <text x={-10} y={dH / 2} textAnchor="end" fontSize="9" fill="#0f172a">{Math.round(item.stirrupHeight)}</text>
-                      <text x={dW / 2} y={dH + 12} textAnchor="middle" fontSize="9" fill="#0f172a">{Math.round(item.stirrupWidth)}</text>
+                      {/* 'Modelo 1' label on left */}
+                      <text x={-40} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo 1</text>
 
-                      {/* Label Description */}
-                      <text x={dW / 2} y={dH + 30} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
-                        {adjustedStirrupCount} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
+                      {/* Main Rectangle Shape */}
+                      <rect x={0} y={0} width={dW} height={dH} fill="none" stroke="#0f172a" strokeWidth="2" />
+
+                      {/* Double Diagonal Hooks (Top-Left) */}
+                      {/* Line 1: From Top edge, slightly Right -> Inwards */}
+                      <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                      {/* Line 2: From Left edge, slightly Down -> Inwards */}
+                      <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+
+                      {/* Dimensions - A (Top & Bottom) */}
+                      <text x={dW / 2} y={-5} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+                      <text x={dW / 2} y={dH + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+
+                      {/* Dimensions - B (Left & Right) */}
+                      <text x={-5} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+                      <text x={dW + 5} y={dH / 2} textAnchor="start" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+
+                      {/* A / B labels as per image? The image had 'A' and 'B' labels AND the formula. 
+                          The user likely wants the VALUES, but maybe small labels 'A'/'B' next to them? 
+                          Let's stick to just values for clarity, or values with label if space permits.
+                          The reference image has 'A' center top/bottom, 'B' center left/right.
+                          Let's assume the values ARE A and B.
+                      */}
+
+                      {/* Summary Text Below */}
+                      <text x={dW / 2} y={dH + 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
+                        {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                       </text>
+                      <text x={dW / 2} y={dH + 48} textAnchor="middle" fontSize="8" fill="#64748b">
+                        (2x{sW_val} + 2x{sH_val} + 10) = {cutLength}
+                      </text>
+
                     </g>
                   );
                 })()}
