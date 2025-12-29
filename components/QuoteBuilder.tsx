@@ -1430,7 +1430,7 @@ const ItemReinforcementPreview: React.FC<{
       */}
 
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
-      {(item.hasStirrups || (!isSapata && item.mainBars.length > 0)) && (
+      {(item.hasStirrups || !isSapata) && (
         <div className="flex flex-col gap-4 items-stretch">
           {/* Technical Project View - Elevation + Section */}
           {!isSapata && (
