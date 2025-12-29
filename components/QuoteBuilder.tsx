@@ -1418,7 +1418,9 @@ const ItemReinforcementPreview: React.FC<{
   onBarUpdate?: (idx: number, newOffset: number) => void;
 }> = ({ item, onEditBar, onRemoveBar, onEditStirrups, onBarUpdate }) => {
   const isSapata = item.type === ElementType.SAPATA;
-  if (item.mainBars.length === 0 && !item.hasStirrups) return null;
+  const isPilarOrBroca = item.type === 'Pilar' || item.type === 'Broca';
+  // Always show for Pilar/Broca even without bars
+  if (item.mainBars.length === 0 && !item.hasStirrups && !isPilarOrBroca) return null;
 
   return (
     <div className="mt-4 p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100/50 space-y-4">
@@ -1430,7 +1432,7 @@ const ItemReinforcementPreview: React.FC<{
       */}
 
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
-      {(item.hasStirrups || !isSapata) && (
+      {(item.hasStirrups || !isSapata || isPilarOrBroca) && (
         <div className="flex flex-col gap-4 items-stretch">
           {/* Technical Project View - Elevation + Section */}
           {!isSapata && (
