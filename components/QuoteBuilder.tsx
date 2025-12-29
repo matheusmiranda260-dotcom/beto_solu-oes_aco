@@ -1404,7 +1404,8 @@ const ColumnElevationView: React.FC<{
 
   // Calculate total stirrups but filter out those in gaps
   // Safety cap at 500 to prevent browser freeze if length is huge or spacing tiny
-  const maxPossibleStirrups = item.hasStirrups ? Math.min(Math.floor(effectiveLengthCm / spacing), 500) : 0;
+  const validLength = (Number.isFinite(effectiveLengthCm) && effectiveLengthCm > 0) ? effectiveLengthCm : 100;
+  const maxPossibleStirrups = item.hasStirrups ? Math.min(Math.floor(validLength / spacing), 500) : 0;
   let adjustedStirrupCount = 0;
   const stirrupLines: React.ReactNode[] = [];
 
@@ -2508,7 +2509,6 @@ const ItemDetailEditor: React.FC<{
                 newBar={editingIndex === undefined ? newBar : undefined}
                 onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))}
                 selectedIdx={editingIndex}
-                readOnly={false}
               />
               :
               <BeamElevationView item={localItem} newBar={editingIndex === undefined ? newBar : undefined} onNewBarUpdate={(offset) => setNewBar(prev => ({ ...prev, offset }))} onEditBar={(idx) => setEditingIndex(idx)} onRemoveBar={handleRemoveBar} selectedIdx={editingIndex} onBarUpdate={(idx, offset) => { const bars = [...localItem.mainBars]; if (bars[idx]) { bars[idx] = { ...bars[idx], offset }; setLocalItem({ ...localItem, mainBars: bars, isConfigured: true }); if (editingIndex === idx) { setNewBar(prev => ({ ...prev, offset })); } } }} readOnly={false} />
