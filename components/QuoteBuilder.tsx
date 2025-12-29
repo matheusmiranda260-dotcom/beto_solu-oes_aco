@@ -1338,7 +1338,7 @@ const ColumnElevationView: React.FC<{
           fontSize="10"
           fontWeight="bold"
           fill="#0f172a"
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          transform={`rotate(-90, ${xPos + 10}, ${(barStartPx + barEndPx) / 2})`}
         >
           {Math.round(baseLenCm)}
         </text>
@@ -1349,7 +1349,7 @@ const ColumnElevationView: React.FC<{
           y={(barStartPx + barEndPx) / 2}
           textAnchor="middle"
           className={`text-[10px] font-black uppercase tracking-tight select-none ${isSelected ? 'fill-indigo-600' : 'fill-slate-600'}`}
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          transform={`rotate(-90, ${labelX}, ${(barStartPx + barEndPx) / 2})`}
         >
           {label}
         </text>
