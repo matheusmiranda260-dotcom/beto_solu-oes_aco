@@ -344,7 +344,8 @@ const CompositeCrossSection: React.FC<{
   model?: 'rect' | 'circle' | 'triangle' | 'pentagon' | 'hexagon';
   onZoneClick?: (zone: 'top' | 'bottom' | 'distributed' | 'center') => void;
   selectedZone?: 'top' | 'bottom' | 'distributed' | 'center' | null;
-}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, model = 'rect', onZoneClick, selectedZone }) => {
+  multiPositions?: ('top' | 'bottom' | 'distributed' | 'center')[];
+}> = ({ stirrupW, stirrupH, bars, stirrupPos, stirrupGauge, stirrupCount, model = 'rect', onZoneClick, selectedZone, multiPositions }) => {
   // Ensure valid dimensions
   const width = (stirrupW && stirrupW > 0) ? stirrupW : 15;
   const height = (stirrupH && stirrupH > 0) ? stirrupH : 20;
@@ -2282,7 +2283,6 @@ const ItemReinforcementPreview: React.FC<{
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
                   <CompositeCrossSection
-                    item={item}
                     stirrupW={item.stirrupWidth}
                     stirrupH={item.stirrupHeight}
                     bars={item.mainBars}
@@ -2819,6 +2819,10 @@ const ItemDetailEditor: React.FC<{
   const [visualShape, setVisualShape] = useState<string>('straight');
   const [lastUsedSegmentA, setLastUsedSegmentA] = useState<number>(localItem.length);
 
+  // Multi-position bar placement system
+  const [barsToAdd, setBarsToAdd] = useState<number>(1);
+  const [selectedPositions, setSelectedPositions] = useState<('top' | 'bottom' | 'distributed' | 'center')[]>([]);
+
   // Sync edits if editingIndex changes
   useEffect(() => {
     if (editingIndex !== undefined && localItem.mainBars[editingIndex]) {
@@ -2867,9 +2871,26 @@ const ItemDetailEditor: React.FC<{
   const handleAddOrUpdateBar = () => {
     const bars = [...localItem.mainBars];
     if (editingIndex !== undefined) {
+      // Editing existing bar
       bars[editingIndex] = newBar;
     } else {
-      bars.push(newBar);
+      // Adding new bar(s) - multi-position mode
+      if (selectedPositions.length === barsToAdd) {
+        // Add one bar per selected position
+        selectedPositions.forEach((position) => {
+          bars.push({
+            ...newBar,
+            count: newBar.count, // Use the count from the form
+            placement: position
+          });
+        });
+        // Reset multi-position state
+        setSelectedPositions([]);
+        setBarsToAdd(1);
+      } else {
+        // Fallback to old behavior if positions not all selected
+        bars.push(newBar);
+      }
     }
     const updated = { ...localItem, mainBars: bars, isConfigured: true };
     setLocalItem(updated);
@@ -3073,9 +3094,37 @@ const ItemDetailEditor: React.FC<{
               <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Seção Transversal</h4>
               <span className="text-[10px] font-bold text-slate-400">Clique p/ posicionar</span>
             </div>
-            <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
+            <div className="flex-grow flex items-center justify-center bg-white rounded-2xl border-2 border-slate-200 overflow-hidden relative">
+              {/* Multi-position indicator */}
+              {selectedPositions.length > 0 && (
+                <div className="absolute top-2 right-2 bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-bold z-10 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {selectedPositions.length} de {barsToAdd} posicionados
+                </div>
+              )}
               <div className="transform scale-[1.5]">
-                <CompositeCrossSection stirrupW={localItem.stirrupWidth} stirrupH={localItem.stirrupHeight} bars={localItem.mainBars} stirrupPos={localItem.stirrupPosition} stirrupGauge={localItem.stirrupGauge} onZoneClick={(zone) => { setNewBar(prev => ({ ...prev, placement: zone })); }} selectedZone={newBar.placement} model={localItem.stirrupModel || 'rect'} />
+                <CompositeCrossSection
+                  stirrupW={localItem.stirrupWidth}
+                  stirrupH={localItem.stirrupHeight}
+                  bars={localItem.mainBars}
+                  stirrupPos={localItem.stirrupPosition}
+                  stirrupGauge={localItem.stirrupGauge}
+                  onZoneClick={(zone) => {
+                    // Multi-position mode
+                    if (selectedPositions.length < barsToAdd) {
+                      setSelectedPositions([...selectedPositions, zone]);
+                      if (selectedPositions.length === 0) {
+                        // First selection also sets the newBar placement for preview
+                        setNewBar(prev => ({ ...prev, placement: zone }));
+                      }
+                    }
+                  }}
+                  selectedZone={newBar.placement}
+                  model={localItem.stirrupModel || 'rect'}
+                  multiPositions={selectedPositions}
+                />
               </div>
             </div>
           </div>
@@ -3175,6 +3224,54 @@ const ItemDetailEditor: React.FC<{
               <input type="number" value={newBar.segmentA || ''} onChange={e => setNewBar({ ...newBar, segmentA: Number(e.target.value) })} placeholder="600" className="w-full p-3 bg-indigo-50 border-2 border-indigo-400 rounded-xl font-black text-2xl text-indigo-700 text-center outline-none focus:border-indigo-500" />
             </div>
           </div>
+
+          {/* Multi-Position Bar System - Only show when adding new bars */}
+          {editingIndex === undefined && (
+            <div className="mb-3 p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl">
+              <label className="text-[10px] font-black text-indigo-700 uppercase block mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Ferros a Adicionar (Clique na seção para posicionar cada um)
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={barsToAdd}
+                  onChange={e => {
+                    const newCount = Math.max(1, Number(e.target.value));
+                    setBarsToAdd(newCount);
+                    setSelectedPositions([]);
+                  }}
+                  className="w-24 p-3 bg-white border-2 border-indigo-300 rounded-xl text-lg font-black text-center focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                />
+                <div className="flex-grow flex items-center gap-2">
+                  {selectedPositions.length > 0 && (
+                    <button
+                      onClick={() => setSelectedPositions([])}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors"
+                    >
+                      Limpar Posições
+                    </button>
+                  )}
+                  {selectedPositions.length === barsToAdd ? (
+                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Posicionamento completo!
+                    </div>
+                  ) : (
+                    <div className="text-xs font-bold text-indigo-600">
+                      {selectedPositions.length} de {barsToAdd} posicionados
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Reuse */}
           {lastUsedSegmentA && lastUsedSegmentA !== newBar.segmentA && (
