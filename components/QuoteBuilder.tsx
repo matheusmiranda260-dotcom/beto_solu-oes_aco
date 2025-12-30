@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DevSystemMap } from './DevSystemMap';
 import { analyzeImageWithGemini } from '../services/imageAnalysisService';
 import { ElementType, BarUsage, SteelItem, Client, Quote, MainBarGroup, HookType } from '../types';
 import { GAUGES, STEEL_WEIGHTS, DEFAULT_KG_PRICE } from '../constants';
@@ -2519,25 +2520,13 @@ const ItemReinforcementPreview: React.FC<{
 
   return (
     <div className="mt-4 p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100/50 space-y-4">
-      {/* Listagem de ferros Individuais */}
-      {/* Listagem de ferros Individuais REMOVIDA - Agora Integrada no Desenho */}
-      {/* 
-        The user explicitly requested to remove the separate card list and merge interaction into the drawing.
-        "que tal deixar em um so.. ali conseguimos no desenho fica mais facil de visualizar editar"
-      */}
-
       {/* Resumo da Gaiola / Estribos Automáticos + Seção Visual */}
       {(item.hasStirrups || !isSapata || isPilarOrBroca) && (
         <div className="flex flex-col gap-4 items-stretch">
-          {/* Technical Project View - Elevation + Section */}
+          {/* Technical Project View - Elevation Only (No Section Side-by-Side) */}
           {!isSapata && (
-            <div className={`flex flex-wrap gap-6 items-start justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100 ${item.type === 'Pilar' || item.type === 'Broca' ? 'flex-row' : 'flex-col md:flex-row'}`}>
-              {/* DEBUG INFO */}
-              <div className="w-full text-center text-[10px] text-red-500 font-bold hidden">
-                Debug: Type="{item.type}"
-              </div>
+            <div className={`flex flex-wrap gap-6 items-start justify-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100 w-full`}>
               {/* Elevation */}
-              {/* Elevation - Now Interactive */}
               {item.type !== 'Pilar' && item.type !== 'Broca' ? (
                 <BeamElevationView
                   item={item}
@@ -2557,45 +2546,16 @@ const ItemReinforcementPreview: React.FC<{
                   readOnly={readOnly}
                 />
               )}
-
-              {/* Section */}
-              <div className="flex flex-col items-center gap-1">
-                <div className="flex flex-col items-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Seção</span>
-                  <CompositeCrossSection
-                    stirrupW={item.stirrupWidth}
-                    stirrupH={item.stirrupHeight}
-                    bars={item.mainBars}
-                    stirrupPos={item.stirrupPosition}
-                    stirrupGauge={item.stirrupGauge}
-                    stirrupCount={Math.floor(((item.length || 1) * 100) / (item.stirrupSpacing || 20)) || 0}
-                    model={item.stirrupModel || 'rect'}
-                  />
-                </div>
-              </div>
             </div>
           )}
 
-          {item.hasStirrups && (
-            <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/st ${isSapata ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
+          {/* Special Case: Cage Drawing for Sapatas (Keep only if Sapata, remove for others) */}
+          {item.hasStirrups && isSapata && (
+            <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/st bg-indigo-50 border-indigo-200`}>
               <div className="flex items-center gap-6">
-                {isSapata ? (
-                  <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
-                ) : (
-                  <StirrupDetailView
-                    width={item.stirrupWidth}
-                    height={item.stirrupHeight}
-                    model={item.stirrupModel || 'rect'}
-                    gauge={item.stirrupGauge}
-                    spacing={item.stirrupSpacing}
-                    count={Math.ceil(((item.length || 1) * 100) / (item.stirrupSpacing || 20))}
-                    position={item.stirrupPosition}
-                    scale={1} // Adjusted scale for compact view
-                  />
-                )}
-
+                <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
                 <div className="flex flex-col">
-                  <span className={`text-[9px] font-black uppercase leading-none ${isSapata ? 'text-indigo-700' : 'text-amber-700'}`}>{isSapata ? 'Gaiola Fechada' : 'Estribos'}</span>
+                  <span className={`text-[9px] font-black uppercase leading-none text-indigo-700`}>Gaiola Fechada</span>
                   <span className="text-[12px] font-black text-slate-800">Ø{item.stirrupGauge} c/{item.stirrupSpacing}cm</span>
                 </div>
 
@@ -2610,7 +2570,7 @@ const ItemReinforcementPreview: React.FC<{
                   </div>
                 )}
               </div>
-              <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm ${isSapata ? 'text-indigo-600 hover:text-indigo-800' : 'text-amber-600 hover:text-amber-800 opacity-0 group-hover/st:opacity-100'}`}>
+              <button onClick={onEditStirrups} className={`p-2 transition-all bg-white rounded-xl shadow-sm text-indigo-600 hover:text-indigo-800`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
               </button>
             </div>
@@ -2623,6 +2583,7 @@ const ItemReinforcementPreview: React.FC<{
 
 const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel }) => {
   const [items, setItems] = useState<SteelItem[]>([]);
+  const [showDevMap, setShowDevMap] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos', initialUsage?: BarUsage } | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -2793,6 +2754,17 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
           </div>
         </div>
         <div className="flex gap-6 items-center">
+          <button
+            onClick={() => setShowDevMap(true)}
+            className="p-3 bg-white text-slate-400 border border-slate-200 hover:border-blue-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm group relative"
+            title="Mapa do Sistema"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7" />
+            </svg>
+            <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Mapa do Sistema</span>
+          </button>
+
           <div className="text-right">
             <span className="text-[10px] font-black text-slate-400 uppercase block tracking-wider">Carga Total</span>
             <span className="text-3xl font-black text-slate-900 tracking-tighter">{calculateWeight(items).toFixed(1)} <small className="text-sm font-medium">kg</small></span>
@@ -2806,6 +2778,8 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
           </button>
         </div>
       </div>
+
+      {showDevMap && <DevSystemMap onClose={() => setShowDevMap(false)} />}
 
       <div className="space-y-4">
         {items.map(item => {
