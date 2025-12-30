@@ -241,7 +241,6 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   - It clearly divides the height into: Start Gap | Distributed Stirrups | End Gap.
   - **Read the Gaps**: Look for small segments at top/bottom labeled "VÃO", "ESPERA", or just a number (e.g. "8").
   - **Read the Middle**: The middle segment label (e.g. "15 N5 c/15") CONFIRMS quantity and spacing.
-  - **PRIORITY RULE**: If the quantity here (e.g. 16) differs from the quantity in the detached stirrup summary (e.g. 19), TRUST THIS LINE. This shows the actual physical distribution in the element.
 
   ========================================
   OUTPUT JSON FORMAT (STRICT):
