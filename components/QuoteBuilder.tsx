@@ -2015,13 +2015,36 @@ const ColumnElevationView: React.FC<{
           <text x="0" y="-12" fontSize="9" fill="#64748b" fontWeight="bold">ESC 1:20</text>
 
           {(() => {
+            const model = item.stirrupModel || 'rect';
             const sW = item.stirrupWidth || 20;
             const sH = item.stirrupHeight || 20;
             const scale = 3;
-            const pW = sW * scale;
-            const pH = sH * scale;
+            const pW = sW * scale; // Width in pixels
+            const pH = (model === 'circle' ? sW : sH) * scale; // Height in pixels
             const cover = 2.5 * scale;
             const stirrupOffset = 1.5 * scale;
+
+            // --- Generate Shape Paths ---
+            let pathOuter = "";
+            let pathInner = "";
+
+            if (model === 'rect') {
+              pathOuter = `M0,0 L${pW},0 L${pW},${pH} L0,${pH} Z`;
+              pathInner = `M${stirrupOffset},${stirrupOffset} L${pW - stirrupOffset},${stirrupOffset} L${pW - stirrupOffset},${pH - stirrupOffset} L${stirrupOffset},${pH - stirrupOffset} Z`;
+            } else if (model === 'circle') {
+              // Circles handled separately via <circle> or path with arcs
+              // Using path for consistency is harder for resize. Let's use logic below.
+            } else if (model === 'triangle') {
+              pathOuter = `M${pW / 2},0 L${pW},${pH} L0,${pH} Z`;
+              // Inner approximation
+              pathInner = `M${pW / 2},${stirrupOffset * 1.5} L${pW - stirrupOffset},${pH - stirrupOffset} L${stirrupOffset},${pH - stirrupOffset} Z`;
+            } else if (model === 'pentagon') {
+              pathOuter = `M${pW / 2},0 L${pW},${pH * 0.38} L${pW * 0.81},${pH} L${pW * 0.19},${pH} L0,${pH * 0.38} Z`;
+              pathInner = `M${pW / 2},${stirrupOffset} L${pW - stirrupOffset},${pH * 0.38} L${pW * 0.81 - stirrupOffset / 2},${pH - stirrupOffset} L${pW * 0.19 + stirrupOffset / 2},${pH - stirrupOffset} L${stirrupOffset},${pH * 0.38} Z`;
+            } else if (model === 'hexagon') {
+              pathOuter = `M${pW * 0.25},0 L${pW * 0.75},0 L${pW},${pH / 2} L${pW * 0.75},${pH} L${pW * 0.25},${pH} L0,${pH / 2} Z`;
+              pathInner = `M${pW * 0.25 + stirrupOffset / 2},${stirrupOffset} L${pW * 0.75 - stirrupOffset / 2},${stirrupOffset} L${pW - stirrupOffset},${pH / 2} L${pW * 0.75 - stirrupOffset / 2},${pH - stirrupOffset} L${pW * 0.25 + stirrupOffset / 2},${pH - stirrupOffset} L${stirrupOffset},${pH / 2} Z`;
+            }
 
             const allBars = [...item.mainBars];
             if (newBar) allBars.push(newBar);
@@ -2038,32 +2061,44 @@ const ColumnElevationView: React.FC<{
 
             return (
               <g transform="translate(0, 0)">
-                <rect x={0} y={0} width={pW} height={pH} fill="#f1f5f9" stroke="#0f172a" strokeWidth="2" />
-                <rect
-                  x={stirrupOffset}
-                  y={stirrupOffset}
-                  width={pW - 2 * stirrupOffset}
-                  height={pH - 2 * stirrupOffset}
-                  fill="none"
-                  stroke="#0f172a"
-                  strokeWidth="1.5"
-                />
+                {/* Visual Concrete Shape */}
+                {model === 'circle' ? (
+                  <circle cx={pW / 2} cy={pH / 2} r={pW / 2} fill="#f1f5f9" stroke="#0f172a" strokeWidth="2" />
+                ) : (
+                  <path d={pathOuter} fill="#f1f5f9" stroke="#0f172a" strokeWidth="2" />
+                )}
 
+                {/* Visual Stirrup Shape */}
+                {model === 'circle' ? (
+                  <circle cx={pW / 2} cy={pH / 2} r={(pW / 2) - stirrupOffset} fill="none" stroke="#0f172a" strokeWidth="1.5" />
+                ) : (
+                  <path d={pathInner} fill="none" stroke="#0f172a" strokeWidth="1.5" />
+                )}
+
+                {/* Bars - Simplified placement logic based on Bounding Box (pW, pH) */}
+                {/* Top Bars */}
                 {topCount > 0 && Array.from({ length: topCount }).map((_, i) => {
+                  // If triangle, push top bars down slightly or center?
+                  // For MVP compatibility, we use bounding box Top logic.
+                  // Only change: for Triangle, Top means Vertex, so center X.
                   const xPos = topCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (topCount - 1)));
-                  return <circle key={`t${i}`} cx={xPos} cy={cover} r={3.5} fill="#0f172a" />;
+                  const yPos = model === 'triangle' ? cover + 5 : cover; // Push down slightly for triangle tip
+                  return <circle key={`t${i}`} cx={xPos} cy={yPos} r={3.5} fill="#0f172a" />;
                 })}
 
+                {/* Bottom Bars */}
                 {botCount > 0 && Array.from({ length: botCount }).map((_, i) => {
                   const xPos = botCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (botCount - 1)));
                   return <circle key={`b${i}`} cx={xPos} cy={pH - cover} r={3.5} fill="#0f172a" />;
                 })}
 
+                {/* Side Bars */}
                 {sideCount > 0 && (() => {
                   const perSide = Math.ceil(sideCount / 2);
                   const nodes: React.ReactNode[] = [];
                   for (let i = 0; i < perSide; i++) {
                     const ySpacing = (pH - 2 * cover) / (perSide + 1);
+                    // Adjust X for non-rect shapes? Simple bounding box for now.
                     nodes.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
                   }
                   const rightBars = sideCount - perSide;
@@ -2074,20 +2109,31 @@ const ColumnElevationView: React.FC<{
                   return nodes;
                 })()}
 
+                {/* Center Bars */}
                 {centerCount > 0 && Array.from({ length: centerCount }).map((_, i) => {
                   const xPos = centerCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (centerCount - 1)));
                   return <circle key={`c${i}`} cx={xPos} cy={pH / 2} r={3.5} fill="#0f172a" />;
                 })}
 
+                {/* Dimensions - Adapted for Shapes */}
+                {/* Horizontal Dimension (Bottom) */}
                 <line x1={0} y1={pH + 8} x2={pW} y2={pH + 8} stroke="#0f172a" strokeWidth="0.5" />
                 <line x1={0} y1={pH + 5} x2={0} y2={pH + 11} stroke="#0f172a" strokeWidth="0.5" />
                 <line x1={pW} y1={pH + 5} x2={pW} y2={pH + 11} stroke="#0f172a" strokeWidth="0.5" />
                 <text x={pW / 2} y={pH + 20} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sW)}</text>
 
-                <line x1={pW + 8} y1={0} x2={pW + 8} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={pW + 5} y1={0} x2={pW + 11} y2={0} stroke="#0f172a" strokeWidth="0.5" />
-                <line x1={pW + 5} y1={pH} x2={pW + 11} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
-                <text x={pW + 18} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
+                {/* Vertical Dimension (Right) */}
+                {model !== 'circle' && (
+                  <>
+                    <line x1={pW + 8} y1={0} x2={pW + 8} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                    <line x1={pW + 5} y1={0} x2={pW + 11} y2={0} stroke="#0f172a" strokeWidth="0.5" />
+                    <line x1={pW + 5} y1={pH} x2={pW + 11} y2={pH} stroke="#0f172a" strokeWidth="0.5" />
+                    <text x={pW + 18} y={pH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(sH)}</text>
+                  </>
+                )}
+                {model === 'circle' && (
+                  <text x={pW / 2} y={pH / 2} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">Ø{Math.round(sW)}</text>
+                )}
 
                 {item.hasStirrups && (() => {
                   const numStirrupsVal = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
