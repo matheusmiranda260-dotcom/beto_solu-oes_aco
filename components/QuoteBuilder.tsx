@@ -1400,11 +1400,7 @@ const BeamElevationView: React.FC<{
                     const cy = dH / 2;
 
                     const offsetY = pH + 60;
-                    let cutLength = 0;
-                    let shapeNode = null;
-                    let dimensionNode = null;
-                    let hookX = 0;
-                    let hookY = 0;
+                    let hooksNode = null;
 
                     if (model === 'rect') {
                       cutLength = (sW_val + sH_val) * 2 + 10;
@@ -1417,68 +1413,143 @@ const BeamElevationView: React.FC<{
                           <text x={dW + 5} y={dH / 2} textAnchor="start" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
                         </>
                       );
-                      hookX = 0;
-                      hookY = 0;
+                      const hookGap = 3;
+                      const hookLen = 8;
+                      hooksNode = (
+                        <g transform="translate(0, 0)">
+                          <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      );
                     } else if (model === 'circle') {
                       cutLength = Math.round(sW_val * Math.PI + 10);
                       const r = dW / 2;
                       shapeNode = <circle cx={cx} cy={cy} r={r} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">Ø{sW_val}</text>;
-                      hookX = cx - 4;
-                      hookY = (cy - r) - 4;
+                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>; // Diameter in center
+                      // Hooks at top
+                      hooksNode = (
+                        <g transform={`translate(${cx}, ${cy - r})`}>
+                          <path d="M-4,2 Q0,8 4,2" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={-2} y1={0} x2={-2} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={2} y1={0} x2={2} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      );
                     } else if (model === 'triangle') {
-                      const side = Math.sqrt(Math.pow(sW_val / 2, 2) + Math.pow(sH_val, 2));
+                      const side = Math.round(Math.sqrt(Math.pow(sW_val / 2, 2) + Math.pow(sH_val, 2)));
                       cutLength = Math.round(sW_val + 2 * side + 10);
                       shapeNode = <polygon points={`0,${dH} ${dW},${dH} ${cx},0`} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
                       dimensionNode = (
                         <>
                           <text x={cx} y={dH + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
-                          <text x={0 - 5} y={cy} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
-                          <text x={dW + 5} y={cy} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
+                          <text x={dW * 0.75 + 6} y={dH / 2} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{side}</text>
+                          <text x={dW * 0.25 - 6} y={dH / 2} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{side}</text>
                         </>
                       );
-                      hookX = cx - 4;
-                      hookY = 0 - 4;
+                      // Hooks: V at top vertex
+                      hooksNode = (
+                        <g transform={`translate(${cx}, 0)`}>
+                          <line x1={-2} y1={2} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={2} y1={2} x2={6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      );
                     } else if (model === 'pentagon') {
-                      cutLength = Math.round(sW_val * 5 + 10);
-                      const R = dW / (2 * Math.sin(Math.PI / 5));
-                      const points = [];
-                      for (let i = 0; i < 5; i++) {
-                        const angle = (2 * Math.PI * i) / 5 - Math.PI / 2;
-                        points.push(`${cx + R * Math.cos(angle)},${cy + R * Math.sin(angle)}`);
-                      }
-                      shapeNode = <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>;
-                      // Top vertex is at i=0, angle=-PI/2
-                      hookX = cx - 4;
-                      hookY = (cy - R) - 4;
-                    } else if (model === 'hexagon') {
-                      cutLength = Math.round(sW_val * 6 + 10);
-                      const R = dW / 2;
-                      const points = [];
-                      for (let i = 0; i < 6; i++) {
-                        const angle = (2 * Math.PI * i) / 6 - Math.PI / 6;
-                        points.push(`${cx + R * Math.cos(angle)},${cy + R * Math.sin(angle)}`);
-                      }
-                      shapeNode = <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>;
-                      // Top vertex is at i=5 (angle 270/-90) for this specific pentagon/hex logic?
-                      // Hex logic used here: angle = (2PI*i)/6 - PI/6.
-                      // To get -PI/2 (top), we need (2PI*i)/6 = -PI/2 + PI/6 = -PI/3 ??
-                      // Wait, previous logic might be rotated.
-                      // Let's stick to safe 'cy - R' assumption for regular polygon bounding.
-                      hookX = cx - 4;
-                      hookY = (cy - R) - 4;
-                    }
+                      // Vertices for House Pentagon (Top, Right-Up, Right-Down, Left-Down, Left-Up)
+                      // Points logic from View: (cx,0), (w, h*0.38), (w*0.81, h), (w*0.19, h), (0, h*0.38)
+                      // BUT user image shows Regular Pentagon (5 equal sides).
+                      // The previous logic was 'House'. To match "Exact Image", we need Regular Pentagon if possible.
+                      // Let's use the layout vertices we calculated before but add labels to all 5 sides.
+                      // Sides: Top-Right, Bot-Right, Bottom, Bot-Left, Top-Left.
 
-                    const hookLen = 8;
-                    const hookGap = 3;
-                    const hooksNode = (
-                      <g transform={`translate(${hookX}, ${hookY})`}>
-                        <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
-                        <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
-                      </g>
-                    );
+                      // Calculate real side lengths based on vertices
+                      const v = [
+                        { x: cx, y: 0 },
+                        { x: dW, y: dH * 0.38 },
+                        { x: dW * 0.81, y: dH },
+                        { x: dW * 0.19, y: dH },
+                        { x: 0, y: dH * 0.38 }
+                      ];
+
+                      // Calculate edge lengths in 'real' units (scaling back)
+                      const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
+
+                      const s1 = distReal(v[0], v[1]);
+                      const s2 = distReal(v[1], v[2]);
+                      const s3 = distReal(v[2], v[3]); // Bottom
+                      const s4 = distReal(v[3], v[4]);
+                      const s5 = distReal(v[4], v[0]);
+
+                      cutLength = s1 + s2 + s3 + s4 + s5 + 10;
+
+                      const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
+                      shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+
+                      dimensionNode = (
+                        <>
+                          <text x={dW * 0.8 + 8} y={dH * 0.2} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
+                          <text x={dW + 4} y={dH * 0.7} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s2}</text>
+                          <text x={cx} y={dH + 10} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s3}</text>
+                          <text x={-4} y={dH * 0.7} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s4}</text>
+                          <text x={dW * 0.2 - 8} y={dH * 0.2} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s5}</text>
+                        </>
+                      );
+
+                      // Hooks: V at top vertex
+                      hooksNode = (
+                        <g transform={`translate(${cx}, 0)`}>
+                          <line x1={-2} y1={3} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={2} y1={3} x2={6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      );
+
+                    } else if (model === 'hexagon') {
+                      // Vertices: (w*0.25, 0), (w*0.75, 0), (w, h/2), (w*0.75, h), (w*0.25, h), (0, h/2)
+                      const v = [
+                        { x: dW * 0.25, y: 0 },
+                        { x: dW * 0.75, y: 0 },
+                        { x: dW, y: dH / 2 },
+                        { x: dW * 0.75, y: dH },
+                        { x: dW * 0.25, y: dH },
+                        { x: 0, y: dH / 2 }
+                      ];
+                      const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
+
+                      const s1 = distReal(v[0], v[1]); // Top
+                      const s2 = distReal(v[1], v[2]);
+                      const s3 = distReal(v[2], v[3]);
+                      const s4 = distReal(v[3], v[4]); // Bottom
+                      const s5 = distReal(v[4], v[5]);
+                      const s6 = distReal(v[5], v[0]); // Top-Left
+
+                      cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
+
+                      const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
+                      shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+
+                      dimensionNode = (
+                        <>
+                          <text x={cx} y={-4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
+                          <text x={dW + 4} y={dH * 0.25} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s2}</text>
+                          <text x={dW + 4} y={dH * 0.75} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s3}</text>
+                          <text x={cx} y={dH + 10} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s4}</text>
+                          <text x={-4} y={dH * 0.75} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s5}</text>
+                          <text x={-4} y={dH * 0.25} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s6}</text>
+                        </>
+                      );
+
+                      // Hooks: On Top-Left Edge (last side v5 -> v0)
+                      // Midpoint of v5(0, h/2) and v0(w*0.25, 0)
+                      // No, reference image shows hooks on that edge.
+                      const mx = (v[5].x + v[0].x) / 2;
+                      const my = (v[5].y + v[0].y) / 2;
+                      hooksNode = (
+                        <g transform={`translate(${mx}, ${my})`}>
+                          {/* Perpendicular lines relative to edge slope? Or just simple V? */}
+                          {/* Edge goes up-right. Hooks should point INWARD (down-right). */}
+                          <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(-2, 2)" />
+                          <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(2, -2)" />
+                        </g>
+                      );
+                    }
 
                     return (
                       <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
