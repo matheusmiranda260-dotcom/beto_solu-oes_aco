@@ -106,6 +106,26 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
             let spacing = Number(item.stirrupSpacing) || 20;
             if (spacing < 1 && spacing > 0) spacing = spacing * 100;
 
+            // INTELLIGENT GAP CALCULATION:
+            // If the drawing says "16 N3" (count=16), we MUST respect it.
+            // If explicit gaps are missing, we calculate them to fit the 16 stirrups.
+            let sCount = Number(item.stirrupCount) || 0;
+            let startGap = Number(item.startGap) || 0;
+            let endGap = Number(item.endGap) || 0;
+
+            if (sCount > 0 && spacing > 0) {
+                const totalLenCm = rawLength * 100;
+                // Coverage distance = (N-1) * spacing.
+                const coveredLen = (sCount - 1) * spacing;
+                const remaining = totalLenCm - coveredLen;
+
+                // If we have remaining space and no explicit gaps, distribute it
+                if (remaining > 0 && startGap === 0 && endGap === 0) {
+                    startGap = remaining / 2;
+                    endGap = remaining / 2;
+                }
+            }
+
             return {
                 id: crypto.randomUUID(),
                 type: (item.type && Object.values(ElementType).includes(item.type)) ? item.type : ElementType.VIGA_SUPERIOR,
@@ -135,8 +155,8 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                 })),
 
                 // Gaps
-                startGap: Number(item.startGap) || 0,
-                endGap: Number(item.endGap) || 0,
+                startGap: startGap,
+                endGap: endGap,
 
                 isConfigured: true
             };
@@ -228,6 +248,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
     "hasStirrups": true,
     "stirrupGauge": "5.0",
     "stirrupSpacing": 15, // cm
+    "stirrupCount": 16,    // OPTIONAL: Explicit count read from label (e.g. "16 N3")
     "stirrupWidth": 15,    // cm (FROM SECTION A-A)
     "stirrupHeight": 35,   // cm (FROM SECTION A-A)
     "stirrupPosition": "N3", // FROM LABEL
