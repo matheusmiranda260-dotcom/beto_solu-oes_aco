@@ -1401,6 +1401,9 @@ const BeamElevationView: React.FC<{
 
                     const offsetY = pH + 60;
                     let hooksNode = null;
+                    let cutLength = 0;
+                    let shapeNode = null;
+                    let dimensionNode = null;
 
                     if (model === 'rect') {
                       cutLength = (sW_val + sH_val) * 2 + 10;
