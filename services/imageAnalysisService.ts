@@ -91,21 +91,36 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
                 }
             }
 
+            let w = Number(item.width) || 0.15;
+            if (w > 4) w = w / 100; // Auto-fix: Convert CM to M if value is unrealistic for M
+
+            let h = Number(item.height) || 0.3;
+            if (h > 4) h = h / 100; // Auto-fix: Convert CM to M
+
+            let sW = Number(item.stirrupWidth) || 15;
+            if (sW < 1 && sW > 0) sW = sW * 100; // Auto-fix: Convert M to CM if value is decimal
+
+            let sH = Number(item.stirrupHeight) || 25;
+            if (sH < 1 && sH > 0) sH = sH * 100; // Auto-fix: Convert M to CM
+
+            let spacing = Number(item.stirrupSpacing) || 20;
+            if (spacing < 1 && spacing > 0) spacing = spacing * 100;
+
             return {
                 id: crypto.randomUUID(),
                 type: (item.type && Object.values(ElementType).includes(item.type)) ? item.type : ElementType.VIGA_SUPERIOR,
                 observation: item.observation || 'Item Importado',
                 quantity: Number(item.quantity) || 1,
                 length: rawLength,
-                width: Number(item.width) || 0.15,
-                height: Number(item.height) || 0.3,
+                width: w,
+                height: h,
 
                 // Stirrups
                 hasStirrups: item.hasStirrups ?? true,
                 stirrupGauge: String(item.stirrupGauge || '5.0'),
-                stirrupSpacing: Number(item.stirrupSpacing) || 20,
-                stirrupWidth: Number(item.stirrupWidth) || 15,
-                stirrupHeight: Number(item.stirrupHeight) || 25,
+                stirrupSpacing: spacing,
+                stirrupWidth: sW,
+                stirrupHeight: sH,
                 stirrupPosition: item.stirrupPosition,
 
                 mainBars: parsedBars,
@@ -162,6 +177,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
     const prompt = `
   You are an expert Structural Engineer assistant. Analyze this reinforcement drawing (Rebar Detailing) following this STRICT SEQUENCE.
   IGNORE COLORS. READ TEXT LABELS, DIMENSIONS, AND POSITIONS CAREFULLY.
+  **ATTENTION TO UNITS: Concrete dimensions (Width/Height) are usually in CM in drawings (e.g. 15), but output them in METERS (e.g. 0.15). Steel lengths/spacings are in CM.**
   
   ${learningContext}
 
@@ -206,8 +222,8 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
     "observation": "Label (e.g. P1)",
     "quantity": 1,
     "length": Total concrete length (m),
-    "width": Concrete Section Width (m),
-    "height": Concrete Section Height (m),
+    "width": Concrete Section Width (Meters - e.g. 0.20),
+    "height": Concrete Section Height (Meters - e.g. 0.40),
 
     "hasStirrups": true,
     "stirrupGauge": "5.0",
