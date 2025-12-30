@@ -2574,12 +2574,137 @@ const ItemReinforcementPreview: React.FC<{
   );
 };
 
+const DetailedBudgetView: React.FC<{ item: SteelItem; onClose: () => void }> = ({ item, onClose }) => {
+  const getBarWeight = (gauge: string, totalMeters: number) => totalMeters * (STEEL_WEIGHTS[gauge] || 0);
+
+  // 1. Main Bars Calculation
+  const mainBarsData = item.mainBars.map((bar, idx) => {
+    // Fallback logic matches calculateWeight
+    const lenM_final = (bar.segmentA && bar.segmentA > 0) ? bar.segmentA / 100 : item.length;
+
+    // Extra segments
+    const extraCm = (bar.segmentB || 0) + (bar.segmentC || 0) + (bar.segmentD || 0) + (bar.segmentE || 0) +
+      (bar.hookStartType !== 'none' ? bar.hookStart : 0) + (bar.hookEndType !== 'none' ? bar.hookEnd : 0);
+
+    const totalLenM = lenM_final + (extraCm / 100);
+    const qtyUnit = bar.count;
+    const qtyTotal = qtyUnit * item.quantity;
+    // Assuming 'gauge' like '10.0' matches STEEL_WEIGHTS keys
+    const weightTotal = getBarWeight(bar.gauge, totalLenM * qtyTotal);
+
+    return {
+      pos: bar.position || `N${idx + 1}`,
+      gauge: bar.gauge,
+      qtyUnit,
+      qtyTotal,
+      lengthCm: Math.round(totalLenM * 100),
+      weightTotal
+    };
+  });
+
+  // 2. Stirrups Calculation
+  let stirrupData = null;
+  if (item.hasStirrups) {
+    // Determine effective length for distribution
+    const maxBarLen = Math.max(...item.mainBars.map(b => b.segmentA || 0));
+    const effectiveLength = maxBarLen > 0 ? maxBarLen / 100 : item.length;
+
+    // Use explicit stirrupCount if available (from AI), otherwise calculate
+    const countOne = item.stirrupCount && item.stirrupCount > 0
+      ? item.stirrupCount
+      : Math.ceil((effectiveLength * 100) / (item.stirrupSpacing || 20));
+
+    // Perimeter + Hooks (Standard 5cm + 5cm = 10cm or calculated)
+    const perimeterCm = (item.stirrupWidth * 2) + (item.stirrupHeight * 2) + 10;
+    const totalLenM = perimeterCm / 100;
+    const qtyTotal = countOne * item.quantity;
+    const weightTotal = getBarWeight(item.stirrupGauge, totalLenM * qtyTotal);
+
+    stirrupData = {
+      pos: item.stirrupPosition || 'EST',
+      gauge: item.stirrupGauge,
+      qtyUnit: countOne,
+      qtyTotal,
+      lengthCm: Math.round(perimeterCm),
+      weightTotal
+    };
+  }
+
+  const grandTotalWeight = mainBarsData.reduce((acc, b) => acc + b.weightTotal, 0) + (stirrupData?.weightTotal || 0);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        <div className="bg-slate-900 p-6 flex justify-between items-center">
+          <div>
+            <h3 className="text-white font-black text-xl uppercase tracking-tight">{item.type}</h3>
+            <p className="text-slate-400 text-sm font-medium">{item.observation || 'Sem Observação'}</p>
+          </div>
+          <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="bg-amber-100 text-amber-700 font-black px-4 py-2 rounded-xl text-lg border border-amber-200">
+              {item.quantity} Peças
+            </div>
+            <div className="text-xs text-slate-400 uppercase font-bold tracking-wider ml-auto">
+              Peso Total: <span className="text-slate-900 text-base">{grandTotalWeight.toFixed(2)} kg</span>
+            </div>
+          </div>
+
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-500 font-black uppercase text-[10px] tracking-wider">
+              <tr>
+                <th className="px-4 py-3 rounded-l-xl">Pos</th>
+                <th className="px-4 py-3">Bitola</th>
+                <th className="px-4 py-3 text-center">Qtde (Unit)</th>
+                <th className="px-4 py-3 text-center">Qtde (Total)</th>
+                <th className="px-4 py-3 text-right">Comp. (cm)</th>
+                <th className="px-4 py-3 text-right rounded-r-xl">Peso (kg)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {mainBarsData.map((bar, i) => (
+                <tr key={i} className="hover:bg-slate-50 transition-colors font-medium text-slate-700">
+                  <td className="px-4 py-3"><span className="font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{bar.pos}</span></td>
+                  <td className="px-4 py-3 text-slate-900">ø{bar.gauge}</td>
+                  <td className="px-4 py-3 text-center">{bar.qtyUnit}</td>
+                  <td className="px-4 py-3 text-center font-bold">{bar.qtyTotal}</td>
+                  <td className="px-4 py-3 text-right">{bar.lengthCm}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{bar.weightTotal.toFixed(2)}</td>
+                </tr>
+              ))}
+              {stirrupData && (
+                <tr className="hover:bg-amber-50/50 transition-colors font-medium text-slate-700 bg-amber-50/20">
+                  <td className="px-4 py-3"><span className="font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{stirrupData.pos}</span></td>
+                  <td className="px-4 py-3 text-slate-900">ø{stirrupData.gauge}</td>
+                  <td className="px-4 py-3 text-center">{stirrupData.qtyUnit}</td>
+                  <td className="px-4 py-3 text-center font-bold">{stirrupData.qtyTotal}</td>
+                  <td className="px-4 py-3 text-right">{stirrupData.lengthCm}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{stirrupData.weightTotal.toFixed(2)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="bg-slate-50 px-8 py-4 text-center border-t border-slate-100">
+          <button onClick={onClose} className="text-slate-500 font-bold hover:text-slate-800 text-xs uppercase tracking-widest transition-colors">Fechar Orçamento Detalhado</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel }) => {
   const [items, setItems] = useState<SteelItem[]>([]);
   const [showDevMap, setShowDevMap] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingContext, setEditingContext] = useState<{ item: SteelItem, barIdx?: number, initialTab?: 'ferros' | 'estribos', initialUsage?: BarUsage } | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [viewingDetailedItem, setViewingDetailedItem] = useState<SteelItem | null>(null);
   const [newItemBase, setNewItemBase] = useState<{ type: ElementType, qty: number, lengthCm: number, widthCm: number, heightCm: number, obs: string } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false); // State for AI Analysis loading
 
@@ -2837,6 +2962,14 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
                           <div className="h-px bg-slate-100 my-1" />
 
                           <button
+                            onClick={() => { setViewingDetailedItem(item); setOpenDropdownId(null); }}
+                            className="text-left px-4 py-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group"
+                          >
+                            <span>Orçamento Detalhado</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">NOVO</span>
+                          </button>
+
+                          <button
                             onClick={() => {
                               // Duplicar item logic? Or delete?
                               // Assuming the list had delete but I don't see one in this dropdown block.
@@ -3006,6 +3139,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
     </div>
   );
 };
+
 
 interface EditorProps {
   item: SteelItem;

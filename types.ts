@@ -165,6 +165,7 @@ export interface SteelItem {
     hasStirrups: boolean;
     stirrupGauge: string;
     stirrupSpacing: number;
+    stirrupCount?: number; // Explicit count if available (AI/Manual)
     stirrupWidth: number;
     stirrupHeight: number;
     stirrupPosition?: string;
