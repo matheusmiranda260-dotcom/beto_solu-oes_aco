@@ -44,12 +44,17 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
         return items.map((item: any) => {
             // ... parsing bars first to use them for validation ...
             const parsedBars = (item.mainBars || []).map((bar: any) => {
-                const hStart = Number(bar.hookStart) || 0;
-                const hEnd = Number(bar.hookEnd) || 0;
+                let hStart = Number(bar.hookStart) || 0;
+                let hEnd = Number(bar.hookEnd) || 0;
                 let shape = bar.shape || 'straight';
 
-                // AUTO-CORRECTION: If hooks exist, FORCE the shape to be valid
-                if ((hStart > 0 || hEnd > 0) && shape === 'straight') {
+                // AUTO-CORRECTION: Trust 'straight' classification to avoid "c/15" reading errors
+                if (shape === 'straight') {
+                    hStart = 0;
+                    hEnd = 0;
+                }
+                // Fallback: If hooks exist and shape is NOT straight (e.g. undefined), infer shape
+                else if ((hStart > 0 || hEnd > 0) && !['u_up', 'u_down', 'l_left_up', 'l_right_up'].includes(shape)) {
                     const placement = bar.placement || (bar.usage === BarUsage.PRINCIPAL ? 'bottom' : 'top');
                     shape = (placement === 'top') ? 'u_down' : 'u_up';
                 }
@@ -214,6 +219,7 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   - **Top vs Bottom**: If the bar is drawn at the top of the element, it is Top. If at bottom, it is Bottom.
   - **Side Bars (Costelas/Pele)**: If bars are distributed along the height (middle), label them as 'distributed'.
   - **Hooks (Dobras)**: Check the ends of these lines. If they turn up or down, note the dimension (e.g. "15").
+  - **CRITICAL**: If the bar is a straight line, set 'hookStart' and 'hookEnd' to 0. Do NOT confuse stirrup spacing (e.g. "c/15") or quantity with hooks. Only add hooks if you visually see the bend.
 
   ### STEP 2: READ STIRRUPS (Estribos) - LOOK AT THE CROSS-SECTION
   - **MANDATORY**: Locate the Cross-Section (rectangle with dots) or the callout typically on the RIGHT.
@@ -228,12 +234,13 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
 
   ### STEP 3: GAPS & SPANS (Vãos e Esperas) - NEW CRITICAL STEP
   - **Start Gap (Vão Inicial/Espera)**: Look for the distance from the bottom/start of the element to the *first* stirrup.
-    - Look for text like "LE" (Limite Estribo), "Início", "1º Estribo a X", or a dimension line at the start.
-    - If you see a segment marked "5", "10", or "50" before the stirrups start, that is the Start Gap.
-    - **Columns**: Often denoted at the bottom as "Espera" or "Arranca".
   - **End Gap (Vão Final)**: Look for the distance from the last stirrup to the top/end of the element.
-    - Common in columns as "Espera Superior", "Vão Superior", or "Topo".
-  - **Span (Vão Livre)**: If there is a massive gap in the middle with NO stirrups (e.g. crossing a beam), note it.
+
+  ### STEP 4: READ VERTICAL DISTRIBUTION LINE (Cotagem Lateral de Distribuição)
+  - **CRITICAL FOR COLUMNS**: Look for a vertical dimension line next to the drawing.
+  - It clearly divides the height into: Start Gap | Distributed Stirrups | End Gap.
+  - **Read the Gaps**: Look for small segments at top/bottom labeled "VÃO", "ESPERA", or just a number (e.g. "8").
+  - **Read the Middle**: The middle segment label (e.g. "15 N5 c/15") CONFIRMS quantity and spacing.
 
   ========================================
   OUTPUT JSON FORMAT (STRICT):

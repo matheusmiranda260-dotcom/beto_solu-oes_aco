@@ -2074,34 +2074,91 @@ const ColumnElevationView: React.FC<{
         )}
 
         <g transform={`translate(${rightX + 40}, 0)`}>
-          <line x1={0} y1={startY} x2={0} y2={endY} stroke="#0f172a" strokeWidth="1" />
-          <line x1={-3} y1={startY} x2={3} y2={startY} stroke="#0f172a" strokeWidth="1" />
-          <line x1={-3} y1={endY} x2={3} y2={endY} stroke="#0f172a" strokeWidth="1" />
-          <text
-            x={10}
-            y={(startY + endY) / 2}
-            textAnchor="middle"
-            fontSize="12"
-            fontWeight="normal"
-            fill="#0f172a"
-            transform={`rotate(-90, 10, ${(startY + endY) / 2})`}
-          >
-            {Math.round(item.length * 100)}
-          </text>
+          {(() => {
+            const totalLen = item.length * 100;
+            // Calculate covered length based on stirrup count
+            const stCount = adjustedStirrupCount > 0 ? adjustedStirrupCount : 0;
+            const coveredLen = stCount > 1 ? (stCount - 1) * spacing : 0;
 
-          {item.hasStirrups && (
-            <text
-              x={-6}
-              y={(startY + endY) / 2}
-              textAnchor="middle"
-              fontSize="10"
-              fontWeight="normal"
-              fill="#0f172a"
-              transform={`rotate(-90, -6, ${(startY + endY) / 2})`}
-            >
-              {adjustedStirrupCount} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
-            </text>
-          )}
+            // Determine Gaps
+            let sGap = item.startGap || 0;
+            let eGap = item.endGap || 0;
+
+            // If gaps missing, infer from remainder
+            if (sGap === 0 && eGap === 0 && coveredLen > 0 && coveredLen < totalLen) {
+              const rem = totalLen - coveredLen;
+              sGap = rem / 2;
+              eGap = rem / 2;
+            }
+
+            // Positions in Pixels relative to startY/endY
+            // Top of column is startY. Bottom is endY.
+            // StartGap is at BOTTOM. EndGap is at TOP.
+            const bottomGapPx = sGap * scaleY;
+            const topGapPx = eGap * scaleY;
+            const midPx = coveredLen * scaleY;
+
+            const yTop = startY;
+            const yStirrupStart = startY + topGapPx;
+            const yStirrupEnd = Math.min(startY + topGapPx + midPx, endY - bottomGapPx + 0.1);
+            // Safety min to avoid overshoot if calculation is slightly off
+            const yBot = endY;
+
+            return (
+              <>
+                {/* Main Line */}
+                <line x1={0} y1={yTop} x2={0} y2={yBot} stroke="#0f172a" strokeWidth="1" />
+
+                {/* Ticks */}
+                <line x1={-3} y1={yTop} x2={3} y2={yTop} stroke="#0f172a" strokeWidth="1" />
+                <line x1={-3} y1={yBot} x2={3} y2={yBot} stroke="#0f172a" strokeWidth="1" />
+
+                {/* Internal Ticks for Distribution if valid */}
+                {stCount > 1 && (
+                  <>
+                    {eGap > 0 && <line x1={-3} y1={yStirrupStart} x2={0} y2={yStirrupStart} stroke="#0f172a" strokeWidth="1" />}
+                    {sGap > 0 && <line x1={-3} y1={yStirrupEnd} x2={0} y2={yStirrupEnd} stroke="#0f172a" strokeWidth="1" />}
+                  </>
+                )}
+
+                {/* Total Length Text */}
+                <text
+                  x={25}
+                  y={(yTop + yBot) / 2}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fill="#0f172a"
+                  transform={`rotate(-90, 25, ${(yTop + yBot) / 2})`}
+                >
+                  {Math.round(totalLen)}
+                </text>
+
+                {/* Gap Texts */}
+                {eGap > 0 && (
+                  <text x={8} y={(yTop + yStirrupStart) / 2} textAnchor="middle" fontSize="9" fill="#64748b" transform={`rotate(-90, 8, ${(yTop + yStirrupStart) / 2})`}>VÃO {Math.round(eGap)}</text>
+                )}
+                {sGap > 0 && (
+                  <text x={8} y={(yStirrupEnd + yBot) / 2} textAnchor="middle" fontSize="9" fill="#64748b" transform={`rotate(-90, 8, ${(yStirrupEnd + yBot) / 2})`}>VÃO {Math.round(sGap)}</text>
+                )}
+
+                {/* Stirrup Info */}
+                {item.hasStirrups && (
+                  <text
+                    x={8}
+                    y={(yStirrupStart + yStirrupEnd) / 2}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fill="#0f172a"
+                    transform={`rotate(-90, 8, ${(yStirrupStart + yStirrupEnd) / 2})`}
+                  >
+                    {adjustedStirrupCount} N{item.stirrupPosition || '2'} ø{item.stirrupGauge} c/{spacing}
+                  </text>
+                )}
+              </>
+            );
+          })()}
         </g>
 
         <line x1={leftX - 20} y1={(startY + endY) / 2} x2={leftX - 10} y2={(startY + endY) / 2} stroke="#0f172a" strokeWidth="1.5" />
