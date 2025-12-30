@@ -333,6 +333,9 @@ const TechnicalDimension: React.FC<{ x1: number; y1: number; x2: number; y2: num
 };
 
 // Visualização da Seção Transversal Composta (Estilo Projeto Estrutural)
+// Helper Function for Grid Points
+const getStirrupGridPoints = (w: number, h: number, model: string): { x: number, y: number, id: number }[] => { const points: { x: number, y: number, id: number }[] = []; let id = 0; const cx = w / 2; const cy = h / 2; if (model === 'rect') { const cols = 5; const rows = 6; for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) { const x = (w * c) / (cols - 1); const y = (h * r) / (rows - 1); points.push({ x, y, id: id++ }); } } } else if (model === 'circle') { const radius = w / 2; const numPoints = 16; for (let i = 0; i < numPoints; i++) { const angle = (2 * Math.PI * i) / numPoints - Math.PI / 2; points.push({ x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), id: id++ }); } points.push({ x: cx, y: cy, id: id++ }); } else if (model === 'triangle') { const p1 = { x: w / 2, y: 0 }; const p2 = { x: w, y: h }; const p3 = { x: 0, y: h }; const pointsPerEdge = 4; for (let i = 0; i < pointsPerEdge; i++) { points.push({ x: p1.x + (p2.x - p1.x) * (i / pointsPerEdge), y: p1.y + (p2.y - p1.y) * (i / pointsPerEdge), id: id++ }); } for (let i = 0; i < pointsPerEdge; i++) { points.push({ x: p2.x + (p3.x - p2.x) * (i / pointsPerEdge), y: p2.y + (p3.y - p2.y) * (i / pointsPerEdge), id: id++ }); } for (let i = 0; i < pointsPerEdge; i++) { points.push({ x: p3.x + (p1.x - p3.x) * (i / pointsPerEdge), y: p3.y + (p1.y - p3.y) * (i / pointsPerEdge), id: id++ }); } } else if (model === 'pentagon') { const v = [{ x: w / 2, y: 0 }, { x: w, y: h * 0.38 }, { x: w * 0.81, y: h }, { x: w * 0.19, y: h }, { x: 0, y: h * 0.38 }]; const pointsPerEdge = 3; for (let side = 0; side < 5; side++) { const start = v[side]; const end = v[(side + 1) % 5]; for (let i = 0; i < pointsPerEdge; i++) { points.push({ x: start.x + (end.x - start.x) * (i / pointsPerEdge), y: start.y + (end.y - start.y) * (i / pointsPerEdge), id: id++ }); } } } else if (model === 'hexagon') { const v = [{ x: w * 0.25, y: 0 }, { x: w * 0.75, y: 0 }, { x: w, y: h / 2 }, { x: w * 0.75, y: h }, { x: w * 0.25, y: h }, { x: 0, y: h / 2 }]; const pointsPerEdge = 3; for (let side = 0; side < 6; side++) { const start = v[side]; const end = v[(side + 1) % 6]; for (let i = 0; i < pointsPerEdge; i++) { points.push({ x: start.x + (end.x - start.x) * (i / pointsPerEdge), y: start.y + (end.y - start.y) * (i / pointsPerEdge), id: id++ }); } } } return points; };
+
 const CompositeCrossSection: React.FC<{
   stirrupW: number;
   stirrupH: number;
@@ -480,7 +483,7 @@ const CompositeCrossSection: React.FC<{
     return points;
   };
 
-  const availablePoints = generateGridPoints();
+  const availablePoints = getStirrupGridPoints(w, h, model);
 
   // --- Render Shape ---
   let shapePath = "";
@@ -1481,8 +1484,30 @@ const BeamElevationView: React.FC<{
                     );
                   })()}
 
-                  {/* Bars Punctuation - Reflects actual bars */}
+                  {/* Bars Punctuation - Reflects actual bars using Precise Point Indices */}
                   {(() => {
+                    const gridPts = getStirrupGridPoints(pW, pH, model);
+                    const preciseCircles: React.ReactNode[] = [];
+                    let hasPointIndices = false;
+
+                    item.mainBars.forEach((bar, bIdx) => {
+                      if (bar.pointIndices && bar.pointIndices.length > 0) {
+                        hasPointIndices = true;
+                        bar.pointIndices.forEach((ptIdx, i) => {
+                          const pt = gridPts.find(p => p.id === ptIdx);
+                          if (pt) {
+                            let color = "#2563eb";
+                            if (bar.placement === 'distributed') color = "#10b981";
+                            if (bar.placement === 'center') color = "#f59e0b";
+                            preciseCircles.push(<circle key={`pb-${bIdx}-${i}`} cx={pt.x} cy={pt.y} r={2.5} fill={color} />);
+                          }
+                        });
+                      }
+                    });
+
+                    if (hasPointIndices) return preciseCircles;
+
+                    // Fallback Logic
                     const barMargin = coverPx + 4;
                     const barAreaW = pW - barMargin * 2;
                     const barAreaH = pH - barMargin * 2;
@@ -1513,12 +1538,10 @@ const BeamElevationView: React.FC<{
                     const sideCount = sideBars.reduce((sum, b) => sum + b.count, 0);
                     if (sideCount > 0) {
                       const perSide = Math.ceil(sideCount / 2);
-                      // Left side
                       Array.from({ length: perSide }).forEach((_, i) => {
                         const cy = barMargin + (perSide > 1 ? i * (barAreaH / (perSide - 1)) : barAreaH / 2);
                         circles.push(<circle key={`sl${i}`} cx={coverPx + 4} cy={cy} r={2.5} fill="#10b981" />);
                       });
-                      // Right side
                       const rightCount = sideCount - perSide;
                       Array.from({ length: rightCount }).forEach((_, i) => {
                         const cy = barMargin + (rightCount > 1 ? i * (barAreaH / (rightCount - 1)) : barAreaH / 2);
@@ -2115,45 +2138,72 @@ const ColumnElevationView: React.FC<{
                   <path d={pathInner} fill="none" stroke="#0f172a" strokeWidth="1.5" />
                 )}
 
-                {/* Bars - Simplified placement logic based on Bounding Box (pW, pH) */}
-                {/* Top Bars */}
-                {topCount > 0 && Array.from({ length: topCount }).map((_, i) => {
-                  // If triangle, push top bars down slightly or center?
-                  // For MVP compatibility, we use bounding box Top logic.
-                  // Only change: for Triangle, Top means Vertex, so center X.
-                  const xPos = topCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (topCount - 1)));
-                  const yPos = model === 'triangle' ? cover + 5 : cover; // Push down slightly for triangle tip
-                  return <circle key={`t${i}`} cx={xPos} cy={yPos} r={3.5} fill="#0f172a" />;
-                })}
+                {/* Bars - Precise positioning via Grid Points */}
+                {(() => {
+                  const gridPts = getStirrupGridPoints(pW, pH, model);
+                  const preciseCircles: React.ReactNode[] = [];
+                  let hasPointIndices = false;
 
-                {/* Bottom Bars */}
-                {botCount > 0 && Array.from({ length: botCount }).map((_, i) => {
-                  const xPos = botCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (botCount - 1)));
-                  return <circle key={`b${i}`} cx={xPos} cy={pH - cover} r={3.5} fill="#0f172a" />;
-                })}
+                  item.mainBars.forEach((bar, bIdx) => {
+                    if (bar.pointIndices && bar.pointIndices.length > 0) {
+                      hasPointIndices = true;
+                      bar.pointIndices.forEach((ptIdx, i) => {
+                        const pt = gridPts.find(p => p.id === ptIdx);
+                        if (pt) {
+                          preciseCircles.push(<circle key={`pb-${bIdx}-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="#0f172a" />);
+                        }
+                      });
+                    }
+                  });
 
-                {/* Side Bars */}
-                {sideCount > 0 && (() => {
-                  const perSide = Math.ceil(sideCount / 2);
-                  const nodes: React.ReactNode[] = [];
-                  for (let i = 0; i < perSide; i++) {
-                    const ySpacing = (pH - 2 * cover) / (perSide + 1);
-                    // Adjust X for non-rect shapes? Simple bounding box for now.
-                    nodes.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
+                  if (hasPointIndices) return preciseCircles;
+
+                  // Fallback Logic
+                  const circles: React.ReactNode[] = [];
+
+                  // Top Bars
+                  if (topCount > 0) {
+                    Array.from({ length: topCount }).forEach((_, i) => {
+                      const xPos = topCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (topCount - 1)));
+                      const yPos = model === 'triangle' ? cover + 5 : cover;
+                      circles.push(<circle key={`t${i}`} cx={xPos} cy={yPos} r={3.5} fill="#0f172a" />);
+                    });
                   }
-                  const rightBars = sideCount - perSide;
-                  for (let i = 0; i < rightBars; i++) {
-                    const ySpacing = (pH - 2 * cover) / (rightBars + 1);
-                    nodes.push(<circle key={`sr${i}`} cx={pW - cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
+
+                  // Bottom Bars
+                  if (botCount > 0) {
+                    Array.from({ length: botCount }).forEach((_, i) => {
+                      const xPos = botCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (botCount - 1)));
+                      circles.push(<circle key={`b${i}`} cx={xPos} cy={pH - cover} r={3.5} fill="#0f172a" />);
+                    });
                   }
-                  return nodes;
+
+                  // Side Bars
+                  if (sideCount > 0) {
+                    const perSide = Math.ceil(sideCount / 2);
+                    // Left
+                    for (let i = 0; i < perSide; i++) {
+                      const ySpacing = (pH - 2 * cover) / (perSide + 1);
+                      circles.push(<circle key={`sl${i}`} cx={cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
+                    }
+                    // Right
+                    const rightBars = sideCount - perSide;
+                    for (let i = 0; i < rightBars; i++) {
+                      const ySpacing = (pH - 2 * cover) / (rightBars + 1);
+                      circles.push(<circle key={`sr${i}`} cx={pW - cover} cy={cover + ySpacing * (i + 1)} r={3.5} fill="#0f172a" />);
+                    }
+                  }
+
+                  // Center Bars
+                  if (centerCount > 0) {
+                    Array.from({ length: centerCount }).forEach((_, i) => {
+                      const xPos = centerCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (centerCount - 1)));
+                      circles.push(<circle key={`c${i}`} cx={xPos} cy={pH / 2} r={3.5} fill="#0f172a" />);
+                    });
+                  }
+
+                  return circles;
                 })()}
-
-                {/* Center Bars */}
-                {centerCount > 0 && Array.from({ length: centerCount }).map((_, i) => {
-                  const xPos = centerCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (centerCount - 1)));
-                  return <circle key={`c${i}`} cx={xPos} cy={pH / 2} r={3.5} fill="#0f172a" />;
-                })}
 
                 {/* Dimensions - Adapted for Shapes */}
                 {/* Horizontal Dimension (Bottom) */}
