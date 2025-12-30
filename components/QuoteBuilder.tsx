@@ -3136,6 +3136,10 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ client, onSave, onCancel })
           onCancel={() => setEditingContext(null)}
         />
       )}
+
+      {viewingDetailedItem && (
+        <DetailedBudgetView item={viewingDetailedItem} onClose={() => setViewingDetailedItem(null)} />
+      )}
     </div>
   );
 };
