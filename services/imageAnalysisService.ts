@@ -222,9 +222,10 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   - **CRITICAL**: If the bar is a straight line, set 'hookStart' and 'hookEnd' to 0. Do NOT confuse stirrup spacing (e.g. "c/15") or quantity with hooks. Only add hooks if you visually see the bend.
 
   ### STEP 2: READ STIRRUPS (Estribos) - LOOK AT THE CROSS-SECTION
-  - **MANDATORY**: Locate the Cross-Section (rectangle with dots) or the callout typically on the RIGHT.
-  - **READ THE LABEL EXACTLY** (e.g., "13 N3 ø 5.0 c/15").
-    - **Quantity**: "13" is the absolute count. USE THIS VALUE. Do NOT recalculate.
+  - **MANDATORY**: Locate the Cross-Section to get dimensions (Width x Height).
+  - **READ THE LABEL**: Found below/near the section (e.g., "20 N5 ø 5.0 c/15").
+    - **Note**: The quantity here (e.g. 20) often sums up total bars including starters (arrancues).
+    - **CRITICAL**: For Pillars/Columns, this quantity might be HIGHER than the distribution. Keep it in mind, but Step 4 (Vertical Line) is the Tie-Breaker.
     - **Position**: "N3" (or similar).
     - **Gauge**: "5.0".
     - **Spacing**: "15" (c/15).
@@ -236,11 +237,11 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
   - **Start Gap (Vão Inicial/Espera)**: Look for the distance from the bottom/start of the element to the *first* stirrup.
   - **End Gap (Vão Final)**: Look for the distance from the last stirrup to the top/end of the element.
 
-  ### STEP 4: READ VERTICAL DISTRIBUTION LINE (Cotagem Lateral de Distribuição)
-  - **CRITICAL FOR COLUMNS**: Look for a vertical dimension line next to the drawing.
-  - It clearly divides the height into: Start Gap | Distributed Stirrups | End Gap.
-  - **Read the Gaps**: Look for small segments at top/bottom labeled "VÃO", "ESPERA", or just a number (e.g. "8").
-  - **Read the Middle**: The middle segment label (e.g. "15 N5 c/15") CONFIRMS quantity and spacing.
+  ### STEP 4: READ VERTICAL DISTRIBUTION LINE (Cotagem Lateral de Distribuição) = SOURCE OF TRUTH
+  - **CRITICAL FOR COLUMNS**: Look for the vertical dimension line next to the drawing.
+  - **Read the Middle**: The label here (e.g. "17 N5") is the TRUE QUANTITY for this element distribution.
+  - **OVERRIDE RULE**: If Step 2 found "20" but this line says "17", OUTPUT 17. The value 20 likely included starters (esperas/arranques) which are separate.
+  - **Read the Gaps**: Look for "VÃO" or numbers at the ends (e.g. "42").
 
   ========================================
   OUTPUT JSON FORMAT (STRICT):
