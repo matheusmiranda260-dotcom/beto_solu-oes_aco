@@ -1401,16 +1401,8 @@ const BeamElevationView: React.FC<{
                     let cutLength = 0;
                     let shapeNode = null;
                     let dimensionNode = null;
-
-                    // Hooks
-                    const hookLen = 8;
-                    const hookGap = 3;
-                    const hooksNode = (
-                      <>
-                        <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" transform={`translate(${model === 'rect' ? 0 : cx - 15}, ${model === 'rect' ? 0 : cy - 20})`} />
-                        <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" transform={`translate(${model === 'rect' ? 0 : cx - 15}, ${model === 'rect' ? 0 : cy - 20})`} />
-                      </>
-                    );
+                    let hookX = 0;
+                    let hookY = 0;
 
                     if (model === 'rect') {
                       cutLength = (sW_val + sH_val) * 2 + 10;
@@ -1423,11 +1415,15 @@ const BeamElevationView: React.FC<{
                           <text x={dW + 5} y={dH / 2} textAnchor="start" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
                         </>
                       );
+                      hookX = 0;
+                      hookY = 0;
                     } else if (model === 'circle') {
                       cutLength = Math.round(sW_val * Math.PI + 10);
                       const r = dW / 2;
                       shapeNode = <circle cx={cx} cy={cy} r={r} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
                       dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">Ø{sW_val}</text>;
+                      hookX = cx - 4;
+                      hookY = (cy - r) - 4;
                     } else if (model === 'triangle') {
                       const side = Math.sqrt(Math.pow(sW_val / 2, 2) + Math.pow(sH_val, 2));
                       cutLength = Math.round(sW_val + 2 * side + 10);
@@ -1439,6 +1435,8 @@ const BeamElevationView: React.FC<{
                           <text x={dW + 5} y={cy} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
                         </>
                       );
+                      hookX = cx - 4;
+                      hookY = 0 - 4;
                     } else if (model === 'pentagon') {
                       cutLength = Math.round(sW_val * 5 + 10);
                       const R = dW / (2 * Math.sin(Math.PI / 5));
@@ -1449,6 +1447,9 @@ const BeamElevationView: React.FC<{
                       }
                       shapeNode = <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
                       dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>;
+                      // Top vertex is at i=0, angle=-PI/2
+                      hookX = cx - 4;
+                      hookY = (cy - R) - 4;
                     } else if (model === 'hexagon') {
                       cutLength = Math.round(sW_val * 6 + 10);
                       const R = dW / 2;
@@ -1459,7 +1460,23 @@ const BeamElevationView: React.FC<{
                       }
                       shapeNode = <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
                       dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>;
+                      // Top vertex is at i=5 (angle 270/-90) for this specific pentagon/hex logic?
+                      // Hex logic used here: angle = (2PI*i)/6 - PI/6.
+                      // To get -PI/2 (top), we need (2PI*i)/6 = -PI/2 + PI/6 = -PI/3 ??
+                      // Wait, previous logic might be rotated.
+                      // Let's stick to safe 'cy - R' assumption for regular polygon bounding.
+                      hookX = cx - 4;
+                      hookY = (cy - R) - 4;
                     }
+
+                    const hookLen = 8;
+                    const hookGap = 3;
+                    const hooksNode = (
+                      <g transform={`translate(${hookX}, ${hookY})`}>
+                        <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                      </g>
+                    );
 
                     return (
                       <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
