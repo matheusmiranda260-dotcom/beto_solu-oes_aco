@@ -2319,7 +2319,8 @@ const ColumnElevationView: React.FC<{
 
                 {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Scaled for Visibility */}
                 {item.hasStirrups && (() => {
-                  const numStirrups = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
+                  // Use the explicit quantity from AI/Input, matches side dimension
+                  const numStirrups = adjustedStirrupCount;
                   const sW_val = Math.round(item.stirrupWidth || sW);
                   const sH_val = Math.round(item.stirrupHeight || sH);
                   const model = item.stirrupModel || 'rect';
