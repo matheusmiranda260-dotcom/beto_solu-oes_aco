@@ -3233,6 +3233,13 @@ const ItemDetailEditor: React.FC<{
         else if (bar.hookStartType === 'down' && bar.hookEndType === 'down') setVisualShape('u_down');
         else setVisualShape('custom');
       }
+
+      // Load existing positions for editing
+      if (bar.pointIndices && bar.pointIndices.length > 0) {
+        setSelectedPositions(bar.pointIndices);
+      } else {
+        setSelectedPositions([]);
+      }
     } else {
       // RESET FORM FOR NEW BAR
       setNewBar({
@@ -3262,7 +3269,11 @@ const ItemDetailEditor: React.FC<{
     const bars = [...localItem.mainBars];
     if (editingIndex !== undefined) {
       // Editing existing bar
-      bars[editingIndex] = newBar;
+      // Update with new data AND new positions
+      bars[editingIndex] = {
+        ...newBar,
+        pointIndices: selectedPositions // Save the edited positions
+      };
     } else {
       // Adding new bar(s) - multi-position mode with exact points
       // Logic: newBar.count dictates expected positions
@@ -3501,16 +3512,24 @@ const ItemDetailEditor: React.FC<{
                 <CompositeCrossSection
                   stirrupW={localItem.stirrupWidth}
                   stirrupH={localItem.stirrupHeight}
-                  bars={localItem.mainBars}
+                  // Filter out the bar being edited so its points are "Available" and not "Occupied"
+                  bars={editingIndex !== undefined ? localItem.mainBars.filter((_, i) => i !== editingIndex) : localItem.mainBars}
                   stirrupPos={localItem.stirrupPosition}
                   stirrupGauge={localItem.stirrupGauge}
                   model={localItem.stirrupModel || 'rect'}
-                  showAvailablePoints={editingIndex === undefined && (newBar.count || 0) > 0}
+                  // Always show points if we have a quantity to place
+                  showAvailablePoints={(newBar.count || 0) > 0}
                   selectedPointIndices={selectedPositions}
                   onPointClick={(pointIndex) => {
                     const max = newBar.count || 0;
-                    if (selectedPositions.length < max) {
-                      setSelectedPositions([...selectedPositions, pointIndex]);
+                    if (selectedPositions.includes(pointIndex)) {
+                      // Deselect
+                      setSelectedPositions(selectedPositions.filter(p => p !== pointIndex));
+                    } else {
+                      // Select if under max
+                      if (selectedPositions.length < max) {
+                        setSelectedPositions([...selectedPositions, pointIndex]);
+                      }
                     }
                   }}
                 />
