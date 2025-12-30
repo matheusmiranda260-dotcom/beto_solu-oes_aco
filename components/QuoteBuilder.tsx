@@ -571,7 +571,7 @@ const CompositeCrossSection: React.FC<{
           {model === 'circle' && (
             <>
               {/* Diameter Label */}
-              <text x={cx} y={cy - w/2 - 8} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">Ø{width}</text>
+              <text x={cx} y={cy - w / 2 - 8} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">Ø{width}</text>
             </>
           )}
           {model === 'triangle' && (
@@ -584,14 +584,18 @@ const CompositeCrossSection: React.FC<{
           )}
           {model === 'pentagon' && (
             <>
-              {/* Side Length */}
-              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{width}</text>
+              {/* Width (Base/Max Width) */}
+              <text x={cx} y={h + 15} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{width}</text>
+              {/* Height */}
+              <text x={-8} y={cy} textAnchor="end" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{height}</text>
             </>
           )}
           {model === 'hexagon' && (
             <>
-              {/* Side Length */}
-              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{width}</text>
+              {/* Width */}
+              <text x={cx} y={h + 15} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{width}</text>
+              {/* Height */}
+              <text x={-8} y={cy} textAnchor="end" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{height}</text>
             </>
           )}
 
