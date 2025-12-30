@@ -209,6 +209,10 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
 
   --- EXECUTION SEQUENCE ---
 
+  ### STEP 0: READ ELEMENT TITLE (Identificação)
+  - Look for large bold text identifying the element(s), e.g. "P12=P39=P54" or "V101".
+  - Extract this entire string as the "observation" field.
+
   ### STEP 1: READ MAIN LONGITUDINAL BARS (Ferros Longitudinais)
   - Look for long horizontal lines representing the beam/column bars.
   - Find their labels, usually format: "2 N1 ø 8.0 c=237" (or "2 N1 f 8.0 c=237").
