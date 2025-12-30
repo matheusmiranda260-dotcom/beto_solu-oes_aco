@@ -1289,7 +1289,7 @@ const BeamElevationView: React.FC<{
 
           {/* Title Group */}
           <g transform="translate(80, 25)">
-            <text textAnchor="middle" fontSize="14" fontWeight="bold" fill="#0f172a" textDecoration="underline">SEÇÃO A-A</text>
+            <text textAnchor="middle" fontSize="14" fontWeight="bold" fill="#0f172a" textDecoration="underline">SEÇÃO</text>
             <text y="16" textAnchor="middle" fontSize="11" fill="#64748b">ESC 1:25</text>
           </g>
 
@@ -1496,10 +1496,7 @@ const BeamElevationView: React.FC<{
                         bar.pointIndices.forEach((ptIdx, i) => {
                           const pt = gridPts.find(p => p.id === ptIdx);
                           if (pt) {
-                            let color = "#2563eb";
-                            if (bar.placement === 'distributed') color = "#10b981";
-                            if (bar.placement === 'center') color = "#f59e0b";
-                            preciseCircles.push(<circle key={`pb-${bIdx}-${i}`} cx={pt.x} cy={pt.y} r={2.5} fill={color} />);
+                            preciseCircles.push(<circle key={`pb-${bIdx}-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="#0f172a" />);
                           }
                         });
                       }
@@ -1519,7 +1516,7 @@ const BeamElevationView: React.FC<{
                     if (topCount > 0) {
                       Array.from({ length: topCount }).forEach((_, i) => {
                         const cx = barMargin + (topCount > 1 ? i * (barAreaW / (topCount - 1)) : barAreaW / 2);
-                        circles.push(<circle key={`t${i}`} cx={cx} cy={coverPx + 4} r={2.5} fill="#2563eb" />);
+                        circles.push(<circle key={`t${i}`} cx={cx} cy={coverPx + 4} r={3.5} fill="#0f172a" />);
                       });
                     }
 
@@ -1529,7 +1526,7 @@ const BeamElevationView: React.FC<{
                     if (botCount > 0) {
                       Array.from({ length: botCount }).forEach((_, i) => {
                         const cx = barMargin + (botCount > 1 ? i * (barAreaW / (botCount - 1)) : barAreaW / 2);
-                        circles.push(<circle key={`b${i}`} cx={cx} cy={pH - coverPx - 4} r={2.5} fill="#2563eb" />);
+                        circles.push(<circle key={`b${i}`} cx={cx} cy={pH - coverPx - 4} r={3.5} fill="#0f172a" />);
                       });
                     }
 
@@ -1540,12 +1537,12 @@ const BeamElevationView: React.FC<{
                       const perSide = Math.ceil(sideCount / 2);
                       Array.from({ length: perSide }).forEach((_, i) => {
                         const cy = barMargin + (perSide > 1 ? i * (barAreaH / (perSide - 1)) : barAreaH / 2);
-                        circles.push(<circle key={`sl${i}`} cx={coverPx + 4} cy={cy} r={2.5} fill="#10b981" />);
+                        circles.push(<circle key={`sl${i}`} cx={coverPx + 4} cy={cy} r={3.5} fill="#0f172a" />);
                       });
                       const rightCount = sideCount - perSide;
                       Array.from({ length: rightCount }).forEach((_, i) => {
                         const cy = barMargin + (rightCount > 1 ? i * (barAreaH / (rightCount - 1)) : barAreaH / 2);
-                        circles.push(<circle key={`sr${i}`} cx={pW - coverPx - 4} cy={cy} r={2.5} fill="#10b981" />);
+                        circles.push(<circle key={`sr${i}`} cx={pW - coverPx - 4} cy={cy} r={3.5} fill="#0f172a" />);
                       });
                     }
 
@@ -1555,7 +1552,7 @@ const BeamElevationView: React.FC<{
                     if (centerCount > 0) {
                       Array.from({ length: centerCount }).forEach((_, i) => {
                         const cx = barMargin + (centerCount > 1 ? i * (barAreaW / (centerCount - 1)) : barAreaW / 2);
-                        circles.push(<circle key={`c${i}`} cx={cx} cy={pH / 2} r={2.5} fill="#f59e0b" />);
+                        circles.push(<circle key={`c${i}`} cx={cx} cy={pH / 2} r={3.5} fill="#0f172a" />);
                       });
                     }
 
