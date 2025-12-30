@@ -2315,134 +2315,161 @@ const ColumnElevationView: React.FC<{
                   <text x={pW / 2} y={pH / 2} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">Ø{Math.round(sW)}</text>
                 )}
 
+                {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Standardized Detailed Logic (Match Beam) */}
                 {item.hasStirrups && (() => {
-                  const numStirrupsVal = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
+                  const numStirrups = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
                   const sW_val = Math.round(item.stirrupWidth || sW);
                   const sH_val = Math.round(item.stirrupHeight || sH);
                   const model = item.stirrupModel || 'rect';
 
-                  const offsetYSt = pH + 50;
+                  // Scale drawing to be ~60px visually
+                  const targetSize = 60;
+                  const scale = targetSize / Math.max(sW_val, sH_val);
+                  const dW = sW_val * scale;
+                  const dH = sH_val * scale;
 
-                  // Helper for Hooks (Double Diagonal)
-                  const drawHooks = (startX: number, startY: number) => (
-                    <g>
-                      <line x1={startX + 3} y1={startY} x2={startX + 10} y2={startY + 7} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
-                      <line x1={startX} y1={startY + 3} x2={startX + 7} y2={startY + 10} stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
-                    </g>
-                  );
+                  const cx = dW / 2;
+                  const cy = dH / 2;
 
-                  let sW_use = sW_val;
-                  let sH_use = sH_val;
+                  const offsetY = pH + 60;
+                  let hooksNode = null;
                   let cutLength = 0;
-
-                  const detachedScale = 1.0;
-                  // Scale up slightly for visibility if tiny
-                  const displayScale = Math.max(detachedScale, 1.5);
-
-                  // Recalculate dimensions based on model logic matching StirrupDetailView
-                  let pW_st = sW_use * displayScale;
-                  let pH_st = sH_use * displayScale;
-
-                  let shapeElement: React.ReactNode = null;
-                  let dimElement: React.ReactNode = null;
-
-                  const cxStr = 0; // Relative to translation
-                  const cyStr = 0;
+                  let shapeNode = null;
+                  let dimensionNode = null;
+                  let hookX = 0;
+                  let hookY = 0;
 
                   if (model === 'rect') {
-                    cutLength = (sW_use + sH_use) * 2 + 10;
-                    // Center the rect
-                    const x0 = cxStr - pW_st / 2;
-                    const y0 = cyStr - pH_st / 2;
-
-                    shapeElement = (
-                      <g>
-                        <rect x={x0} y={y0} width={pW_st} height={pH_st} fill="none" stroke="#0f172a" strokeWidth="2" />
-                        {drawHooks(x0, y0)}
-                      </g>
+                    cutLength = (sW_val + sH_val) * 2 + 10;
+                    shapeNode = <rect x={0} y={0} width={dW} height={dH} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+                    dimensionNode = (
+                      <>
+                        <text x={dW / 2} y={-5} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+                        <text x={dW / 2} y={dH + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+                        <text x={-5} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+                        <text x={dW + 5} y={dH / 2} textAnchor="start" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_val}</text>
+                      </>
                     );
-                    dimElement = (
-                      <g>
-                        <text x={0} y={y0 - 5} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_use}</text>
-                        <text x={x0 - 5} y={0} textAnchor="end" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sH_use}</text>
+                    const hookGap = 3;
+                    const hookLen = 8;
+                    hooksNode = (
+                      <g transform="translate(0, 0)">
+                        <line x1={hookGap} y1={0} x2={hookGap + hookLen} y2={hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={0} y1={hookGap} x2={hookLen} y2={hookGap + hookLen} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
                     );
                   } else if (model === 'circle') {
-                    cutLength = Math.round(sW_use * 3.14 + 10);
-                    const r = pW_st / 2;
-                    shapeElement = (
-                      <g>
-                        <circle cx={0} cy={0} r={r} fill="none" stroke="#0f172a" strokeWidth="2" />
-                        {drawHooks(-r * 0.7, -r * 0.7)}
+                    cutLength = Math.round(sW_val * Math.PI + 10);
+                    const r = dW / 2;
+                    shapeNode = <circle cx={cx} cy={cy} r={r} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+                    dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">Ø{sW_val}</text>;
+                    hooksNode = (
+                      <g transform={`translate(${cx}, ${cy - r})`}>
+                        <path d="M-4,2 Q0,8 4,2" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={-2} y1={0} x2={-2} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={2} y1={0} x2={2} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
                     );
-                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">Ø{sW_use}</text>;
                   } else if (model === 'triangle') {
-                    const side = Math.sqrt(Math.pow(sW_use / 2, 2) + Math.pow(sH_use, 2));
-                    cutLength = Math.round(sW_use + 2 * side + 10);
-
-                    const x0 = -pW_st / 2;
-                    const x1 = pW_st / 2;
-                    const yTop = -pH_st / 2;
-                    const yBot = pH_st / 2;
-
-                    shapeElement = (
-                      <g>
-                        <polygon points={`${x0},${yBot} ${x1},${yBot} 0,${yTop}`} fill="none" stroke="#0f172a" strokeWidth="2" />
-                        {drawHooks(-5, yTop + 5)}
-                      </g>
+                    const side = Math.round(Math.sqrt(Math.pow(sW_val / 2, 2) + Math.pow(sH_val, 2)));
+                    cutLength = Math.round(sW_val + 2 * side + 10);
+                    shapeNode = <polygon points={`0,${dH} ${dW},${dH} ${cx},0`} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+                    dimensionNode = (
+                      <>
+                        <text x={cx} y={dH + 12} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_val}</text>
+                        <text x={dW * 0.75 + 6} y={dH / 2} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{side}</text>
+                        <text x={dW * 0.25 - 6} y={dH / 2} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{side}</text>
+                      </>
                     );
-                    dimElement = (
-                      <g>
-                        <text x={0} y={yBot + 10} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">{sW_use}</text>
-                        <text x={x0 - 2} y={0} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
-                        <text x={x1 + 2} y={0} textAnchor="start" fontSize="10" fontWeight="bold" fill="#0f172a">{Math.round(side)}</text>
+                    hooksNode = (
+                      <g transform={`translate(${cx}, 0)`}>
+                        <line x1={-2} y1={2} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={2} y1={2} x2={6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
                     );
                   } else if (model === 'pentagon') {
-                    // Assuming sW_use is Side Length 'B'
-                    cutLength = Math.round(sW_use * 5 + 10);
-                    const R = (sW_use * displayScale) / (2 * Math.sin(Math.PI / 5));
-
-                    const points = [];
-                    for (let i = 0; i < 5; i++) {
-                      const angle = (2 * Math.PI * i) / 5 - Math.PI / 2;
-                      points.push(`${R * Math.cos(angle)},${R * Math.sin(angle)}`);
-                    }
-                    shapeElement = (
-                      <g>
-                        <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2" />
-                        {drawHooks(points[4].split(',')[0] as any + 5, points[4].split(',')[1] as any)} {/* Approx Hook pos */}
+                    const v = [
+                      { x: cx, y: 0 },
+                      { x: dW, y: dH * 0.38 },
+                      { x: dW * 0.81, y: dH },
+                      { x: dW * 0.19, y: dH },
+                      { x: 0, y: dH * 0.38 }
+                    ];
+                    const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
+                    const s1 = distReal(v[0], v[1]);
+                    const s2 = distReal(v[1], v[2]);
+                    const s3 = distReal(v[2], v[3]);
+                    const s4 = distReal(v[3], v[4]);
+                    const s5 = distReal(v[4], v[0]);
+                    cutLength = s1 + s2 + s3 + s4 + s5 + 10;
+                    const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
+                    shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+                    dimensionNode = (
+                      <>
+                        <text x={dW * 0.8 + 8} y={dH * 0.2} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
+                        <text x={dW + 4} y={dH * 0.7} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s2}</text>
+                        <text x={cx} y={dH + 10} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s3}</text>
+                        <text x={-4} y={dH * 0.7} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s4}</text>
+                        <text x={dW * 0.2 - 8} y={dH * 0.2} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s5}</text>
+                      </>
+                    );
+                    hooksNode = (
+                      <g transform={`translate(${cx}, 0)`}>
+                        <line x1={-2} y1={3} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={2} y1={3} x2={6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
                     );
-                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{sW_use}</text>;
                   } else if (model === 'hexagon') {
-                    // Assuming sW_use is Side Length
-                    cutLength = Math.round(sW_use * 6 + 10);
-                    const R = sW_use * displayScale;
-                    const points = [];
-                    for (let i = 0; i < 6; i++) {
-                      const angle = (2 * Math.PI * i) / 6 - Math.PI / 6;
-                      points.push(`${R * Math.cos(angle)},${R * Math.sin(angle)}`);
-                    }
-                    shapeElement = (
-                      <g>
-                        <polygon points={points.join(' ')} fill="none" stroke="#0f172a" strokeWidth="2" />
-                        {drawHooks(points[5].split(',')[0] as any + 5, points[5].split(',')[1] as any)}
+                    const v = [
+                      { x: dW * 0.25, y: 0 },
+                      { x: dW * 0.75, y: 0 },
+                      { x: dW, y: dH / 2 },
+                      { x: dW * 0.75, y: dH },
+                      { x: dW * 0.25, y: dH },
+                      { x: 0, y: dH / 2 }
+                    ];
+                    const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
+                    const s1 = distReal(v[0], v[1]);
+                    const s2 = distReal(v[1], v[2]);
+                    const s3 = distReal(v[2], v[3]);
+                    const s4 = distReal(v[3], v[4]);
+                    const s5 = distReal(v[4], v[5]);
+                    const s6 = distReal(v[5], v[0]);
+                    cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
+                    const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
+                    shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+                    dimensionNode = (
+                      <>
+                        <text x={cx} y={-4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
+                        <text x={dW + 4} y={dH * 0.25} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s2}</text>
+                        <text x={dW + 4} y={dH * 0.75} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s3}</text>
+                        <text x={cx} y={dH + 10} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s4}</text>
+                        <text x={-4} y={dH * 0.75} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s5}</text>
+                        <text x={-4} y={dH * 0.25} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s6}</text>
+                      </>
+                    );
+                    const mx = (v[5].x + v[0].x) / 2;
+                    const my = (v[5].y + v[0].y) / 2;
+                    hooksNode = (
+                      <g transform={`translate(${mx}, ${my})`}>
+                        <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(-2, 2)" />
+                        <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(2, -2)" />
                       </g>
                     );
-                    dimElement = <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="bold" fill="#0f172a">{sW_use}</text>;
                   }
 
                   return (
-                    <g transform={`translate(${pW / 2}, ${offsetYSt + pH_st / 2})`}> {/* Center the detached stirrup */}
-                      <text x={-40} y={0} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'pentagon' ? '2' : model === 'triangle' ? '3' : model === 'circle' ? '4' : '5'}</text>
+                    <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
+                      {/* 'Modelo X' label on left */}
+                      <text x={-30} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'circle' ? '2' : model === 'triangle' ? '3' : model === 'pentagon' ? '4' : model === 'hexagon' ? '5' : ''}</text>
 
-                      {shapeElement}
-                      {dimElement}
+                      {shapeNode}
+                      {hooksNode}
+                      {dimensionNode}
 
-                      <text x={0} y={pH_st / 2 + 35} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
-                        {numStirrupsVal} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
+                      {/* Summary Text Below */}
+                      <text x={dW / 2} y={dH + 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
+                        {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                       </text>
                     </g>
                   );
