@@ -243,8 +243,10 @@ export const analyzeImageWithGemini = async (file: File, apiKey: string, referen
 
   ### STEP 4: READ VERTICAL DISTRIBUTION LINE (Cotagem Lateral de Distribuição) = SOURCE OF TRUTH
   - **CRITICAL FOR COLUMNS**: Look for the vertical dimension line next to the drawing.
-  - **Read the Middle**: The label here (e.g. "17 N5") is the TRUE QUANTITY for this element distribution.
-  - **OVERRIDE RULE**: If Step 2 found "20" but this line says "17", OUTPUT 17. The value 20 likely included starters (esperas/arranques) which are separate.
+  - **Read the Middle**: The label here (e.g. "17 N5") provides the EXPLICIT QUANTITY (17).
+  - **ACTION**: Set the JSON field "stirrupCount" to this value (e.g. 17).
+  - **DO NOT CALCULATE**: Do NOT try to calculate quantity from Length/Spacing. READ THE VISUAL NUMBER.
+  - **OVERRIDE RULE**: If Step 2 found a different number (e.g. 20), IGNORE IT and use the one from this line.
   - **Read the Gaps**: Look for "VÃO" or numbers at the ends (e.g. "42").
 
   ========================================
