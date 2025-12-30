@@ -1383,16 +1383,18 @@ const BeamElevationView: React.FC<{
                     <text x={pW / 2} y={20} textAnchor="middle" fontSize="12" fontWeight="bold">{Math.round(concreteW)}</text>
                   </g>
 
-                  {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Standardized Models 1-5 */}
+                  {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Scaled for Visibility */}
                   {item.hasStirrups && (() => {
                     const numStirrups = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
                     const sW_val = Math.round(item.stirrupWidth || sW);
                     const sH_val = Math.round(item.stirrupHeight || sH);
                     const model = item.stirrupModel || 'rect';
 
-                    const detachedScale = 1.0;
-                    const dW = sW_val * detachedScale;
-                    const dH = sH_val * detachedScale;
+                    // Scale drawing to be ~60px visually, regardless of real size, so labels/hooks fit nicely.
+                    const targetSize = 60;
+                    const scale = targetSize / Math.max(sW_val, sH_val);
+                    const dW = sW_val * scale;
+                    const dH = sH_val * scale;
 
                     const cx = dW / 2;
                     const cy = dH / 2;
