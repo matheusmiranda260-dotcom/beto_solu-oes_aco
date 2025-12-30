@@ -70,7 +70,7 @@ const BarDrawing: React.FC<{
 
   return (
     <div className={`flex flex-col items-center justify-center rounded-xl transition-all ${compact ? 'p-0 bg-transparent' : 'p-6 bg-white border border-slate-100 shadow-inner mb-2'}`}>
-      <svg width={viewW} height={viewH} viewBox={`0 0 ${viewW} ${viewH}`} className="overflow-visible">
+      <svg viewBox={`0 0 ${viewW} ${viewH}`} className="w-full h-full max-h-full drop-shadow-sm select-none">
         <path d={path} fill="none" stroke="#0f172a" strokeWidth={compact ? "2" : "5"} strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Dimension Labels */}
@@ -542,7 +542,7 @@ const CompositeCrossSection: React.FC<{
   });
 
   return (
-    <div className="flex flex-col items-center select-none">
+    <div className="flex flex-col items-center select-none relative w-full h-full">
       <div className="bg-white p-2 flex items-center justify-center relative transition-all" style={{ minWidth: '200px', height: '220px' }}>
         <svg width={w + padding * 2} height={h + padding * 2} viewBox={`-${padding} -${padding} ${w + padding * 2} ${h + padding * 2}`} className="overflow-visible">
 
@@ -677,36 +677,28 @@ const BeamElevationView: React.FC<{
   readOnly?: boolean;
 }> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const svgRef = React.useRef<SVGSVGElement>(null);
+
+  // Dynamic Layout to reduce whitespace
+  const barStackH = 40;
+  const topPad = 60; // Reduced top padding
+
+  const layoutTopBars = item.mainBars.filter(b => b.placement === 'top');
+  const layoutBotBars = item.mainBars.filter(b => b.placement !== 'top');
+
+  // Anchor Beam Position
+  const beamTopY = topPad + (Math.max(1, layoutTopBars.length) * barStackH);
+  const beamBotY = beamTopY + 50;
+
+  // Calculate total View Height needed
+  // Beam bottom + bottom bars stack + annotations space (250px) + detached stirrup padding if needed
+  const viewH = beamBotY + (Math.max(1, layoutBotBars.length) * barStackH) + 250;
   const viewW = 1000;
-  const viewH = 800;
   const padX = 60;
 
   const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
   const [dragStartX, setDragStartX] = useState<number>(0);
   const [initialOffset, setInitialOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-
-  // Vertical Layout Zones with Stacking
-  const topZoneStart = 30; // Start flowing down from here
-  const bottomZoneStart = 280; // Start flowing up from here? Or down? Typically bottom bars flow UP or are just listed.
-  // Reference image shows Bottom bars (N3) at bottom, then N5 (Skin) in middle, N2/N1 at top.
-  // Let's define:
-  // - Top Bars: Start at Y=50 and stack DOWNWARDS.
-  // - Beam Top Face: Y=150
-  // - Beam Bottom Face: Y=200
-  // - Bottom Bars: Start at Y=230 and stack DOWNWARDS.
-  // - Side/Distributed Bars: Start at Y=300?
-
-  // Revised Stacking Strategy to match typical detailing:
-  // Top Bars (Negative): List them ABOVE the beam.
-  // Bottom Bars (Positive): List them BELOW the beam.
-  // Side Bars (Skin): List them BELOW bottom bars or IN BETWEEN?
-  // Let's put Top Bars starting at Y=20, stacking down.
-  // Beam Drawing at Y=140 to Y=190 (50px height).
-  // Bottom Bars starting at Y=220, stacking down.
-
-  const beamTopY = 375;
-  const beamBotY = 425;
 
   // Calculate effective length from all bars extents (including the one being added)
   const getExtents = () => {
@@ -718,13 +710,15 @@ const BeamElevationView: React.FC<{
 
   const effectiveLengthCm = getExtents();
 
-  // Width for scale calculation (available space)
-  const availableWidthPx = viewW - 2 * padX;
-  const scaleX = Math.min(availableWidthPx / (effectiveLengthCm || 1), 1.5);
+  // Width for scale calculation (available space) - Reserve space for Section View
+  const sectionSpace = 250;
+  const availableWidthPx = viewW - 2 * padX - sectionSpace;
+  const scaleX = Math.min(availableWidthPx / (effectiveLengthCm || 1), 1.0); // Reduced zoom max
 
   // Pixels used by the actual span
   const totalWidthPx = effectiveLengthCm * scaleX;
-  const actualPadX = (viewW - totalWidthPx) / 2;
+  // Center within the available space (left side), leaving right side for Section
+  const actualPadX = padX + (availableWidthPx - totalWidthPx) / 2;
 
   const handleMouseDown = (e: React.MouseEvent, idx: number | 'new', currentOffset: number) => {
     if (readOnly) return;
@@ -764,6 +758,7 @@ const BeamElevationView: React.FC<{
 
       const pt = svgRef.current.createSVGPoint();
       pt.x = e.clientX;
+      pt.y = e.clientY;
       const svgPoint = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
 
       const deltaSVG = svgPoint.x - dragStartX;
@@ -800,7 +795,7 @@ const BeamElevationView: React.FC<{
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [draggingBarIdx, dragStartX, initialOffset, scaleX, onBarUpdate, item.mainBars, item.length]);
+  }, [draggingBarIdx, dragStartX, initialOffset, scaleX, onBarUpdate, item.mainBars, item.length, newBar, onNewBarUpdate]);
 
   const handleMouseUp = () => {
     setDraggingBarIdx(null);
@@ -967,11 +962,8 @@ const BeamElevationView: React.FC<{
 
       <svg
         ref={svgRef}
-        width="100%"
-        height={viewH}
         viewBox={`0 0 ${viewW} ${viewH}`}
-        className={`bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-visible select-none outline-none ${draggingBarIdx !== null ? 'cursor-grabbing' : ''}`}
-        tabIndex={0}
+        className="w-full h-auto drop-shadow-sm select-none"
       >
 
         <defs>
@@ -1241,26 +1233,7 @@ const BeamElevationView: React.FC<{
           return renderInteractableBar(b, y, false);
         })}
 
-        {/* Ruler (Regua de Medição) */}
-        <g transform={`translate(${actualPadX}, ${viewH - 80})`}>
-          <line x1={0} y1={0} x2={totalWidthPx} y2={0} stroke="#cbd5e1" strokeWidth="2" />
-          {Array.from({ length: Math.floor(effectiveLengthCm / 100) + 1 }).map((_, i) => {
-            const x = i * 100 * scaleX;
-            return (
-              <g key={i} transform={`translate(${x}, 0)`}>
-                <line x1={0} y1={0} x2={0} y2={15} stroke="#64748b" strokeWidth="3" strokeLinecap="round" />
-                <text y={35} textAnchor="middle" fontSize="14" className="fill-slate-800 font-black tabular-nums">{i}m</text>
-              </g>
-            );
-          })}
-          {/* Detailed ticks every 10cm for better precision */}
-          {Array.from({ length: Math.floor(effectiveLengthCm / 10) + 1 }).map((_, i) => {
-            const x = i * 10 * scaleX;
-            if (i % 10 === 0) return null;
-            const isMid = i % 5 === 0;
-            return <line key={`t-${i}`} x1={x} y1={0} x2={x} y2={isMid ? 8 : 4} stroke="#94a3b8" strokeWidth={isMid ? 1.5 : 1} />;
-          })}
-        </g>
+        {/* Ruler Removed as requested */}
 
         {/* Draft Bar (New Bar being added) */}
         {newBar && selectedIdx === undefined && (newBar.segmentA || 0) > 0 && (
@@ -1285,7 +1258,7 @@ const BeamElevationView: React.FC<{
         </defs>
 
         {/* SEÇÃO A-A - Dynamic & Positioned after content */}
-        <g transform={`translate(${Math.max(actualPadX + totalWidthPx + 60, viewW - 200)}, ${viewH / 2 - 190})`}>
+        <g transform={`translate(${Math.max(actualPadX + totalWidthPx + 60, viewW - 200)}, 40)`}>
 
 
           {/* Title Group */}
@@ -1391,7 +1364,7 @@ const BeamElevationView: React.FC<{
                     const sH_val = Math.round(item.stirrupHeight || sH);
                     const model = item.stirrupModel || 'rect';
 
-                    // Scale drawing to be ~60px visually, regardless of real size, so labels/hooks fit nicely.
+                    // Scale drawing to be ~60px visually
                     const targetSize = 60;
                     const scale = targetSize / Math.max(sW_val, sH_val);
                     const dW = sW_val * scale;
@@ -1429,8 +1402,7 @@ const BeamElevationView: React.FC<{
                       cutLength = Math.round(sW_val * Math.PI + 10);
                       const r = dW / 2;
                       shapeNode = <circle cx={cx} cy={cy} r={r} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">{sW_val}</text>; // Diameter in center
-                      // Hooks at top
+                      dimensionNode = <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#0f172a">Ø{sW_val}</text>;
                       hooksNode = (
                         <g transform={`translate(${cx}, ${cy - r})`}>
                           <path d="M-4,2 Q0,8 4,2" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
@@ -1449,7 +1421,6 @@ const BeamElevationView: React.FC<{
                           <text x={dW * 0.25 - 6} y={dH / 2} textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">{side}</text>
                         </>
                       );
-                      // Hooks: V at top vertex
                       hooksNode = (
                         <g transform={`translate(${cx}, 0)`}>
                           <line x1={-2} y1={2} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
@@ -1457,14 +1428,6 @@ const BeamElevationView: React.FC<{
                         </g>
                       );
                     } else if (model === 'pentagon') {
-                      // Vertices for House Pentagon (Top, Right-Up, Right-Down, Left-Down, Left-Up)
-                      // Points logic from View: (cx,0), (w, h*0.38), (w*0.81, h), (w*0.19, h), (0, h*0.38)
-                      // BUT user image shows Regular Pentagon (5 equal sides).
-                      // The previous logic was 'House'. To match "Exact Image", we need Regular Pentagon if possible.
-                      // Let's use the layout vertices we calculated before but add labels to all 5 sides.
-                      // Sides: Top-Right, Bot-Right, Bottom, Bot-Left, Top-Left.
-
-                      // Calculate real side lengths based on vertices
                       const v = [
                         { x: cx, y: 0 },
                         { x: dW, y: dH * 0.38 },
@@ -1472,21 +1435,15 @@ const BeamElevationView: React.FC<{
                         { x: dW * 0.19, y: dH },
                         { x: 0, y: dH * 0.38 }
                       ];
-
-                      // Calculate edge lengths in 'real' units (scaling back)
                       const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
-
                       const s1 = distReal(v[0], v[1]);
                       const s2 = distReal(v[1], v[2]);
-                      const s3 = distReal(v[2], v[3]); // Bottom
+                      const s3 = distReal(v[2], v[3]);
                       const s4 = distReal(v[3], v[4]);
                       const s5 = distReal(v[4], v[0]);
-
                       cutLength = s1 + s2 + s3 + s4 + s5 + 10;
-
                       const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
                       shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-
                       dimensionNode = (
                         <>
                           <text x={dW * 0.8 + 8} y={dH * 0.2} textAnchor="start" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
@@ -1496,15 +1453,12 @@ const BeamElevationView: React.FC<{
                           <text x={dW * 0.2 - 8} y={dH * 0.2} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s5}</text>
                         </>
                       );
-
-                      // Hooks: V at top vertex
                       hooksNode = (
                         <g transform={`translate(${cx}, 0)`}>
                           <line x1={-2} y1={3} x2={-6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                           <line x1={2} y1={3} x2={6} y2={10} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                         </g>
                       );
-
                     } else if (model === 'hexagon') {
                       const v = [
                         { x: dW * 0.25, y: 0 },
@@ -1522,10 +1476,8 @@ const BeamElevationView: React.FC<{
                       const s5 = distReal(v[4], v[5]);
                       const s6 = distReal(v[5], v[0]);
                       cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
-
                       const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
                       shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-
                       dimensionNode = (
                         <>
                           <text x={cx} y={-4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
@@ -1536,17 +1488,12 @@ const BeamElevationView: React.FC<{
                           <text x={-4} y={dH * 0.25} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s6}</text>
                         </>
                       );
-
-                      // Hooks: On Top-Left Edge (v[5] -> v[0])
-                      // Interpolate 85% towards top vertex for optimal positioning
                       const pA = v[5];
                       const pB = v[0];
                       const hx = pA.x + (pB.x - pA.x) * 0.85;
                       const hy = pA.y + (pB.y - pA.y) * 0.85;
-
                       hooksNode = (
                         <g transform={`translate(${hx}, ${hy})`}>
-                          {/* Angled lines to simulate the hook fold */}
                           <line x1={-3} y1={2} x2={0} y2={8} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                           <line x1={1} y1={0} x2={4} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                         </g>
@@ -1555,9 +1502,6 @@ const BeamElevationView: React.FC<{
 
                     return (
                       <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
-                        {/* 'Modelo X' label on left */}
-                        <text x={-30} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'circle' ? '2' : model === 'triangle' ? '3' : model === 'pentagon' ? '4' : model === 'hexagon' ? '5' : ''}</text>
-
                         {shapeNode}
                         {hooksNode}
                         {dimensionNode}
@@ -1566,12 +1510,7 @@ const BeamElevationView: React.FC<{
                         <text x={dW / 2} y={dH + 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
                           {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                         </text>
-                        {/* Formula for rect only */}
-                        {model === 'rect' && (
-                          <text x={dW / 2} y={dH + 48} textAnchor="middle" fontSize="8" fill="#64748b">
-                            (2x{sW_val} + 2x{sH_val} + 10) = {cutLength}
-                          </text>
-                        )}
+                        {/* Formula text removed as requested */}
                       </g>
                     );
                   })()}
@@ -1676,8 +1615,32 @@ const ColumnElevationView: React.FC<{
 }> = ({ item, onEditBar, onRemoveBar, onBarUpdate, newBar, onNewBarUpdate, selectedIdx, readOnly }) => {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const viewW = 600;
-  const viewH = 1000;
-  const padY = 80;
+
+  // Dynamic Scaling Logic -----------------------------------------
+  // Fixed scale avoids stretching small columns into huge vertical space
+  const scaleY = 1.3; // Significantly reduced scale for compact cards
+  const padY = 40;
+
+  // Calculate effective length (vertical height) immediately
+  const isItemValid = item && (typeof item.length === 'number') && item.length > 0;
+  const barsForLayout = [...item.mainBars];
+  if (newBar) barsForLayout.push(newBar);
+  const baseLen = (item.length || 1) * 100;
+
+  // Determine max extent of bars (auto-expand logic)
+  const maxBarExtent = barsForLayout.reduce((max, bar) => {
+    const barOffset = bar.offset || 0;
+    const barLen = bar.segmentA || 0;
+    return Math.max(max, barOffset + barLen);
+  }, baseLen);
+
+  const effectiveLengthCm = Math.max(baseLen, maxBarExtent);
+
+  // Dynamic View Height based on actual content
+  const drawingH = effectiveLengthCm * scaleY;
+  const stirrupSectionH = 30; // Minimized buffer (was 120)
+  const viewH = padY + drawingH + stirrupSectionH + padY;
+  // ---------------------------------------------------------------
 
   const [draggingBarIdx, setDraggingBarIdx] = useState<number | 'new' | null>(null);
   const [dragStartY, setDragStartY] = useState<number>(0);
@@ -1687,33 +1650,15 @@ const ColumnElevationView: React.FC<{
   // Layout Constants
   const outputScale = 1;
 
-  // Sanity check for item (Non-blocking for hooks)
-  const isItemValid = item && (typeof item.length === 'number') && item.length > 0;
-
-  // Calculate effective length (vertical height)
-  const getExtents = () => {
-    if (!isItemValid) return 100; // Fallback
-    const bars = [...item.mainBars];
-    if (newBar) bars.push(newBar);
-    const baseLen = (item.length || 1) * 100;
-    if (bars.length === 0) return baseLen;
-
-    const lengths = bars.map(b => (b.offset || 0) + (b.segmentA || 0)).filter(n => Number.isFinite(n));
-    const calculated = Math.max(baseLen, ...lengths);
-    return isNaN(calculated) ? baseLen : calculated;
-  };
-
-  const effectiveLengthCm = getExtents();
-
   // Vertical Scale: map effective length to available height
-  const availableHeightPx = viewH - 2 * padY;
+  // const availableHeightPx = viewH - 2 * padY; // This is no longer needed as viewH is calculated based on scaleY
   // Protect against Division by Zero or NaN
-  const safeLength = (effectiveLengthCm && effectiveLengthCm > 0) ? effectiveLengthCm : 100;
+  // const safeLength = (effectiveLengthCm && effectiveLengthCm > 0) ? effectiveLengthCm : 100; // effectiveLengthCm is already safe
 
   // Calculate layout variables unconditionally (using safe values)
-  const scaleY = Math.min(availableHeightPx / safeLength, 2.5);
-  const totalHeightPx = safeLength * scaleY;
-  const startY = (viewH - totalHeightPx) / 2;
+  // const scaleY = Math.min(availableHeightPx / safeLength, 2.5); // scaleY is now fixed
+  const totalHeightPx = effectiveLengthCm * scaleY; // Use effectiveLengthCm directly
+  const startY = padY; // Start drawing from the top padding
   const endY = startY + totalHeightPx;
 
   // Final Layout Check Flag
@@ -1800,7 +1745,7 @@ const ColumnElevationView: React.FC<{
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [draggingBarIdx, dragStartY, initialOffset, scaleY]); // Removed onBarUpdate to prevent infinite re-renders
+  }, [draggingBarIdx, dragStartY, initialOffset, scaleY, newBar, onNewBarUpdate, onBarUpdate]); // Removed onBarUpdate to prevent infinite re-renders
 
   const renderVerticalBar = (group: MainBarGroup & { originalIdx: number }, xPos: number) => {
     const baseLenCm = (typeof group.segmentA === 'number') ? group.segmentA : Math.round(group.usage.includes('Largura') ? columnWidthCm * 100 : item.length * 100);
@@ -2263,7 +2208,8 @@ const ColumnElevationView: React.FC<{
                   if (botCount > 0) {
                     Array.from({ length: botCount }).forEach((_, i) => {
                       const xPos = botCount === 1 ? pW / 2 : cover + (i * ((pW - 2 * cover) / (botCount - 1)));
-                      circles.push(<circle key={`b${i}`} cx={xPos} cy={pH - cover} r={3.5} fill="#0f172a" />);
+                      const yPos = model === 'triangle' ? pH - cover - 5 : pH - cover;
+                      circles.push(<circle key={`b${i}`} cx={xPos} cy={yPos} r={3.5} fill="#0f172a" />);
                     });
                   }
 
@@ -2314,7 +2260,7 @@ const ColumnElevationView: React.FC<{
                   <text x={pW / 2} y={pH / 2} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">Ø{Math.round(sW)}</text>
                 )}
 
-                {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Standardized Detailed Logic (Match Beam) */}
+                {/* NEW: DETACHED STIRRUP (Estribo Avulso) - Scaled for Visibility */}
                 {item.hasStirrups && (() => {
                   const numStirrups = Math.ceil(((item.length * 100) / (item.stirrupSpacing || 20)));
                   const sW_val = Math.round(item.stirrupWidth || sW);
@@ -2335,8 +2281,6 @@ const ColumnElevationView: React.FC<{
                   let cutLength = 0;
                   let shapeNode = null;
                   let dimensionNode = null;
-                  let hookX = 0;
-                  let hookY = 0;
 
                   if (model === 'rect') {
                     cutLength = (sW_val + sH_val) * 2 + 10;
@@ -2435,10 +2379,8 @@ const ColumnElevationView: React.FC<{
                     const s5 = distReal(v[4], v[5]);
                     const s6 = distReal(v[5], v[0]);
                     cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
-
                     const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
                     shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
-
                     dimensionNode = (
                       <>
                         <text x={cx} y={-4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
@@ -2449,17 +2391,12 @@ const ColumnElevationView: React.FC<{
                         <text x={-4} y={dH * 0.25} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s6}</text>
                       </>
                     );
-
-                    // Hooks: On Top-Left Edge (v[5] -> v[0])
-                    // Interpolate 85% towards top vertex
                     const pA = v[5];
                     const pB = v[0];
                     const hx = pA.x + (pB.x - pA.x) * 0.85;
                     const hy = pA.y + (pB.y - pA.y) * 0.85;
-
                     hooksNode = (
                       <g transform={`translate(${hx}, ${hy})`}>
-                        {/* Angled lines to simulate the hook fold */}
                         <line x1={-3} y1={2} x2={0} y2={8} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                         <line x1={1} y1={0} x2={4} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
@@ -2468,9 +2405,6 @@ const ColumnElevationView: React.FC<{
 
                   return (
                     <g transform={`translate(${pW / 2 - dW / 2}, ${offsetY})`}>
-                      {/* 'Modelo X' label on left */}
-                      <text x={-30} y={dH / 2} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#64748b" fontWeight="bold">modelo {model === 'rect' ? '1' : model === 'circle' ? '2' : model === 'triangle' ? '3' : model === 'pentagon' ? '4' : model === 'hexagon' ? '5' : ''}</text>
-
                       {shapeNode}
                       {hooksNode}
                       {dimensionNode}
@@ -2479,6 +2413,7 @@ const ColumnElevationView: React.FC<{
                       <text x={dW / 2} y={dH + 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
                         {numStirrups} {item.stirrupPosition || 'N2'} ø{item.stirrupGauge} C={cutLength}
                       </text>
+                      {/* Formula text removed */}
                     </g>
                   );
                 })()}
