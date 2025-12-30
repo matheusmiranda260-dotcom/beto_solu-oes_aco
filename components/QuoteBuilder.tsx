@@ -1353,25 +1353,25 @@ const BeamElevationView: React.FC<{
                     <path d={pathOuter} fill="#f1f5f9" stroke="none" />
                   )}
 
-                  {/* Outer Border (Blue) */}
+                  {/* Outer Border (Dark Slate - Match Column) */}
                   {model === 'circle' ? (
-                    <circle cx={pW / 2} cy={pH / 2} r={pW / 2} fill="none" stroke="#2563eb" strokeWidth="1.5" />
+                    <circle cx={pW / 2} cy={pH / 2} r={pW / 2} fill="none" stroke="#0f172a" strokeWidth="2" />
                   ) : (
-                    <path d={pathOuter} fill="none" stroke="#2563eb" strokeWidth="1.5" />
+                    <path d={pathOuter} fill="none" stroke="#0f172a" strokeWidth="2" />
                   )}
 
-                  {/* Inner Stirrup (Black) */}
+                  {/* Inner Stirrup (Dark Slate - Match Column) */}
                   {model === 'circle' ? (
-                    <circle cx={pW / 2} cy={pH / 2} r={(pW / 2) - coverPx} fill="none" stroke="#000" strokeWidth="2" />
+                    <circle cx={pW / 2} cy={pH / 2} r={(pW / 2) - coverPx} fill="none" stroke="#0f172a" strokeWidth="1.5" />
                   ) : (
-                    <path d={pathInner} fill="none" stroke="#000" strokeWidth="2" />
+                    <path d={pathInner} fill="none" stroke="#0f172a" strokeWidth="1.5" />
                   )}
 
                   {/* Hook Cross - Only for Rect roughly, or simplified */}
                   {model === 'rect' && (
                     <>
-                      <line x1={coverPx + 2} y1={coverPx + 6} x2={coverPx + 10} y2={coverPx + 6} stroke="#000" strokeWidth="1.5" />
-                      <line x1={coverPx + 6} y1={coverPx + 2} x2={coverPx + 6} y2={coverPx + 10} stroke="#000" strokeWidth="1.5" />
+                      <line x1={coverPx + 2} y1={coverPx + 6} x2={coverPx + 10} y2={coverPx + 6} stroke="#0f172a" strokeWidth="1.5" />
+                      <line x1={coverPx + 6} y1={coverPx + 2} x2={coverPx + 6} y2={coverPx + 10} stroke="#0f172a" strokeWidth="1.5" />
                     </>
                   )}
 
