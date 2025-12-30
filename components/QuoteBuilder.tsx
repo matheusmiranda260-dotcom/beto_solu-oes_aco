@@ -1505,7 +1505,6 @@ const BeamElevationView: React.FC<{
                       );
 
                     } else if (model === 'hexagon') {
-                      // Vertices: (w*0.25, 0), (w*0.75, 0), (w, h/2), (w*0.75, h), (w*0.25, h), (0, h/2)
                       const v = [
                         { x: dW * 0.25, y: 0 },
                         { x: dW * 0.75, y: 0 },
@@ -1514,15 +1513,13 @@ const BeamElevationView: React.FC<{
                         { x: dW * 0.25, y: dH },
                         { x: 0, y: dH / 2 }
                       ];
-                      const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
-
-                      const s1 = distReal(v[0], v[1]); // Top
+                      const distReal = (p1: any, p2: any) => Math.round(Math.pow(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2), 0.5));
+                      const s1 = distReal(v[0], v[1]);
                       const s2 = distReal(v[1], v[2]);
                       const s3 = distReal(v[2], v[3]);
-                      const s4 = distReal(v[3], v[4]); // Bottom
+                      const s4 = distReal(v[3], v[4]);
                       const s5 = distReal(v[4], v[5]);
-                      const s6 = distReal(v[5], v[0]); // Top-Left
-
+                      const s6 = distReal(v[5], v[0]);
                       cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
 
                       const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
@@ -1539,17 +1536,18 @@ const BeamElevationView: React.FC<{
                         </>
                       );
 
-                      // Hooks: On Top-Left Edge (last side v5 -> v0)
-                      // Midpoint of v5(0, h/2) and v0(w*0.25, 0)
-                      // No, reference image shows hooks on that edge.
-                      const mx = (v[5].x + v[0].x) / 2;
-                      const my = (v[5].y + v[0].y) / 2;
+                      // Hooks: On Top-Left Edge (v[5] -> v[0])
+                      // Interpolate 85% towards top vertex for optimal positioning
+                      const pA = v[5];
+                      const pB = v[0];
+                      const hx = pA.x + (pB.x - pA.x) * 0.85;
+                      const hy = pA.y + (pB.y - pA.y) * 0.85;
+
                       hooksNode = (
-                        <g transform={`translate(${mx}, ${my})`}>
-                          {/* Perpendicular lines relative to edge slope? Or just simple V? */}
-                          {/* Edge goes up-right. Hooks should point INWARD (down-right). */}
-                          <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(-2, 2)" />
-                          <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(2, -2)" />
+                        <g transform={`translate(${hx}, ${hy})`}>
+                          {/* Angled lines to simulate the hook fold */}
+                          <line x1={-3} y1={2} x2={0} y2={8} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1={1} y1={0} x2={4} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                         </g>
                       );
                     }
@@ -2428,7 +2426,7 @@ const ColumnElevationView: React.FC<{
                       { x: dW * 0.25, y: dH },
                       { x: 0, y: dH / 2 }
                     ];
-                    const distReal = (p1: any, p2: any) => Math.round(Math.sqrt(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2)));
+                    const distReal = (p1: any, p2: any) => Math.round(Math.pow(Math.pow((p2.x - p1.x) / scale, 2) + Math.pow((p2.y - p1.y) / scale, 2), 0.5));
                     const s1 = distReal(v[0], v[1]);
                     const s2 = distReal(v[1], v[2]);
                     const s3 = distReal(v[2], v[3]);
@@ -2436,8 +2434,10 @@ const ColumnElevationView: React.FC<{
                     const s5 = distReal(v[4], v[5]);
                     const s6 = distReal(v[5], v[0]);
                     cutLength = s1 + s2 + s3 + s4 + s5 + s6 + 10;
+
                     const pointsStr = v.map(p => `${p.x},${p.y}`).join(' ');
                     shapeNode = <polygon points={pointsStr} fill="none" stroke="#0f172a" strokeWidth="2.5" />;
+
                     dimensionNode = (
                       <>
                         <text x={cx} y={-4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{s1}</text>
@@ -2448,12 +2448,19 @@ const ColumnElevationView: React.FC<{
                         <text x={-4} y={dH * 0.25} textAnchor="end" fontSize="9" fontWeight="bold" fill="#0f172a">{s6}</text>
                       </>
                     );
-                    const mx = (v[5].x + v[0].x) / 2;
-                    const my = (v[5].y + v[0].y) / 2;
+
+                    // Hooks: On Top-Left Edge (v[5] -> v[0])
+                    // Interpolate 85% towards top vertex
+                    const pA = v[5];
+                    const pB = v[0];
+                    const hx = pA.x + (pB.x - pA.x) * 0.85;
+                    const hy = pA.y + (pB.y - pA.y) * 0.85;
+
                     hooksNode = (
-                      <g transform={`translate(${mx}, ${my})`}>
-                        <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(-2, 2)" />
-                        <line x1={-3} y1={-3} x2={3} y2={3} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" transform="translate(2, -2)" />
+                      <g transform={`translate(${hx}, ${hy})`}>
+                        {/* Angled lines to simulate the hook fold */}
+                        <line x1={-3} y1={2} x2={0} y2={8} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={1} y1={0} x2={4} y2={6} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
                       </g>
                     );
                   }
