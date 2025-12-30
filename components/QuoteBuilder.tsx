@@ -2323,8 +2323,14 @@ const ItemReinforcementPreview: React.FC<{
                   <CageDrawing lengthCm={Math.round(item.length * 100)} widthCm={Math.round((item.width || 0) * 100)} spacing={item.stirrupSpacing} compact />
                 ) : (
                   <StirrupDetailView
-                    item={item}
-                    compact
+                    width={item.stirrupWidth}
+                    height={item.stirrupHeight}
+                    model={item.stirrupModel || 'rect'}
+                    gauge={item.stirrupGauge}
+                    spacing={item.stirrupSpacing}
+                    count={Math.ceil(((item.length || 1) * 100) / (item.stirrupSpacing || 20))}
+                    position={item.stirrupPosition}
+                    scale={1} // Adjusted scale for compact view
                   />
                 )}
 
