@@ -85,9 +85,10 @@ const parseGeminiResponse = (responseText: string): SteelItem[] => {
 
             if (maxBarSegment > 0) {
                 const minConcreteNeeded = (maxBarSegment / 100); // meters
-                const diff = Math.abs(rawLength - minConcreteNeeded);
-                if (diff > 0.5 || rawLength < minConcreteNeeded) {
-                    rawLength = Number((minConcreteNeeded).toFixed(2)); // Exact fit, no margin
+                // Only increase concrete if bar is longer than concrete
+                // Never shrink concrete based on bars, as that removes legitimate gaps/covers.
+                if (rawLength < minConcreteNeeded) {
+                    rawLength = Number((minConcreteNeeded + 0.05).toFixed(2)); // Fit bar + 5cm margin
                 }
             }
 
